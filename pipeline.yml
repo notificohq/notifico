@@ -1,0 +1,26 @@
+project: "magicup"
+events:
+  - name: registration
+    pipelines:
+      - steps:
+          #          - step: telegram.set_recipients
+          #            telegram_id: [ 111579711i64 ]
+          - step: telegram.load_template
+            template_id: "0191d395-f806-7b54-b4db-feffbbe5d2d4"
+          - step: telegram.send
+            bot_token: ""
+#      - type: "email"
+#        steps:
+#          - step: "load-template"
+#            template_id: "email-template-id"
+#          - step: "send"
+#            server_id: "smtp-server-id"
+#      - type: "email"
+#        steps:
+#          - step: "hold"
+#            timer_name: "registration_idle"
+#            timeout: "2d"
+#          - step: "load-template"
+#            template_id: "email-template-id"
+#          - step: "send"
+#            server_id: "smtp-server-id"
