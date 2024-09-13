@@ -1,6 +1,7 @@
 use crate::engine::templater::RenderedContext;
 use crate::engine::{Engine, EngineError, EnginePlugin, PipelineContext};
 use async_trait::async_trait;
+use sea_orm::JsonValue;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::borrow::Cow;
@@ -35,7 +36,7 @@ pub enum TelegramStep {
     Send { bot_token: String },
 }
 
-#[derive(Default)]
+#[derive(Default, Serialize, Deserialize)]
 struct TelegramContext {
     template_id: Uuid,
 }
@@ -48,21 +49,22 @@ impl EnginePlugin for TelegramPlugin {
         context: &mut PipelineContext,
         step: Value,
     ) -> Result<(), EngineError> {
-        let mut _telegram_context_lk = context
+        let telegram_context = context
             .plugin_contexts
             .entry("telegram".into())
-            .or_insert_with(|| Arc::new(Mutex::new(TelegramContext::default())))
-            .lock()
-            .await;
-        let telegram_context = (*_telegram_context_lk)
-            .downcast_mut::<TelegramContext>()
-            .unwrap();
+            .or_insert(Value::Object(Default::default()));
 
+        let mut plugin_context: TelegramContext =
+            serde_json::from_value(telegram_context.clone()).unwrap();
         let telegram_step: TelegramStep = serde_json::from_value(step).unwrap();
 
         match telegram_step {
             TelegramStep::LoadTemplate { template_id } => {
-                telegram_context.template_id = template_id;
+                plugin_context.template_id = template_id;
+                context.plugin_contexts.insert(
+                    "telegram".into(),
+                    serde_json::to_value(plugin_context).unwrap(),
+                );
             }
             TelegramStep::Send { bot_token } => {
                 let bot = Bot::new(bot_token);
@@ -72,7 +74,7 @@ impl EnginePlugin for TelegramPlugin {
                         .get_templater()
                         .render(
                             "telegram",
-                            telegram_context.template_id,
+                            plugin_context.template_id,
                             context.event_context.0.clone(),
                         )
                         .await
@@ -89,6 +91,7 @@ impl EnginePlugin for TelegramPlugin {
                 }
             }
         }
+
         Ok(())
     }
 

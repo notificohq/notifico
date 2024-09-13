@@ -1,3 +1,4 @@
+use crate::engine::settings::Settings;
 use crate::engine::templater::Templater;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -9,6 +10,7 @@ use std::fmt::Debug;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+pub mod settings;
 pub mod telegram;
 pub mod templater;
 
@@ -40,7 +42,7 @@ pub struct EventContext(HashMap<String, Value>);
 pub struct PipelineContext {
     pub recipients: Vec<Recipient>,
     pub event_context: EventContext,
-    pub plugin_contexts: HashMap<Cow<'static, str>, Arc<Mutex<dyn Any + Send>>>,
+    pub plugin_contexts: HashMap<Cow<'static, str>, Value>,
 }
 
 pub struct Engine<'a> {
@@ -56,7 +58,7 @@ impl<'a> Engine<'a> {
         }
     }
 
-    pub fn add_plugin(&mut self, plugin: impl EnginePlugin + Send + Sync + 'static) {
+    pub fn add_plugin(&mut self, plugin: impl EnginePlugin + 'static) {
         self.plugins.insert(plugin.step_type(), Arc::new(plugin));
     }
 
@@ -87,7 +89,7 @@ pub enum EngineError {
 }
 
 #[async_trait]
-pub trait EnginePlugin {
+pub trait EnginePlugin: Send + Sync + Any {
     async fn execute_step(
         &self,
         engine: &Engine,
