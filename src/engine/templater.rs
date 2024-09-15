@@ -1,7 +1,7 @@
+use async_trait::async_trait;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use std::collections::HashMap;
+use serde_json::{Map, Value};
 use url::Url;
 use uuid::Uuid;
 
@@ -25,33 +25,46 @@ impl From<url::ParseError> for TemplaterError {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(transparent)]
-pub struct RenderedContext(pub HashMap<String, Value>);
+pub struct RenderResponse(pub Map<String, Value>);
 
 #[derive(Debug, Serialize, Deserialize)]
 struct RenderRequest {
     template_id: Uuid,
-    context: HashMap<String, Value>,
+    context: Map<String, Value>,
 }
 
-pub struct Templater {
+#[async_trait]
+pub trait Templater: Send + Sync {
+    async fn render(
+        &self,
+        template_type: &str,
+        template_id: Uuid,
+        context: Map<String, Value>,
+    ) -> Result<RenderResponse, TemplaterError>;
+}
+
+pub struct TemplaterService {
     client: Client,
     templater_baseurl: Url,
 }
 
-impl Templater {
+impl TemplaterService {
     pub fn new(templater_baseurl: &str) -> Self {
-        Templater {
+        TemplaterService {
             client: Client::builder().build().unwrap(),
             templater_baseurl: Url::parse(templater_baseurl).unwrap(),
         }
     }
+}
 
-    pub async fn render(
+#[async_trait]
+impl Templater for TemplaterService {
+    async fn render(
         &self,
         template_type: &str,
         template_id: Uuid,
-        context: HashMap<String, Value>,
-    ) -> Result<RenderedContext, TemplaterError> {
+        context: Map<String, Value>,
+    ) -> Result<RenderResponse, TemplaterError> {
         let url = self
             .templater_baseurl
             .join(&format!("/template/{template_type}/render"))?;
@@ -62,6 +75,6 @@ impl Templater {
         };
 
         let template = self.client.post(url).json(&render_request).send().await?;
-        Ok(template.json::<RenderedContext>().await?)
+        Ok(template.json::<RenderResponse>().await?)
     }
 }

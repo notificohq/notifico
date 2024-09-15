@@ -1,6 +1,6 @@
 pub mod engine;
 
-use crate::engine::templater::Templater;
+use crate::engine::templater::TemplaterService;
 use crate::engine::{Engine, EventContext, PipelineContext, Recipient, Step};
 use axum::http::StatusCode;
 use axum::routing::{get, post};
@@ -8,6 +8,7 @@ use axum::{Json, Router};
 use engine::telegram::TelegramPlugin;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::sync::Arc;
 use tracing::info;
 use utoipa::OpenApi;
 use utoipa_redoc::{Redoc, Servable};
@@ -77,11 +78,11 @@ async fn trigger(Json(payload): Json<TriggerSchema>) -> (StatusCode, Json<Trigge
 
     // Pipeline;
     {
-        let templater = Templater::new("http://127.0.0.1:8000");
+        let templater = Arc::new(TemplaterService::new("http://127.0.0.1:8000"));
 
-        let mut engine = Engine::new(&templater);
+        let mut engine = Engine::new();
 
-        let tg_plugin = TelegramPlugin::new();
+        let tg_plugin = TelegramPlugin::new(templater);
         engine.add_plugin(tg_plugin);
 
         let mut context = PipelineContext::default();

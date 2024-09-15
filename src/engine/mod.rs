@@ -1,14 +1,12 @@
 use crate::engine::settings::Settings;
-use crate::engine::templater::Templater;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{Map, Value};
 use std::any::Any;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::sync::Arc;
-use tokio::sync::Mutex;
 
 pub mod settings;
 pub mod telegram;
@@ -36,7 +34,7 @@ pub struct Recipient {
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 #[serde(transparent)]
-pub struct EventContext(HashMap<String, Value>);
+pub struct EventContext(Map<String, Value>);
 
 #[derive(Default)]
 pub struct PipelineContext {
@@ -45,16 +43,14 @@ pub struct PipelineContext {
     pub plugin_contexts: HashMap<Cow<'static, str>, Value>,
 }
 
-pub struct Engine<'a> {
+pub struct Engine {
     plugins: HashMap<Cow<'static, str>, Arc<dyn EnginePlugin + Send + Sync>>,
-    templater: &'a Templater,
 }
 
-impl<'a> Engine<'a> {
-    pub fn new(templater: &'a Templater) -> Self {
+impl Engine {
+    pub fn new() -> Self {
         Self {
             plugins: Default::default(),
-            templater,
         }
     }
 
@@ -70,15 +66,11 @@ impl<'a> Engine<'a> {
     ) -> Result<(), EngineError> {
         for (plugin_type, plugin) in self.plugins.iter() {
             if step_type.starts_with(plugin_type.as_ref()) {
-                plugin.execute_step(self, context, step).await?;
+                plugin.execute_step(context, step).await?;
                 return Ok(());
             }
         }
         Err(EngineError::PluginNotFound(step))
-    }
-
-    pub(crate) fn get_templater(&self) -> &Templater {
-        self.templater
     }
 }
 
@@ -92,7 +84,6 @@ pub enum EngineError {
 pub trait EnginePlugin: Send + Sync + Any {
     async fn execute_step(
         &self,
-        engine: &Engine,
         context: &mut PipelineContext,
         step: Value,
     ) -> Result<(), EngineError>;

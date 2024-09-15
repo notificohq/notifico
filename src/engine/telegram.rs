@@ -1,7 +1,6 @@
-use crate::engine::templater::RenderedContext;
+use crate::engine::templater::{RenderResponse, Templater};
 use crate::engine::{Engine, EngineError, EnginePlugin, PipelineContext};
 use async_trait::async_trait;
-use sea_orm::JsonValue;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::borrow::Cow;
@@ -9,19 +8,19 @@ use std::sync::Arc;
 use teloxide::prelude::{ChatId, Requester};
 use teloxide::types::Recipient;
 use teloxide::Bot;
-use tokio::sync::Mutex;
 use uuid::Uuid;
 
 pub struct TelegramBotCredentials {
     token: String,
 }
 
-#[derive(Default)]
-pub struct TelegramPlugin {}
+pub struct TelegramPlugin {
+    templater: Arc<dyn Templater>,
+}
 
 impl TelegramPlugin {
-    pub fn new() -> Self {
-        Default::default()
+    pub fn new(templater: Arc<dyn Templater>) -> Self {
+        Self { templater }
     }
 }
 
@@ -45,7 +44,6 @@ struct TelegramContext {
 impl EnginePlugin for TelegramPlugin {
     async fn execute_step(
         &self,
-        engine: &Engine,
         context: &mut PipelineContext,
         step: Value,
     ) -> Result<(), EngineError> {
@@ -70,8 +68,8 @@ impl EnginePlugin for TelegramPlugin {
                 let bot = Bot::new(bot_token);
 
                 for recipient in context.recipients.iter() {
-                    let rendered_template = engine
-                        .get_templater()
+                    let rendered_template = self
+                        .templater
                         .render(
                             "telegram",
                             plugin_context.template_id,
@@ -105,10 +103,10 @@ pub struct TelegramTemplate {
     pub body: String,
 }
 
-impl TryFrom<RenderedContext> for TelegramTemplate {
+impl TryFrom<RenderResponse> for TelegramTemplate {
     type Error = ();
 
-    fn try_from(value: RenderedContext) -> Result<Self, Self::Error> {
+    fn try_from(value: RenderResponse) -> Result<Self, Self::Error> {
         serde_json::from_value(Value::from_iter(value.0)).map_err(|_| ())
     }
 }
