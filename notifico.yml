@@ -1,0 +1,37 @@
+project: "magicup"
+
+pipelines:
+  - events:
+      - send_notification
+    steps:
+      #          - step: common.subscription_check
+      - step: telegram.load_template
+        template_id: "0191d395-f806-7b54-b4db-feffbbe5d2d4"
+      - step: telegram.send
+        bot_name: telegram_bot_1
+#      - steps:
+#          - step: common.subscription_check
+#          - step: email.load_template
+#            template_id: "275c4ac9-014f-41b8-bf93-047e74421b34"
+#          - step: email.send
+#            smtp:
+#              name: mailman_1
+credentials:
+  - type: telegram_token
+    name: telegram_bot_1
+    value:
+      token: "7488126039:AAG9HCfywfyZHkYwB_bWuE6jeeDFTHuvFpM"
+  - type: smtp_server
+    name: mailman_1
+    value:
+      host: "your-smtp-host"
+      port: "your-smtp-port"
+      username: "your-smtp-username"
+      password: "your-smtp-password"
+recipients:
+  - id: 3766b9e9-a700-4c75-a9c9-88117af11767
+    contacts:
+      - type: telegram
+        chat_id: 111579711
+      - type: mobile_phone
+        number: "+1234567890"

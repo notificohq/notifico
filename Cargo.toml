@@ -9,19 +9,18 @@ tokio = { version = "1.40", features = ["full"] }
 log = "0.4.22"
 futures = "0.3.30"
 tracing = "0.1.40"
-tracing-subscriber = "0.3.18"
-axum = { version = "0.7.5", features = ["macros"] }
-teloxide = "0.13.0"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter", "fmt"] }
 serde = { version = "1.0.210", features = ["derive"] }
-utoipa = { version = "5.0.0-beta.0", features = ["axum_extras"] }
-utoipa-redoc = { version = "4.0.1-beta.0", features = ["axum"] }
-sea-orm = { version = "1.1.0-rc.1", features = ["sqlx-sqlite", "runtime-tokio-rustls", "macros"] }
+#sea-orm = { version = "1.1.0-rc.1", features = ["sqlx-sqlite", "runtime-tokio-rustls", "macros"] }
 uuid = { version = "1.10.0", features = ["serde"] }
 serde_json = "1.0.128"
 reqwest = { version = "0.12.7", features = ["json"] }
 async-trait = "0.1.82"
 url = "2.5.2"
-erased-serde = "0.4.5"
+figment = { version = "0.10.19", features = ["yaml", "env"] }
+clap = { version = "4.5.17", features = ["derive", "color", "usage"] }
+notifico-core = { path = "notifico-core" }
+notifico-telegram = { path = "notifico-telegram" }
 
 [workspace]
-members = ["."]
+members = [".", "notifico-core", "notifico-telegram"]

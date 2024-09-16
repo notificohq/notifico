@@ -1,0 +1,12 @@
+[package]
+name = "notifico-core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+async-trait = "0.1.82"
+serde = { version = "1.0.210", features = ["derive"] }
+serde_json = "1.0.128"
+uuid = { version = "1.10.0", features = ["v4", "serde"] }
+reqwest = "0.12.7"
+url = "2.5.2"

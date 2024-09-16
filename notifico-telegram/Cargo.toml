@@ -1,0 +1,14 @@
+[package]
+name = "notifico-telegram"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+async-trait = "0.1.82"
+serde = { version = "1.0.210", features = ["derive"] }
+serde_json = "1.0.128"
+tracing = "0.1.40"
+uuid = { version = "1.10.0", features = ["v4"] }
+notifico-core = { path = "../notifico-core" }
+teloxide = "0.13.0"
+
