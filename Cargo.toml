@@ -2,6 +2,7 @@
 name = "rule_engine"
 version = "0.1.0"
 edition = "2021"
+rust-version = "1.81.0"
 
 [dependencies]
 #lapin = "2.5.0"
@@ -21,6 +22,7 @@ figment = { version = "0.10.19", features = ["yaml", "env"] }
 clap = { version = "4.5.17", features = ["derive", "color", "usage"] }
 notifico-core = { path = "notifico-core" }
 notifico-telegram = { path = "notifico-telegram" }
+notifico-smtp = { path = "notifico-smtp" }
 
 [workspace]
-members = [".", "notifico-core", "notifico-telegram"]
+members = [".", "notifico-core", "notifico-smtp", "notifico-telegram"]

@@ -24,6 +24,7 @@ pub enum EngineError {
     TemplaterError(TemplaterError),
     PluginNotFound(SerializedStep),
     PipelineInterrupted,
+    CredentialsError,
 }
 
 #[async_trait]
