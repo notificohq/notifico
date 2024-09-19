@@ -1,6 +1,6 @@
+use crate::error::EngineError;
 use crate::pipeline::SerializedStep;
 use crate::recipient::Recipient;
-use crate::templater::TemplaterError;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -19,14 +19,6 @@ pub struct PipelineContext {
     pub plugin_contexts: HashMap<Cow<'static, str>, Value>,
 }
 
-#[derive(Debug)]
-pub enum EngineError {
-    TemplaterError(TemplaterError),
-    PluginNotFound(SerializedStep),
-    PipelineInterrupted,
-    CredentialsError,
-}
-
 #[async_trait]
 pub trait EnginePlugin: Send + Sync + Any {
     async fn execute_step(
@@ -35,5 +27,5 @@ pub trait EnginePlugin: Send + Sync + Any {
         step: &SerializedStep,
     ) -> Result<(), EngineError>;
 
-    fn step_type(&self) -> Cow<'static, str>;
+    fn step_namespace(&self) -> Cow<'static, str>;
 }

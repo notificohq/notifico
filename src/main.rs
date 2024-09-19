@@ -15,7 +15,6 @@ use notifico_core::recipient::Recipient;
 use notifico_smtp::EmailPlugin;
 use notifico_telegram::TelegramPlugin;
 use std::collections::HashMap;
-use std::env::args;
 use std::sync::Arc;
 use templater::service::TemplaterService;
 use tracing::{debug, info};

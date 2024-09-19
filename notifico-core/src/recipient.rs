@@ -1,3 +1,4 @@
+use crate::error::EngineError;
 use serde::Deserialize;
 use serde_json::Value;
 use uuid::Uuid;
@@ -9,13 +10,13 @@ pub struct Recipient {
 }
 
 impl Recipient {
-    pub fn get_primary_contact(&self, r#type: &str) -> Option<&Contact> {
+    pub fn get_primary_contact(&self, r#type: &str) -> Result<&Contact, EngineError> {
         for contact in &self.contacts {
             if contact.r#type() == r#type {
-                return Some(&contact);
+                return Ok(contact);
             }
         }
-        None
+        Err(EngineError::ContactNotFound(r#type.to_string()))
     }
 }
 

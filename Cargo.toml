@@ -24,5 +24,10 @@ notifico-core = { path = "notifico-core" }
 notifico-telegram = { path = "notifico-telegram" }
 notifico-smtp = { path = "notifico-smtp" }
 
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+
 [workspace]
 members = [".", "notifico-core", "notifico-smtp", "notifico-telegram"]

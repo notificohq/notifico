@@ -16,7 +16,11 @@ impl SerializedStep {
         self.0["step"].as_str().expect("Step type must be a string")
     }
 
-    pub fn into_inner(self) -> serde_json::Map<String, Value> {
+    pub fn get_namespace(&self) -> &str {
+        self.get_type().split(".").next().unwrap_or_default()
+    }
+
+    fn into_inner(self) -> serde_json::Map<String, Value> {
         self.0
     }
 

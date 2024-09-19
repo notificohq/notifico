@@ -1,7 +1,8 @@
 use async_trait::async_trait;
 use contact::TelegramContact;
 use notifico_core::credentials::Credentials;
-use notifico_core::engine::{EngineError, EnginePlugin, PipelineContext};
+use notifico_core::engine::{EnginePlugin, PipelineContext};
+use notifico_core::error::EngineError;
 use notifico_core::pipeline::SerializedStep;
 use notifico_core::templater::{RenderResponse, Templater};
 use serde::{Deserialize, Serialize};
@@ -20,6 +21,14 @@ mod step;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TelegramBotCredentials {
     token: String,
+}
+
+impl TryFrom<Value> for TelegramBotCredentials {
+    type Error = EngineError;
+
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
+        serde_json::from_value(value).map_err(|_| EngineError::InvalidCredentialFormat)
+    }
 }
 
 pub struct TelegramPlugin {
@@ -69,38 +78,32 @@ impl EnginePlugin for TelegramPlugin {
             }
             TelegramStep::Send(cred_selector) => {
                 let Some(template_id) = plugin_context.template_id else {
-                    return Err(EngineError::PipelineInterrupted);
+                    return Err(EngineError::TemplateNotSet);
+                };
+                let Some(recipient) = context.recipient.clone() else {
+                    return Err(EngineError::RecipientNotSet);
                 };
 
-                let bot_token = match cred_selector {
+                let tgcred: TelegramBotCredentials = match cred_selector {
                     CredentialSelector::BotName { bot_name } => self
                         .credentials
-                        .get_credential("telegram_token", &bot_name)
-                        .unwrap(),
+                        .get_credential("telegram_token", &bot_name)?
+                        .try_into()?,
                 };
-
-                let tgcred: TelegramBotCredentials = serde_json::from_value(bot_token).unwrap();
 
                 let bot = Bot::new(tgcred.token);
 
                 let rendered_template = self
                     .templater
                     .render("telegram", template_id, context.event_context.0.clone())
-                    .await
-                    .unwrap();
+                    .await?;
 
                 let rendered_template: TelegramBody = rendered_template.try_into().unwrap();
 
-                let contact = TelegramContact::try_from(
-                    context
-                        .recipient
-                        .clone()
-                        .unwrap()
-                        .get_primary_contact("telegram")
-                        .ok_or(EngineError::PipelineInterrupted)
-                        .cloned()?,
-                )
-                .unwrap();
+                let contact: TelegramContact = recipient
+                    .get_primary_contact("telegram")?
+                    .clone()
+                    .try_into()?;
 
                 bot.send_message(contact.into_recipient(), rendered_template.body)
                     .await
@@ -111,7 +114,7 @@ impl EnginePlugin for TelegramPlugin {
         Ok(())
     }
 
-    fn step_type(&self) -> Cow<'static, str> {
+    fn step_namespace(&self) -> Cow<'static, str> {
         "telegram".into()
     }
 }

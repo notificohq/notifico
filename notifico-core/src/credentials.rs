@@ -1,3 +1,4 @@
+use crate::error::EngineError;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -9,5 +10,5 @@ pub struct Credential {
 }
 
 pub trait Credentials: Send + Sync {
-    fn get_credential(&self, r#type: &str, name: &str) -> Option<Value>;
+    fn get_credential(&self, r#type: &str, name: &str) -> Result<Value, EngineError>;
 }

@@ -1,3 +1,4 @@
+use notifico_core::error::EngineError;
 use notifico_core::recipient::Contact;
 use serde::Deserialize;
 use teloxide::prelude::ChatId;
@@ -15,9 +16,9 @@ impl TelegramContact {
 }
 
 impl TryFrom<Contact> for TelegramContact {
-    type Error = ();
+    type Error = EngineError;
 
     fn try_from(value: Contact) -> Result<Self, Self::Error> {
-        serde_json::from_value(value.into_json()).map_err(|_| ())
+        serde_json::from_value(value.into_json()).map_err(|_| EngineError::InvalidContactFormat)
     }
 }

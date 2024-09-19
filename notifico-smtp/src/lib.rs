@@ -1,18 +1,20 @@
+mod credentials;
 mod step;
 
 use async_trait::async_trait;
-use lettre::message::header::{Header, HeaderValue, Headers, Subject};
-use lettre::message::{Mailbox, MultiPart};
-use lettre::transport::smtp::authentication::Credentials as LettreCredentials;
-use lettre::transport::smtp::client::TlsParameters;
+use credentials::SmtpServerCredentials;
 use lettre::{
-    Address, AsyncSmtpTransport, AsyncTransport, SmtpTransport, Tokio1Executor, Transport,
+    message::{Mailbox, MultiPart},
+    AsyncSmtpTransport, AsyncTransport, Tokio1Executor,
 };
-use notifico_core::credentials::Credentials;
-use notifico_core::engine::{EngineError, EnginePlugin, PipelineContext};
-use notifico_core::pipeline::SerializedStep;
-use notifico_core::recipient::Contact;
-use notifico_core::templater::{RenderResponse, Templater};
+use notifico_core::{
+    credentials::Credentials,
+    engine::{EnginePlugin, PipelineContext},
+    error::EngineError,
+    pipeline::SerializedStep,
+    recipient::Contact,
+    templater::{RenderResponse, Templater},
+};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::borrow::Cow;
@@ -20,7 +22,6 @@ use std::str::FromStr;
 use std::sync::Arc;
 use step::{CredentialSelector, EmailStep};
 use tracing::debug;
-use url::Url;
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
@@ -29,35 +30,10 @@ pub struct EmailContact {
 }
 
 impl TryFrom<Contact> for EmailContact {
-    type Error = ();
+    type Error = EngineError;
 
     fn try_from(value: Contact) -> Result<Self, Self::Error> {
-        serde_json::from_value(value.into_json()).map_err(|_| ())
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct SmtpServerCredentials {
-    tls: bool,
-    host: String,
-    port: Option<u16>,
-    username: String,
-    password: String,
-}
-
-impl SmtpServerCredentials {
-    pub fn into_url(self) -> String {
-        let (protocol, port, tls_param) = match self.tls {
-            true => ("smtps", 465, "?tls=required"),
-            false => ("smtp", 25, ""),
-        };
-
-        let port = self.port.unwrap_or(port);
-
-        format!(
-            "{protocol}://{}:{}@{}:{port}{tls_param}",
-            self.username, self.password, self.host
-        )
+        serde_json::from_value(value.into_json()).map_err(|_| EngineError::InvalidContactFormat)
     }
 }
 
@@ -108,17 +84,18 @@ impl EnginePlugin for EmailPlugin {
             }
             EmailStep::Send(cred_selector) => {
                 let Some(template_id) = plugin_context.template_id else {
-                    return Err(EngineError::PipelineInterrupted);
+                    return Err(EngineError::TemplateNotSet);
+                };
+                let Some(recipient) = context.recipient.clone() else {
+                    return Err(EngineError::RecipientNotSet);
                 };
 
-                let credentials = match cred_selector {
+                let smtpcred: SmtpServerCredentials = match cred_selector {
                     CredentialSelector::SmtpName { smtp_name } => self
                         .credentials
-                        .get_credential("smtp_server", &smtp_name)
-                        .unwrap(),
+                        .get_credential("smtp_server", &smtp_name)?
+                        .try_into()?,
                 };
-
-                let smtpcred: SmtpServerCredentials = serde_json::from_value(credentials).unwrap();
 
                 let transport = {
                     AsyncSmtpTransport::<Tokio1Executor>::from_url(&smtpcred.into_url())
@@ -129,21 +106,12 @@ impl EnginePlugin for EmailPlugin {
                 let rendered_template = self
                     .templater
                     .render("email", template_id, context.event_context.0.clone())
-                    .await
-                    .unwrap();
+                    .await?;
 
                 let rendered_template: RenderedEmail = rendered_template.try_into().unwrap();
 
-                let contact = EmailContact::try_from(
-                    context
-                        .recipient
-                        .clone()
-                        .unwrap()
-                        .get_primary_contact("email")
-                        .ok_or(EngineError::PipelineInterrupted)
-                        .cloned()?,
-                )
-                .unwrap();
+                let contact =
+                    EmailContact::try_from(recipient.get_primary_contact("email")?.clone())?;
 
                 let mut builder = lettre::Message::builder();
                 builder = builder.from(Mailbox::from_str(&rendered_template.from).unwrap());
@@ -164,7 +132,7 @@ impl EnginePlugin for EmailPlugin {
         Ok(())
     }
 
-    fn step_type(&self) -> Cow<'static, str> {
+    fn step_namespace(&self) -> Cow<'static, str> {
         "email".into()
     }
 }

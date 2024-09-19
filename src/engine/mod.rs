@@ -1,11 +1,7 @@
-use async_trait::async_trait;
-use notifico_core::engine::{EngineError, EnginePlugin, PipelineContext};
+use notifico_core::engine::{EnginePlugin, PipelineContext};
+use notifico_core::error::EngineError;
 use notifico_core::pipeline::{Pipeline, SerializedStep};
-use notifico_core::recipient::Recipient;
-use notifico_core::templater::TemplaterError;
 use serde::{Deserialize, Serialize};
-use serde_json::{Map, Value};
-use std::any::Any;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
@@ -19,7 +15,7 @@ pub struct Event {
 }
 
 pub struct Engine {
-    plugins: HashMap<Cow<'static, str>, Arc<dyn EnginePlugin + Send + Sync>>,
+    plugins: HashMap<Cow<'static, str>, Arc<dyn EnginePlugin>>,
 }
 
 impl Debug for Engine {
@@ -37,7 +33,8 @@ impl Engine {
     }
 
     pub fn add_plugin(&mut self, plugin: impl EnginePlugin + 'static) {
-        self.plugins.insert(plugin.step_type(), Arc::new(plugin));
+        self.plugins
+            .insert(plugin.step_namespace(), Arc::new(plugin));
     }
 
     #[instrument]
@@ -46,14 +43,12 @@ impl Engine {
         context: &mut PipelineContext,
         step: &SerializedStep,
     ) -> Result<(), EngineError> {
-        let step_type = step.get_type();
+        let plugin = self
+            .plugins
+            .get(step.get_namespace())
+            .ok_or_else(|| EngineError::PluginNotFound(step.get_type().into()))?;
 
-        for (plugin_type, plugin) in self.plugins.iter() {
-            if step_type.starts_with(&**plugin_type) {
-                plugin.execute_step(context, step).await?;
-                return Ok(());
-            }
-        }
-        Err(EngineError::PluginNotFound(step.clone()))
+        plugin.execute_step(context, step).await?;
+        Ok(())
     }
 }

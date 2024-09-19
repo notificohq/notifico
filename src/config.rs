@@ -1,4 +1,5 @@
 use notifico_core::credentials::{Credential, Credentials};
+use notifico_core::error::EngineError;
 use notifico_core::pipeline::Pipeline;
 use notifico_core::recipient::Recipient;
 use serde::Deserialize;
@@ -23,12 +24,15 @@ impl SimpleCredentials {
 }
 
 impl Credentials for SimpleCredentials {
-    fn get_credential(&self, r#type: &str, name: &str) -> Option<Value> {
+    fn get_credential(&self, r#type: &str, name: &str) -> Result<Value, EngineError> {
         for cred in self.creds.iter() {
             if cred.r#type == r#type && cred.name == name {
-                return Some(cred.value.clone());
+                return Ok(cred.value.clone());
             }
         }
-        None
+        Err(EngineError::CredentialNotFound(
+            r#type.to_string().into(),
+            name.into(),
+        ))
     }
 }
