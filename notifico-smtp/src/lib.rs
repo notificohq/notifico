@@ -63,31 +63,47 @@ impl EnginePlugin for EmailPlugin {
         context: &mut PipelineContext,
         step: &SerializedStep,
     ) -> Result<(), EngineError> {
-        let plugin_context = context
-            .plugin_contexts
-            .entry("email".into())
-            .or_insert(Value::Object(Default::default()));
-
-        debug!("Plugin context: {:?}", plugin_context);
-
-        let mut plugin_context: TelegramContext =
-            serde_json::from_value(plugin_context.clone()).unwrap();
         let telegram_step: EmailStep = step.clone().try_into().unwrap();
 
         match telegram_step {
             EmailStep::LoadTemplate { template_id } => {
-                plugin_context.template_id = Some(template_id);
+                let rendered_template = self
+                    .templater
+                    .render("email", template_id, context.event_context.0.clone())
+                    .await?;
+
+                let rendered_template: RenderedEmail = rendered_template.try_into().unwrap();
+
                 context.plugin_contexts.insert(
-                    "email".into(),
-                    serde_json::to_value(plugin_context).unwrap(),
+                    "email.content".into(),
+                    serde_json::to_value(rendered_template).unwrap(),
                 );
             }
             EmailStep::Send(cred_selector) => {
-                let Some(template_id) = plugin_context.template_id else {
-                    return Err(EngineError::TemplateNotSet);
-                };
                 let Some(recipient) = context.recipient.clone() else {
                     return Err(EngineError::RecipientNotSet);
+                };
+
+                let contact =
+                    EmailContact::try_from(recipient.get_primary_contact("email")?.clone())?;
+
+                let message = {
+                    let content = context
+                        .plugin_contexts
+                        .get("email.content")
+                        .ok_or(EngineError::TemplateNotSet)?;
+                    let content: RenderedEmail = serde_json::from_value(content.clone()).unwrap();
+
+                    let mut builder = lettre::Message::builder();
+                    builder = builder.from(Mailbox::from_str(&content.from).unwrap());
+                    builder = builder.to(contact.address);
+                    builder = builder.subject(content.subject);
+                    builder
+                        .multipart(MultiPart::alternative_plain_html(
+                            content.body_plaintext,
+                            content.body_html,
+                        ))
+                        .unwrap()
                 };
 
                 let smtpcred: SmtpServerCredentials = match cred_selector {
@@ -103,28 +119,6 @@ impl EnginePlugin for EmailPlugin {
                         .build()
                 };
 
-                let rendered_template = self
-                    .templater
-                    .render("email", template_id, context.event_context.0.clone())
-                    .await?;
-
-                let rendered_template: RenderedEmail = rendered_template.try_into().unwrap();
-
-                let contact =
-                    EmailContact::try_from(recipient.get_primary_contact("email")?.clone())?;
-
-                let mut builder = lettre::Message::builder();
-                builder = builder.from(Mailbox::from_str(&rendered_template.from).unwrap());
-                builder = builder.to(contact.address);
-                builder = builder.subject(rendered_template.subject);
-
-                let message = builder
-                    .multipart(MultiPart::alternative_plain_html(
-                        rendered_template.body_plaintext,
-                        rendered_template.body_html,
-                    ))
-                    .unwrap();
-
                 transport.send(message).await.unwrap();
             }
         }
@@ -137,7 +131,7 @@ impl EnginePlugin for EmailPlugin {
     }
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct RenderedEmail {
     headers: String,
 

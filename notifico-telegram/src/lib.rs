@@ -51,13 +51,6 @@ impl EnginePlugin for TelegramPlugin {
         context: &mut PipelineContext,
         step: &SerializedStep,
     ) -> Result<(), EngineError> {
-        let telegram_context = context
-            .plugin_contexts
-            .entry("telegram".into())
-            .or_insert(Value::Object(Default::default()));
-
-        debug!("Plugin context: {:?}", telegram_context);
-
         let telegram_step: TelegramStep = step.clone().try_into().unwrap();
 
         match telegram_step {
