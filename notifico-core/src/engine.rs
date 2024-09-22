@@ -9,7 +9,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use uuid::Uuid;
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct EventContext(pub Map<String, Value>);
 

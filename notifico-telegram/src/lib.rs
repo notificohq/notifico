@@ -13,7 +13,6 @@ use step::{CredentialSelector, TelegramStep};
 use teloxide::prelude::Requester;
 use teloxide::Bot;
 use tracing::debug;
-use uuid::Uuid;
 
 mod contact;
 mod step;
@@ -45,11 +44,6 @@ impl TelegramPlugin {
     }
 }
 
-#[derive(Default, Serialize, Deserialize)]
-struct TelegramContext {
-    template_id: Option<Uuid>,
-}
-
 #[async_trait]
 impl EnginePlugin for TelegramPlugin {
     async fn execute_step(
@@ -64,26 +58,45 @@ impl EnginePlugin for TelegramPlugin {
 
         debug!("Plugin context: {:?}", telegram_context);
 
-        let mut plugin_context: TelegramContext =
-            serde_json::from_value(telegram_context.clone()).unwrap();
         let telegram_step: TelegramStep = step.clone().try_into().unwrap();
 
         match telegram_step {
             TelegramStep::LoadTemplate { template_id } => {
-                plugin_context.template_id = Some(template_id);
+                if context.recipient.is_none() {
+                    return Err(EngineError::RecipientNotSet);
+                };
+
+                let rendered_template = self
+                    .templater
+                    .render("telegram", template_id, context.event_context.0.clone())
+                    .await?;
+
+                let rendered_template: TelegramContent = rendered_template.try_into().unwrap();
+
                 context.plugin_contexts.insert(
-                    "telegram".into(),
-                    serde_json::to_value(plugin_context).unwrap(),
+                    "telegram.content".into(),
+                    serde_json::to_value(rendered_template)
+                        .map_err(|_| EngineError::TemplateRenderingError)?,
                 );
             }
             TelegramStep::Send(cred_selector) => {
-                let Some(template_id) = plugin_context.template_id else {
-                    return Err(EngineError::TemplateNotSet);
-                };
                 let Some(recipient) = context.recipient.clone() else {
                     return Err(EngineError::RecipientNotSet);
                 };
 
+                let content = context
+                    .plugin_contexts
+                    .get("telegram.content")
+                    .ok_or(EngineError::TemplateNotSet)?;
+                let content: TelegramContent = serde_json::from_value(content.clone())
+                    .map_err(|e| EngineError::InternalError(e.into()))?;
+
+                let contact: TelegramContact = recipient
+                    .get_primary_contact("telegram")?
+                    .clone()
+                    .try_into()?;
+
+                // Send
                 let tgcred: TelegramBotCredentials = match cred_selector {
                     CredentialSelector::BotName { bot_name } => self
                         .credentials
@@ -92,20 +105,7 @@ impl EnginePlugin for TelegramPlugin {
                 };
 
                 let bot = Bot::new(tgcred.token);
-
-                let rendered_template = self
-                    .templater
-                    .render("telegram", template_id, context.event_context.0.clone())
-                    .await?;
-
-                let rendered_template: TelegramBody = rendered_template.try_into().unwrap();
-
-                let contact: TelegramContact = recipient
-                    .get_primary_contact("telegram")?
-                    .clone()
-                    .try_into()?;
-
-                bot.send_message(contact.into_recipient(), rendered_template.body)
+                bot.send_message(contact.into_recipient(), content.body)
                     .await
                     .unwrap();
             }
@@ -119,12 +119,12 @@ impl EnginePlugin for TelegramPlugin {
     }
 }
 
-#[derive(Deserialize, Clone)]
-pub struct TelegramBody {
+#[derive(Serialize, Deserialize, Clone)]
+pub struct TelegramContent {
     pub body: String,
 }
 
-impl TryFrom<RenderResponse> for TelegramBody {
+impl TryFrom<RenderResponse> for TelegramContent {
     type Error = ();
 
     fn try_from(value: RenderResponse) -> Result<Self, Self::Error> {

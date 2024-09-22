@@ -4,14 +4,13 @@ pub mod recipients;
 pub mod templater;
 
 use crate::config::{Config, SimpleCredentials, SimplePipelineStorage};
-use crate::engine::Engine;
+use crate::engine::{Engine, PipelineRunner};
 use clap::Parser;
 use figment::{
     providers::{Env, Format, Yaml},
     Figment,
 };
-use notifico_core::engine::{EventContext, PipelineContext};
-use notifico_core::pipeline::PipelineStorage;
+use notifico_core::engine::EventContext;
 use notifico_core::recipient::Recipient;
 use notifico_smtp::EmailPlugin;
 use notifico_telegram::TelegramPlugin;
@@ -64,31 +63,26 @@ async fn main() {
 
     let templater = Arc::new(TemplaterService::new("http://127.0.0.1:8000"));
     let credentials = Arc::new(SimpleCredentials::from_config(&config));
-    let pipelines = SimplePipelineStorage::from_config(&config);
+    let pipelines = Arc::new(SimplePipelineStorage::from_config(&config));
 
     let mut engine = Engine::new();
 
     engine.add_plugin(TelegramPlugin::new(templater.clone(), credentials.clone()));
     engine.add_plugin(EmailPlugin::new(templater, credentials));
 
-    let pipelines = pipelines
-        .get_pipelines(config.projects[0].id, &args.event)
-        .unwrap();
-
     let recipinents: HashMap<Uuid, &Recipient> =
         HashMap::from_iter(config.projects[0].recipients.iter().map(|r| (r.id, r)));
 
-    // Pipeline;
-    {
-        let mut context = PipelineContext::default();
-        context.project_id = config.projects[0].id;
-        context.recipient = Some(recipinents[&args.recipient].clone());
-        context.event_context = event_context;
-
-        for pipeline in pipelines {
-            for step in pipeline.steps.iter() {
-                engine.execute_step(&mut context, step).await.unwrap()
-            }
-        }
-    }
+    let runner = PipelineRunner {};
+    runner
+        .process_event(
+            pipelines.clone(),
+            config.projects[0].id,
+            &args.event,
+            event_context,
+            engine,
+            recipinents[&args.recipient].clone(),
+        )
+        .await
+        .unwrap();
 }
