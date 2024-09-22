@@ -93,7 +93,7 @@ impl EnginePlugin for EmailPlugin {
                 let smtpcred: SmtpServerCredentials = match cred_selector {
                     CredentialSelector::SmtpName { smtp_name } => self
                         .credentials
-                        .get_credential("smtp_server", &smtp_name)?
+                        .get_credential(context.project_id, "smtp_server", &smtp_name)?
                         .try_into()?,
                 };
 

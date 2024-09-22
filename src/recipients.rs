@@ -1,10 +1,6 @@
-use notifico_core::recipient::Recipient;
+use notifico_core::recipient::{Recipient, RecipientDirectory};
 use std::collections::HashMap;
 use uuid::Uuid;
-
-pub trait RecipientDirectory {
-    fn get_recipient(&self, id: Uuid) -> Option<Recipient>;
-}
 
 pub struct MemoryRecipientDirectory {
     directory: HashMap<Uuid, Recipient>,

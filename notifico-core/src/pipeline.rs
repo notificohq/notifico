@@ -1,5 +1,7 @@
+use crate::error::EngineError;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use uuid::Uuid;
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug)]
 pub struct Pipeline {
@@ -27,4 +29,8 @@ impl SerializedStep {
     pub fn into_value(self) -> Value {
         Value::Object(self.into_inner())
     }
+}
+
+pub trait PipelineStorage {
+    fn get_pipelines(&self, project: Uuid, event_name: &str) -> Result<Vec<Pipeline>, EngineError>;
 }

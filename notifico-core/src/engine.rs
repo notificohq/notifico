@@ -7,6 +7,7 @@ use serde_json::{Map, Value};
 use std::any::Any;
 use std::borrow::Cow;
 use std::collections::HashMap;
+use uuid::Uuid;
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 #[serde(transparent)]
@@ -14,6 +15,7 @@ pub struct EventContext(pub Map<String, Value>);
 
 #[derive(Default, Debug)]
 pub struct PipelineContext {
+    pub project_id: Uuid,
     pub recipient: Option<Recipient>,
     pub event_context: EventContext,
     pub plugin_contexts: HashMap<Cow<'static, str>, Value>,

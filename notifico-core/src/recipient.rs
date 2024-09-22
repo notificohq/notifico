@@ -34,3 +34,7 @@ impl Contact {
         self.0
     }
 }
+
+pub trait RecipientDirectory {
+    fn get_recipient(&self, id: Uuid) -> Option<Recipient>;
+}

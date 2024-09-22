@@ -1,5 +1,6 @@
 use crate::templater::TemplaterError;
 use std::borrow::Cow;
+use uuid::Uuid;
 
 #[derive(Debug)]
 pub enum EngineError {
@@ -12,6 +13,7 @@ pub enum EngineError {
     InvalidContactFormat,
     RecipientNotSet,
     TemplateNotSet,
+    ProjectNotFound(Uuid),
 }
 
 impl From<TemplaterError> for EngineError {

@@ -39,7 +39,7 @@ impl Engine {
 
     #[instrument]
     pub(crate) async fn execute_step(
-        &mut self,
+        &self,
         context: &mut PipelineContext,
         step: &SerializedStep,
     ) -> Result<(), EngineError> {

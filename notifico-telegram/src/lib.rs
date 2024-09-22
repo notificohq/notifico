@@ -87,7 +87,7 @@ impl EnginePlugin for TelegramPlugin {
                 let tgcred: TelegramBotCredentials = match cred_selector {
                     CredentialSelector::BotName { bot_name } => self
                         .credentials
-                        .get_credential("telegram_token", &bot_name)?
+                        .get_credential(context.project_id, "telegram_token", &bot_name)?
                         .try_into()?,
                 };
 
