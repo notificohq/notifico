@@ -1,9 +1,10 @@
 use crate::error::EngineError;
-use serde::Deserialize;
+use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Recipient {
     pub id: Uuid,
     pub contacts: Vec<Contact>,
@@ -20,7 +21,7 @@ impl Recipient {
     }
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Contact(Value);
 
 impl Contact {
@@ -35,6 +36,7 @@ impl Contact {
     }
 }
 
+#[async_trait]
 pub trait RecipientDirectory {
-    fn get_recipient(&self, id: Uuid) -> Option<Recipient>;
+    async fn get_recipient(&self, id: Uuid) -> Option<Recipient>;
 }

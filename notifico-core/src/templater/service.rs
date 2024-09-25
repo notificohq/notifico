@@ -1,6 +1,8 @@
+use crate::templater::{RenderResponse, Templater, TemplaterError};
 use async_trait::async_trait;
-use notifico_core::templater::{RenderResponse, Templater, TemplaterError};
 use reqwest::Client;
+use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
+use reqwest_tracing::TracingMiddleware;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use url::Url;
@@ -13,14 +15,16 @@ struct RenderRequest {
 }
 
 pub struct TemplaterService {
-    client: Client,
+    client: ClientWithMiddleware,
     templater_baseurl: Url,
 }
 
 impl TemplaterService {
     pub fn new(templater_baseurl: &str) -> Self {
         TemplaterService {
-            client: Client::builder().build().unwrap(),
+            client: ClientBuilder::new(Client::builder().build().unwrap())
+                .with(TracingMiddleware::default())
+                .build(),
             templater_baseurl: Url::parse(templater_baseurl).unwrap(),
         }
     }

@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use notifico_core::recipient::{Recipient, RecipientDirectory};
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -14,8 +15,9 @@ impl MemoryRecipientDirectory {
     }
 }
 
+#[async_trait]
 impl RecipientDirectory for MemoryRecipientDirectory {
-    fn get_recipient(&self, id: Uuid) -> Option<Recipient> {
+    async fn get_recipient(&self, id: Uuid) -> Option<Recipient> {
         self.directory.get(&id).cloned()
     }
 }

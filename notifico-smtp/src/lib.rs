@@ -7,9 +7,10 @@ use lettre::{
     message::{Mailbox, MultiPart},
     AsyncSmtpTransport, AsyncTransport, Tokio1Executor,
 };
+use notifico_core::engine::plugin::EnginePlugin;
 use notifico_core::{
     credentials::Credentials,
-    engine::{EnginePlugin, PipelineContext},
+    engine::PipelineContext,
     error::EngineError,
     pipeline::SerializedStep,
     recipient::Contact,
@@ -21,8 +22,9 @@ use std::borrow::Cow;
 use std::str::FromStr;
 use std::sync::Arc;
 use step::{CredentialSelector, EmailStep};
-use tracing::debug;
 use uuid::Uuid;
+
+const CHANNEL_NAME: &'static str = "email";
 
 #[derive(Debug, Deserialize)]
 pub struct EmailContact {

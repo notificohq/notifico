@@ -1,7 +1,8 @@
 use async_trait::async_trait;
 use contact::TelegramContact;
 use notifico_core::credentials::Credentials;
-use notifico_core::engine::{EnginePlugin, PipelineContext};
+use notifico_core::engine::plugin::EnginePlugin;
+use notifico_core::engine::PipelineContext;
 use notifico_core::error::EngineError;
 use notifico_core::pipeline::SerializedStep;
 use notifico_core::templater::{RenderResponse, Templater};
@@ -12,7 +13,8 @@ use std::sync::Arc;
 use step::{CredentialSelector, TelegramStep};
 use teloxide::prelude::Requester;
 use teloxide::Bot;
-use tracing::debug;
+
+const CHANNEL_NAME: &'static str = "telegram";
 
 mod contact;
 mod step;

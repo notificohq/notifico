@@ -12,7 +12,7 @@ futures = "0.3.30"
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter", "fmt"] }
 serde = { version = "1.0.210", features = ["derive"] }
-#sea-orm = { version = "1.1.0-rc.1", features = ["sqlx-sqlite", "runtime-tokio-rustls", "macros"] }
+sea-orm = { version = "1.0.1", features = ["sqlx-sqlite", "runtime-tokio-rustls", "macros"] }
 uuid = { version = "1.10.0", features = ["serde"] }
 serde_json = "1.0.128"
 reqwest = { version = "0.12.7", features = ["json"] }
@@ -23,6 +23,9 @@ clap = { version = "4.5.17", features = ["derive", "color", "usage"] }
 notifico-core = { path = "notifico-core" }
 notifico-telegram = { path = "notifico-telegram" }
 notifico-smtp = { path = "notifico-smtp" }
+actix = "0.13.5"
+axum = "0.7.6"
+
 
 [profile.release]
 opt-level = 3
@@ -30,4 +33,4 @@ lto = true
 codegen-units = 1
 
 [workspace]
-members = [".", "notifico-core", "notifico-smtp", "notifico-telegram"]
+members = [".", "notifico-core", "notifico-smtp", "notifico-telegram", "migration", "entity"]

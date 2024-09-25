@@ -1,3 +1,5 @@
+pub mod service;
+
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -6,12 +8,19 @@ use uuid::Uuid;
 #[derive(Debug)]
 pub enum TemplaterError {
     RequestError(reqwest::Error),
+    RequestMiddlewareError(reqwest_middleware::Error),
     UrlError(url::ParseError),
 }
 
 impl From<reqwest::Error> for TemplaterError {
     fn from(err: reqwest::Error) -> Self {
         TemplaterError::RequestError(err)
+    }
+}
+
+impl From<reqwest_middleware::Error> for TemplaterError {
+    fn from(err: reqwest_middleware::Error) -> Self {
+        TemplaterError::RequestMiddlewareError(err)
     }
 }
 
