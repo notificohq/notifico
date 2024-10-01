@@ -10,7 +10,7 @@ pub enum CredentialSelector {
 
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "step")]
-pub enum TelegramStep {
+pub enum Step {
     #[serde(rename = "telegram.load_template")]
     LoadTemplate { template_id: Uuid },
     // #[serde(rename = "telegram.set_recipients")]
@@ -19,12 +19,4 @@ pub enum TelegramStep {
     Send(CredentialSelector),
 }
 
-impl TryFrom<SerializedStep> for TelegramStep {
-    type Error = ();
-
-    fn try_from(value: SerializedStep) -> Result<Self, Self::Error> {
-        let s = serde_json::to_string(&value.into_value()).unwrap();
-
-        Ok(serde_json::from_str(&s).unwrap())
-    }
-}
+pub(crate) const STEPS: &'static [&'static str] = &["telegram.load_template", "telegram.send"];

@@ -5,14 +5,13 @@ edition = "2021"
 rust-version = "1.81.0"
 
 [dependencies]
-#lapin = "2.5.0"
 tokio = { version = "1.40", features = ["full"] }
 log = "0.4.22"
 futures = "0.3.30"
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter", "fmt"] }
 serde = { version = "1.0.210", features = ["derive"] }
-sea-orm = { version = "1.0.1", features = ["sqlx-sqlite", "runtime-tokio-rustls", "macros"] }
+sea-orm = { workspace = true }
 uuid = { version = "1.10.0", features = ["serde"] }
 serde_json = "1.0.128"
 reqwest = { version = "0.12.7", features = ["json"] }
@@ -23,9 +22,13 @@ clap = { version = "4.5.17", features = ["derive", "color", "usage"] }
 notifico-core = { path = "notifico-core" }
 notifico-telegram = { path = "notifico-telegram" }
 notifico-smtp = { path = "notifico-smtp" }
+notifico-subscription = { path = "notifico-subscription" }
 actix = "0.13.5"
 axum = "0.7.6"
-
+jwt = "0.16.0"
+sha2 = "0.10.8"
+hmac = "0.12.1"
+anyhow = "1.0.89"
 
 [profile.release]
 opt-level = 3
@@ -33,4 +36,7 @@ lto = true
 codegen-units = 1
 
 [workspace]
-members = [".", "notifico-core", "notifico-smtp", "notifico-telegram", "migration", "entity"]
+members = [".", "notifico-core", "notifico-smtp", "notifico-telegram", "notifico-subscription/migration", "notifico-subscription"]
+
+[workspace.dependencies]
+sea-orm = { version = "1.1.0-rc.1", features = ["sqlx-sqlite", "sqlx-postgres", "runtime-tokio-rustls", "macros"] }

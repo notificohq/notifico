@@ -9,7 +9,6 @@ pub enum EngineError {
     CredentialNotFound(Cow<'static, str>, String),
     TemplaterError(TemplaterError),
     PluginNotFound(String),
-    PipelineInterrupted,
     ContactNotFound(String),
     InvalidContactFormat,
     RecipientNotSet,
@@ -17,6 +16,7 @@ pub enum EngineError {
     ProjectNotFound(Uuid),
     TemplateRenderingError,
     InternalError(Box<dyn Error>),
+    InvalidStep(serde_json::Error),
 }
 
 impl From<TemplaterError> for EngineError {

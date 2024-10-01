@@ -1,4 +1,3 @@
-use notifico_core::pipeline::SerializedStep;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -10,19 +9,11 @@ pub enum CredentialSelector {
 
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "step")]
-pub enum EmailStep {
+pub enum Step {
     #[serde(rename = "email.load_template")]
     LoadTemplate { template_id: Uuid },
     #[serde(rename = "email.send")]
     Send(CredentialSelector),
 }
 
-impl TryFrom<SerializedStep> for EmailStep {
-    type Error = ();
-
-    fn try_from(value: SerializedStep) -> Result<Self, Self::Error> {
-        let s = serde_json::to_string(&value.into_value()).unwrap();
-
-        Ok(serde_json::from_str(&s).unwrap())
-    }
-}
+pub(crate) const STEPS: &[&str] = &["email.load_template", "email.send"];

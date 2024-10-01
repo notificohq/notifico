@@ -11,6 +11,7 @@ pub struct Model {
     pub event: String,
     pub channel: String,
     pub recipient_id: Uuid,
+    pub is_subscribed: bool,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

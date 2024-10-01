@@ -5,13 +5,20 @@ use async_trait::async_trait;
 use std::any::Any;
 use std::borrow::Cow;
 
+pub enum StepOutput {
+    None,
+    Interrupt,
+}
+
 #[async_trait]
 pub trait EnginePlugin: Send + Sync + Any {
     async fn execute_step(
         &self,
         context: &mut PipelineContext,
         step: &SerializedStep,
-    ) -> Result<(), EngineError>;
+    ) -> Result<StepOutput, EngineError>;
 
-    fn step_namespace(&self) -> Cow<'static, str>;
+    fn steps(&self) -> Vec<Cow<'static, str>> {
+        vec![]
+    }
 }

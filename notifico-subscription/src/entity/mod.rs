@@ -3,3 +3,4 @@
 pub mod prelude;
 
 pub mod subscription;
+pub mod subscription_migrations;

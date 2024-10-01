@@ -1,3 +1,4 @@
+use crate::engine::plugin::StepOutput;
 use crate::engine::{Engine, EventContext, PipelineContext};
 use crate::error::EngineError;
 use crate::recipient::{Recipient, RecipientDirectory};
@@ -5,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::sync::Arc;
 use tokio::task::JoinSet;
+use tracing::error;
 use uuid::Uuid;
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug)]
@@ -29,16 +31,21 @@ impl SerializedStep {
         self.0["step"].as_str().expect("Step type must be a string")
     }
 
-    pub fn get_namespace(&self) -> &str {
-        self.get_type().split(".").next().unwrap_or_default()
-    }
-
     fn into_inner(self) -> serde_json::Map<String, Value> {
         self.0
     }
 
-    pub fn into_value(self) -> Value {
+    fn into_value(self) -> Value {
         Value::Object(self.into_inner())
+    }
+
+    pub fn convert_step<T>(self) -> Result<T, EngineError>
+    where
+        T: for<'de> Deserialize<'de>,
+    {
+        let s =
+            serde_json::to_string(&self.into_value()).map_err(|e| EngineError::InvalidStep(e))?;
+        Ok(serde_json::from_str(&s).map_err(|e| EngineError::InvalidStep(e))?)
     }
 }
 
@@ -68,11 +75,13 @@ impl PipelineRunner {
     pub async fn process_event(
         &self,
         project_id: Uuid,
-        event: &str,
+        trigger_event: &str,
         event_context: EventContext,
         recipient_sel: Option<RecipientSelector>,
     ) -> Result<(), EngineError> {
-        let pipelines = self.pipeline_storage.get_pipelines(project_id, event)?;
+        let pipelines = self
+            .pipeline_storage
+            .get_pipelines(project_id, trigger_event)?;
 
         let mut join_handles = JoinSet::new();
 
@@ -89,18 +98,27 @@ impl PipelineRunner {
             let engine = self.engine.clone();
             let recipient = recipient.clone();
             let event_context = event_context.clone();
+            let trigger_event = trigger_event.to_string();
 
             join_handles.spawn(async move {
                 let mut context = PipelineContext {
                     project_id,
                     recipient,
+                    trigger_event,
                     event_context,
                     plugin_contexts: Default::default(),
                 };
 
                 for step in pipeline.steps.iter() {
                     let result = engine.execute_step(&mut context, step).await;
-                    result.unwrap()
+                    match result {
+                        Ok(StepOutput::None) => continue,
+                        Ok(StepOutput::Interrupt) => break,
+                        Err(err) => {
+                            error!("Error executing step: {:?}", err);
+                            break;
+                        }
+                    }
                 }
             });
         }

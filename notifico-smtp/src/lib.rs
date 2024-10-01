@@ -1,28 +1,29 @@
+mod context;
 mod credentials;
+mod headers;
 mod step;
+mod templater;
 
+use crate::context::{Email, EMAIL_BODY_HTML, EMAIL_BODY_PLAINTEXT, EMAIL_FROM, EMAIL_SUBJECT};
+use crate::credentials::CREDENTIAL_TYPE;
+use crate::headers::ListUnsubscribe;
+use crate::step::STEPS;
+use crate::templater::RenderedEmail;
 use async_trait::async_trait;
 use credentials::SmtpServerCredentials;
 use lettre::{
     message::{Mailbox, MultiPart},
     AsyncSmtpTransport, AsyncTransport, Tokio1Executor,
 };
-use notifico_core::engine::plugin::EnginePlugin;
+use notifico_core::engine::plugin::{EnginePlugin, StepOutput};
 use notifico_core::{
-    credentials::Credentials,
-    engine::PipelineContext,
-    error::EngineError,
-    pipeline::SerializedStep,
-    recipient::Contact,
-    templater::{RenderResponse, Templater},
+    credentials::Credentials, engine::PipelineContext, error::EngineError,
+    pipeline::SerializedStep, recipient::Contact, templater::Templater,
 };
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde::Deserialize;
 use std::borrow::Cow;
-use std::str::FromStr;
 use std::sync::Arc;
-use step::{CredentialSelector, EmailStep};
-use uuid::Uuid;
+use step::{CredentialSelector, Step};
 
 const CHANNEL_NAME: &'static str = "email";
 
@@ -53,35 +54,42 @@ impl EmailPlugin {
     }
 }
 
-#[derive(Default, Serialize, Deserialize)]
-struct TelegramContext {
-    template_id: Option<Uuid>,
-}
-
 #[async_trait]
 impl EnginePlugin for EmailPlugin {
     async fn execute_step(
         &self,
         context: &mut PipelineContext,
         step: &SerializedStep,
-    ) -> Result<(), EngineError> {
-        let telegram_step: EmailStep = step.clone().try_into().unwrap();
+    ) -> Result<StepOutput, EngineError> {
+        let step: Step = step.clone().convert_step()?;
 
-        match telegram_step {
-            EmailStep::LoadTemplate { template_id } => {
+        match step {
+            Step::LoadTemplate { template_id } => {
                 let rendered_template = self
                     .templater
-                    .render("email", template_id, context.event_context.0.clone())
+                    .render(CHANNEL_NAME, template_id, context.event_context.0.clone())
                     .await?;
 
                 let rendered_template: RenderedEmail = rendered_template.try_into().unwrap();
 
                 context.plugin_contexts.insert(
-                    "email.content".into(),
-                    serde_json::to_value(rendered_template).unwrap(),
+                    EMAIL_FROM.into(),
+                    serde_json::to_value(rendered_template.from).unwrap(),
+                );
+                context.plugin_contexts.insert(
+                    EMAIL_SUBJECT.into(),
+                    serde_json::to_value(rendered_template.subject).unwrap(),
+                );
+                context.plugin_contexts.insert(
+                    EMAIL_BODY_HTML.into(),
+                    serde_json::to_value(rendered_template.body_html).unwrap(),
+                );
+                context.plugin_contexts.insert(
+                    EMAIL_BODY_PLAINTEXT.into(),
+                    serde_json::to_value(rendered_template.body_plaintext).unwrap(),
                 );
             }
-            EmailStep::Send(cred_selector) => {
+            Step::Send(cred_selector) => {
                 let Some(recipient) = context.recipient.clone() else {
                     return Err(EngineError::RecipientNotSet);
                 };
@@ -90,16 +98,16 @@ impl EnginePlugin for EmailPlugin {
                     EmailContact::try_from(recipient.get_primary_contact("email")?.clone())?;
 
                 let message = {
-                    let content = context
-                        .plugin_contexts
-                        .get("email.content")
-                        .ok_or(EngineError::TemplateNotSet)?;
-                    let content: RenderedEmail = serde_json::from_value(content.clone()).unwrap();
+                    let content: Email =
+                        serde_json::from_value(context.plugin_contexts.clone().into()).unwrap();
 
                     let mut builder = lettre::Message::builder();
-                    builder = builder.from(Mailbox::from_str(&content.from).unwrap());
+                    builder = builder.from(content.from);
                     builder = builder.to(contact.address);
                     builder = builder.subject(content.subject);
+                    if let Some(list_unsubscribe) = content.list_unsubscribe {
+                        builder = builder.header(ListUnsubscribe::from(list_unsubscribe));
+                    }
                     builder
                         .multipart(MultiPart::alternative_plain_html(
                             content.body_plaintext,
@@ -111,7 +119,7 @@ impl EnginePlugin for EmailPlugin {
                 let smtpcred: SmtpServerCredentials = match cred_selector {
                     CredentialSelector::SmtpName { smtp_name } => self
                         .credentials
-                        .get_credential(context.project_id, "smtp_server", &smtp_name)?
+                        .get_credential(context.project_id, CREDENTIAL_TYPE, &smtp_name)?
                         .try_into()?,
                 };
 
@@ -125,30 +133,10 @@ impl EnginePlugin for EmailPlugin {
             }
         }
 
-        Ok(())
+        Ok(StepOutput::None)
     }
 
-    fn step_namespace(&self) -> Cow<'static, str> {
-        "email".into()
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-pub struct RenderedEmail {
-    headers: String,
-
-    from: String,
-
-    subject: String,
-
-    body_html: String,
-    body_plaintext: String,
-}
-
-impl TryFrom<RenderResponse> for RenderedEmail {
-    type Error = ();
-
-    fn try_from(value: RenderResponse) -> Result<Self, Self::Error> {
-        serde_json::from_value(Value::from_iter(value.0)).map_err(|_| ())
+    fn steps(&self) -> Vec<Cow<'static, str>> {
+        STEPS.iter().map(|&s| s.into()).collect()
     }
 }

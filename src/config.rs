@@ -6,11 +6,26 @@ use serde::Deserialize;
 use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::Arc;
+use url::Url;
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
 pub(crate) struct Config {
     pub projects: Vec<Project>,
+    pub secret_key: String,
+    pub http: Http,
+    pub db: Database,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Http {
+    pub bind: String,
+    pub subscriber_url: Url,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Database {
+    pub url: Url,
 }
 
 #[derive(Debug, Deserialize)]

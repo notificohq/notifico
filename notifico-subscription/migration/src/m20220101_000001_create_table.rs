@@ -16,6 +16,21 @@ impl MigrationTrait for Migration {
                     .col(string(Subscription::Event))
                     .col(string(Subscription::Channel))
                     .col(uuid(Subscription::RecipientId))
+                    .col(boolean(Subscription::IsSubscribed))
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .name("idx_subscription_project_id")
+                    .table(Subscription::Table)
+                    .col(Subscription::ProjectId)
+                    .col(Subscription::Event)
+                    .col(Subscription::Channel)
+                    .col(Subscription::RecipientId)
+                    .unique()
                     .to_owned(),
             )
             .await
@@ -36,4 +51,5 @@ enum Subscription {
     Event,
     Channel,
     RecipientId,
+    IsSubscribed,
 }

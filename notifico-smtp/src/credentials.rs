@@ -2,6 +2,8 @@ use notifico_core::error::EngineError;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+pub(crate) const CREDENTIAL_TYPE: &str = "smtp_server";
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SmtpServerCredentials {
     tls: bool,
