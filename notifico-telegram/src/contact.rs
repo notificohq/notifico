@@ -3,7 +3,7 @@ use serde::Deserialize;
 use teloxide::prelude::ChatId;
 use teloxide::types::Recipient;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct TelegramContact {
     chat_id: ChatId,
 }

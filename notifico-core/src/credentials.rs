@@ -1,4 +1,5 @@
 use crate::error::EngineError;
+use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
@@ -26,8 +27,9 @@ pub trait TypedCredential: for<'de> Deserialize<'de> {
     const CREDENTIAL_TYPE: &'static str;
 }
 
+#[async_trait]
 pub trait Credentials: Send + Sync {
-    fn get_credential(
+    async fn get_credential(
         &self,
         project: Uuid,
         r#type: &str,
@@ -35,7 +37,7 @@ pub trait Credentials: Send + Sync {
     ) -> Result<Credential, EngineError>;
 }
 
-pub fn get_typed_credential<T>(
+pub async fn get_typed_credential<T>(
     credentials: &dyn Credentials,
     project: Uuid,
     name: &str,
@@ -45,5 +47,6 @@ where
 {
     credentials
         .get_credential(project, T::CREDENTIAL_TYPE, name)
+        .await
         .and_then(|c| c.into_typed())
 }

@@ -14,10 +14,10 @@ use figment::{
 };
 use hmac::{Hmac, Mac};
 use notifico_core::engine::Engine;
-use notifico_core::templater::service::TemplaterService;
 use notifico_smtp::EmailPlugin;
 use notifico_subscription::SubscriptionManager;
 use notifico_telegram::TelegramPlugin;
+use notifico_templater::TemplaterService;
 use notifico_whatsapp::WaBusinessPlugin;
 use sea_orm::{ConnectOptions, Database};
 use std::sync::Arc;
@@ -68,7 +68,6 @@ async fn main() {
         config.http.subscriber_url.clone(),
     ));
 
-    let templater = Arc::new(TemplaterService::new("http://127.0.0.1:8000"));
     let credentials = Arc::new(SimpleCredentials::from_config(&config));
     let pipelines = Arc::new(SimplePipelineStorage::from_config(&config));
     let directory = Arc::new(MemoryRecipientDirectory::new(
@@ -76,20 +75,11 @@ async fn main() {
     ));
 
     let mut engine = Engine::new();
-
-    engine.add_plugin(Arc::new(TelegramPlugin::new(
-        templater.clone(),
-        credentials.clone(),
-    )));
-    engine.add_plugin(Arc::new(EmailPlugin::new(
-        templater.clone(),
-        credentials.clone(),
-    )));
+    engine.add_plugin(Arc::new(TemplaterService::new("http://127.0.0.1:8000")));
+    engine.add_plugin(Arc::new(TelegramPlugin::new(credentials.clone())));
+    engine.add_plugin(Arc::new(EmailPlugin::new(credentials.clone())));
     engine.add_plugin(sub_manager.clone());
-    engine.add_plugin(Arc::new(WaBusinessPlugin::new(
-        templater.clone(),
-        credentials.clone(),
-    )));
+    engine.add_plugin(Arc::new(WaBusinessPlugin::new(credentials.clone())));
 
     let event_handler = EventHandler {
         pipeline_storage: pipelines.clone(),

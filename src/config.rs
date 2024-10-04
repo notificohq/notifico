@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use notifico_core::credentials::{Credential, Credentials};
 use notifico_core::error::EngineError;
 use notifico_core::pipeline::{Pipeline, PipelineStorage};
@@ -60,8 +61,9 @@ impl SimpleCredentials {
     }
 }
 
+#[async_trait]
 impl Credentials for SimpleCredentials {
-    fn get_credential(
+    async fn get_credential(
         &self,
         project: Uuid,
         r#type: &str,

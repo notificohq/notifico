@@ -24,6 +24,7 @@ notifico-telegram = { path = "notifico-telegram" }
 notifico-smtp = { path = "notifico-smtp" }
 notifico-subscription = { path = "notifico-subscription" }
 notifico-whatsapp = { path = "notifico-whatsapp" }
+notifico-templater = { path = "notifico-templater" }
 serde_yaml = "0.9.23"
 actix = "0.13.5"
 axum = "0.7.6"
@@ -38,7 +39,8 @@ lto = true
 codegen-units = 1
 
 [workspace]
-members = [".", "notifico-core", "notifico-smtp", "notifico-telegram", "notifico-subscription/migration", "notifico-subscription", "notifico-whatsapp"]
+members = [".", "notifico-core", "notifico-smtp", "notifico-telegram", "notifico-subscription/migration", "notifico-subscription", "notifico-whatsapp", "notifico-templater"]
 
 [workspace.dependencies]
 sea-orm = { version = "1.1.0-rc.1", features = ["sqlx-sqlite", "sqlx-postgres", "runtime-tokio-rustls", "macros"] }
+reqwest = "0.12.8"

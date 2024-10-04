@@ -4,7 +4,7 @@ mod headers;
 mod step;
 mod templater;
 
-use crate::context::{Email, EMAIL_BODY_HTML, EMAIL_BODY_PLAINTEXT, EMAIL_FROM, EMAIL_SUBJECT};
+use crate::context::PluginContext;
 use crate::headers::ListUnsubscribe;
 use crate::step::STEPS;
 use crate::templater::RenderedEmail;
@@ -14,22 +14,19 @@ use lettre::{
     message::{Mailbox, MultiPart},
     AsyncSmtpTransport, AsyncTransport, Tokio1Executor,
 };
+use notifico_core::credentials::get_typed_credential;
 use notifico_core::{
     credentials::Credentials,
-    credentials::TypedCredential,
     engine::plugin::{EnginePlugin, StepOutput},
     engine::PipelineContext,
     error::EngineError,
     pipeline::SerializedStep,
     recipient::TypedContact,
-    templater::Templater,
 };
 use serde::Deserialize;
 use std::borrow::Cow;
 use std::sync::Arc;
 use step::Step;
-
-const CHANNEL_NAME: &'static str = "email";
 
 #[derive(Debug, Deserialize)]
 pub struct EmailContact {
@@ -41,16 +38,12 @@ impl TypedContact for EmailContact {
 }
 
 pub struct EmailPlugin {
-    templater: Arc<dyn Templater>,
     credentials: Arc<dyn Credentials>,
 }
 
 impl EmailPlugin {
-    pub fn new(templater: Arc<dyn Templater>, credentials: Arc<dyn Credentials>) -> Self {
-        Self {
-            templater,
-            credentials,
-        }
+    pub fn new(credentials: Arc<dyn Credentials>) -> Self {
+        Self { credentials }
     }
 }
 
@@ -64,31 +57,6 @@ impl EnginePlugin for EmailPlugin {
         let step: Step = step.clone().convert_step()?;
 
         match step {
-            Step::LoadTemplate { template_id } => {
-                let rendered_template = self
-                    .templater
-                    .render(CHANNEL_NAME, template_id, context.event_context.0.clone())
-                    .await?;
-
-                let rendered_template: RenderedEmail = rendered_template.try_into().unwrap();
-
-                context.plugin_contexts.insert(
-                    EMAIL_FROM.into(),
-                    serde_json::to_value(rendered_template.from).unwrap(),
-                );
-                context.plugin_contexts.insert(
-                    EMAIL_SUBJECT.into(),
-                    serde_json::to_value(rendered_template.subject).unwrap(),
-                );
-                context.plugin_contexts.insert(
-                    EMAIL_BODY_HTML.into(),
-                    serde_json::to_value(rendered_template.body_html).unwrap(),
-                );
-                context.plugin_contexts.insert(
-                    EMAIL_BODY_PLAINTEXT.into(),
-                    serde_json::to_value(rendered_template.body_plaintext).unwrap(),
-                );
-            }
             Step::Send { credential } => {
                 let Some(recipient) = context.recipient.clone() else {
                     return Err(EngineError::RecipientNotSet);
@@ -96,45 +64,47 @@ impl EnginePlugin for EmailPlugin {
 
                 let contact: EmailContact = recipient.get_primary_contact()?;
 
-                let message = {
-                    let content: Email =
-                        serde_json::from_value(context.plugin_contexts.clone().into()).unwrap();
-
-                    let mut builder = lettre::Message::builder();
-                    builder = builder.from(content.from);
-                    builder = builder.to(contact.address);
-                    builder = builder.subject(content.subject);
-                    if let Some(list_unsubscribe) = content.list_unsubscribe {
-                        builder = builder.header(ListUnsubscribe::from(list_unsubscribe));
-                    }
-                    builder
-                        .multipart(MultiPart::alternative_plain_html(
-                            content.body_plaintext,
-                            content.body_html,
-                        ))
-                        .unwrap()
-                };
-
-                let smtpcred: SmtpServerCredentials = self
-                    .credentials
-                    .get_credential(
-                        context.project_id,
-                        SmtpServerCredentials::CREDENTIAL_TYPE,
-                        &credential,
-                    )?
-                    .into_typed()?;
+                let credential: SmtpServerCredentials = get_typed_credential(
+                    self.credentials.as_ref(),
+                    context.project_id,
+                    &credential,
+                )
+                .await?;
 
                 let transport = {
-                    AsyncSmtpTransport::<Tokio1Executor>::from_url(&smtpcred.into_url())
+                    AsyncSmtpTransport::<Tokio1Executor>::from_url(&credential.into_url())
                         .unwrap()
                         .build()
                 };
 
-                transport.send(message).await.unwrap();
+                for message in context.messages.iter().cloned() {
+                    let rendered: RenderedEmail = message.try_into().unwrap();
+
+                    let message = {
+                        let content: PluginContext =
+                            serde_json::from_value(context.plugin_contexts.clone().into()).unwrap();
+
+                        let mut builder = lettre::Message::builder();
+                        builder = builder.from(rendered.from);
+                        builder = builder.to(contact.address.clone());
+                        builder = builder.subject(rendered.subject);
+                        if let Some(list_unsubscribe) = content.list_unsubscribe {
+                            builder = builder.header(ListUnsubscribe::from(list_unsubscribe));
+                        }
+                        builder
+                            .multipart(MultiPart::alternative_plain_html(
+                                rendered.body_plaintext,
+                                rendered.body_html,
+                            ))
+                            .unwrap()
+                    };
+
+                    transport.send(message).await.unwrap();
+                }
             }
         }
 
-        Ok(StepOutput::None)
+        Ok(StepOutput::Continue)
     }
 
     fn steps(&self) -> Vec<Cow<'static, str>> {

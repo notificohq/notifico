@@ -2,6 +2,7 @@ use crate::engine::plugin::{EnginePlugin, StepOutput};
 use crate::error::EngineError;
 use crate::pipeline::SerializedStep;
 use crate::recipient::Recipient;
+use crate::templater::RenderResponse;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::borrow::Cow;
@@ -17,14 +18,14 @@ pub mod plugin;
 #[serde(transparent)]
 pub struct EventContext(pub Map<String, Value>);
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Serialize, Deserialize)]
 pub struct PipelineContext {
     pub project_id: Uuid,
     pub recipient: Option<Recipient>,
     pub trigger_event: String,
     pub event_context: EventContext,
     pub plugin_contexts: Map<String, Value>,
-    pub messages: Vec<Map<String, Value>>,
+    pub messages: Vec<RenderResponse>,
     pub channel: String,
 }
 

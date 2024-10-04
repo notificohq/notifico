@@ -115,7 +115,7 @@ impl PipelineRunner {
                 for step in pipeline.steps.iter() {
                     let result = engine.execute_step(&mut context, step).await;
                     match result {
-                        Ok(StepOutput::None) => continue,
+                        Ok(StepOutput::Continue) => continue,
                         Ok(StepOutput::Interrupt) => break,
                         Err(err) => {
                             error!("Error executing step: {:?}", err);

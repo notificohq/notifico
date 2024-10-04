@@ -9,5 +9,5 @@ notifico-core = { path = "../notifico-core" }
 uuid = { version = "1.10.0", features = ["v4"] }
 serde_json = "1.0.128"
 async-trait = "0.1.82"
-reqwest = "0.12.7"
+reqwest = { workspace = true }
 tracing = "0.1.40"

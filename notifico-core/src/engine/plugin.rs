@@ -6,7 +6,7 @@ use std::any::Any;
 use std::borrow::Cow;
 
 pub enum StepOutput {
-    None,
+    Continue,
     Interrupt,
 }
 

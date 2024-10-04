@@ -123,7 +123,7 @@ impl EnginePlugin for SubscriptionManager {
                     )
                     .await
                 {
-                    Ok(StepOutput::None)
+                    Ok(StepOutput::Continue)
                 } else {
                     Ok(StepOutput::Interrupt)
                 }
@@ -147,7 +147,7 @@ impl EnginePlugin for SubscriptionManager {
                         )
                     )),
                 );
-                Ok(StepOutput::None)
+                Ok(StepOutput::Continue)
             }
         }
     }

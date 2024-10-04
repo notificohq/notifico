@@ -1,4 +1,3 @@
-use crate::context::{Message, TG_BODY};
 use crate::step::STEPS;
 use async_trait::async_trait;
 use contact::TelegramContact;
@@ -7,7 +6,7 @@ use notifico_core::engine::plugin::{EnginePlugin, StepOutput};
 use notifico_core::engine::PipelineContext;
 use notifico_core::error::EngineError;
 use notifico_core::pipeline::SerializedStep;
-use notifico_core::templater::{RenderResponse, Templater};
+use notifico_core::templater::RenderResponse;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::borrow::Cow;
@@ -16,10 +15,7 @@ use step::Step;
 use teloxide::prelude::Requester;
 use teloxide::Bot;
 
-const CHANNEL_NAME: &'static str = "telegram";
-
 mod contact;
-mod context;
 mod step;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -32,16 +28,12 @@ impl TypedCredential for TelegramBotCredentials {
 }
 
 pub struct TelegramPlugin {
-    templater: Arc<dyn Templater>,
     credentials: Arc<dyn Credentials>,
 }
 
 impl TelegramPlugin {
-    pub fn new(templater: Arc<dyn Templater>, credentials: Arc<dyn Credentials>) -> Self {
-        Self {
-            templater,
-            credentials,
-        }
+    pub fn new(credentials: Arc<dyn Credentials>) -> Self {
+        Self { credentials }
     }
 }
 
@@ -55,47 +47,32 @@ impl EnginePlugin for TelegramPlugin {
         let step: Step = step.clone().convert_step()?;
 
         match step {
-            Step::LoadTemplate { template_id } => {
-                if context.recipient.is_none() {
-                    return Err(EngineError::RecipientNotSet);
-                };
-
-                let rendered_template = self
-                    .templater
-                    .render(CHANNEL_NAME, template_id, context.event_context.0.clone())
-                    .await?;
-                let rendered_template: TelegramContent = rendered_template.try_into().unwrap();
-
-                context.plugin_contexts.insert(
-                    TG_BODY.into(),
-                    serde_json::to_value(rendered_template.body).unwrap(),
-                );
-            }
             Step::Send { credential } => {
                 let Some(recipient) = context.recipient.clone() else {
                     return Err(EngineError::RecipientNotSet);
                 };
 
-                let message: Message =
-                    serde_json::from_value(context.plugin_contexts.clone().into()).unwrap();
-
-                let contact: TelegramContact = recipient.get_primary_contact()?;
-
-                // Send
                 let credential: TelegramBotCredentials = get_typed_credential(
                     self.credentials.as_ref(),
                     context.project_id,
                     &credential,
-                )?;
-
+                )
+                .await?;
                 let bot = Bot::new(credential.token);
-                bot.send_message(contact.into_recipient(), message.body)
-                    .await
-                    .unwrap();
+                let contact: TelegramContact = recipient.get_primary_contact()?;
+
+                for message in context.messages.iter().cloned() {
+                    let content: TelegramContent = message.try_into().unwrap();
+
+                    // Send
+                    bot.send_message(contact.clone().into_recipient(), content.body)
+                        .await
+                        .unwrap();
+                }
             }
         }
 
-        Ok(StepOutput::None)
+        Ok(StepOutput::Continue)
     }
 
     fn steps(&self) -> Vec<Cow<'static, str>> {

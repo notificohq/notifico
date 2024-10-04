@@ -1,4 +1,3 @@
-use crate::templater::TemplaterError;
 use std::borrow::Cow;
 use std::error::Error;
 use uuid::Uuid;
@@ -7,7 +6,6 @@ use uuid::Uuid;
 pub enum EngineError {
     InvalidCredentialFormat,
     CredentialNotFound(Cow<'static, str>, String),
-    TemplaterError(TemplaterError),
     PluginNotFound(String),
     ContactNotFound(String),
     InvalidContactFormat,
@@ -17,10 +15,4 @@ pub enum EngineError {
     TemplateRenderingError,
     InternalError(Box<dyn Error>),
     InvalidStep(serde_json::Error),
-}
-
-impl From<TemplaterError> for EngineError {
-    fn from(err: TemplaterError) -> Self {
-        EngineError::TemplaterError(err)
-    }
 }
