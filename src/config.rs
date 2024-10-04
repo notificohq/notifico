@@ -3,8 +3,8 @@ use notifico_core::error::EngineError;
 use notifico_core::pipeline::{Pipeline, PipelineStorage};
 use notifico_core::recipient::Recipient;
 use serde::Deserialize;
-use serde_json::Value;
 use std::collections::HashMap;
+use std::net::SocketAddr;
 use std::sync::Arc;
 use url::Url;
 use uuid::Uuid;
@@ -19,7 +19,7 @@ pub(crate) struct Config {
 
 #[derive(Debug, Deserialize)]
 pub struct Http {
-    pub bind: String,
+    pub bind: SocketAddr,
     pub subscriber_url: Url,
 }
 
@@ -66,14 +66,14 @@ impl Credentials for SimpleCredentials {
         project: Uuid,
         r#type: &str,
         name: &str,
-    ) -> Result<Value, EngineError> {
+    ) -> Result<Credential, EngineError> {
         let Some(creds) = self.creds.get(&project) else {
             return Err(EngineError::ProjectNotFound(project));
         };
 
         for cred in creds.iter() {
             if cred.r#type == r#type && cred.name == name {
-                return Ok(cred.value.clone());
+                return Ok(cred.clone());
             }
         }
         Err(EngineError::CredentialNotFound(

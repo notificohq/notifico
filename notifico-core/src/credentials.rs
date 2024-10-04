@@ -10,7 +10,40 @@ pub struct Credential {
     pub value: Value,
 }
 
+impl Credential {
+    pub fn into_typed<T>(self) -> Result<T, EngineError>
+    where
+        T: TypedCredential,
+    {
+        if self.r#type != T::CREDENTIAL_TYPE {
+            return Err(EngineError::InvalidCredentialFormat);
+        }
+        serde_json::from_value(self.value).map_err(|_| EngineError::InvalidCredentialFormat)
+    }
+}
+
+pub trait TypedCredential: for<'de> Deserialize<'de> {
+    const CREDENTIAL_TYPE: &'static str;
+}
+
 pub trait Credentials: Send + Sync {
-    fn get_credential(&self, project: Uuid, r#type: &str, name: &str)
-        -> Result<Value, EngineError>;
+    fn get_credential(
+        &self,
+        project: Uuid,
+        r#type: &str,
+        name: &str,
+    ) -> Result<Credential, EngineError>;
+}
+
+pub fn get_typed_credential<T>(
+    credentials: &dyn Credentials,
+    project: Uuid,
+    name: &str,
+) -> Result<T, EngineError>
+where
+    T: TypedCredential,
+{
+    credentials
+        .get_credential(project, T::CREDENTIAL_TYPE, name)
+        .and_then(|c| c.into_typed())
 }

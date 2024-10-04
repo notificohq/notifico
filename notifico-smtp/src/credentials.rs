@@ -1,8 +1,5 @@
-use notifico_core::error::EngineError;
+use notifico_core::credentials::TypedCredential;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
-
-pub(crate) const CREDENTIAL_TYPE: &str = "smtp_server";
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SmtpServerCredentials {
@@ -11,6 +8,10 @@ pub struct SmtpServerCredentials {
     port: Option<u16>,
     username: String,
     password: String,
+}
+
+impl TypedCredential for SmtpServerCredentials {
+    const CREDENTIAL_TYPE: &'static str = "smtp_server";
 }
 
 impl SmtpServerCredentials {
@@ -26,13 +27,5 @@ impl SmtpServerCredentials {
             "{protocol}://{}:{}@{}:{port}{tls_param}",
             self.username, self.password, self.host
         )
-    }
-}
-
-impl TryFrom<Value> for SmtpServerCredentials {
-    type Error = EngineError;
-
-    fn try_from(value: Value) -> Result<Self, Self::Error> {
-        serde_json::from_value(value).map_err(|_| EngineError::InvalidCredentialFormat)
     }
 }

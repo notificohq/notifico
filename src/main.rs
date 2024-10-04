@@ -18,6 +18,7 @@ use notifico_core::templater::service::TemplaterService;
 use notifico_smtp::EmailPlugin;
 use notifico_subscription::SubscriptionManager;
 use notifico_telegram::TelegramPlugin;
+use notifico_whatsapp::WaBusinessPlugin;
 use sea_orm::{ConnectOptions, Database};
 use std::sync::Arc;
 use tracing::debug;
@@ -80,8 +81,15 @@ async fn main() {
         templater.clone(),
         credentials.clone(),
     )));
-    engine.add_plugin(Arc::new(EmailPlugin::new(templater, credentials)));
+    engine.add_plugin(Arc::new(EmailPlugin::new(
+        templater.clone(),
+        credentials.clone(),
+    )));
     engine.add_plugin(sub_manager.clone());
+    engine.add_plugin(Arc::new(WaBusinessPlugin::new(
+        templater.clone(),
+        credentials.clone(),
+    )));
 
     let event_handler = EventHandler {
         pipeline_storage: pipelines.clone(),

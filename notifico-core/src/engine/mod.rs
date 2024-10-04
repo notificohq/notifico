@@ -8,7 +8,6 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
-use tracing::field::debug;
 use tracing::instrument;
 use uuid::Uuid;
 
@@ -25,11 +24,12 @@ pub struct PipelineContext {
     pub trigger_event: String,
     pub event_context: EventContext,
     pub plugin_contexts: Map<String, Value>,
+    pub messages: Vec<Map<String, Value>>,
+    pub channel: String,
 }
 
 #[derive(Clone)]
 pub struct Engine {
-    plugins: HashMap<Cow<'static, str>, Arc<dyn EnginePlugin>>,
     steps: HashMap<Cow<'static, str>, Arc<dyn EnginePlugin>>,
 }
 
@@ -49,15 +49,17 @@ impl Default for Engine {
 impl Engine {
     pub fn new() -> Self {
         Self {
-            plugins: Default::default(),
             steps: Default::default(),
         }
     }
 
     pub fn add_plugin(&mut self, plugin: Arc<dyn EnginePlugin + 'static>) {
-        for step in plugin.steps() {
-            self.steps.insert(step.clone(), plugin.clone());
-        }
+        self.steps.extend(
+            plugin
+                .steps()
+                .into_iter()
+                .map(|step| (step, plugin.clone())),
+        );
     }
 
     #[instrument]
@@ -68,9 +70,10 @@ impl Engine {
     ) -> Result<StepOutput, EngineError> {
         let step_type = step.get_type();
 
-        match self.steps.get(step_type) {
-            Some(plugin) => plugin.execute_step(context, step).await,
-            None => Err(EngineError::PluginNotFound(step_type.into())),
-        }
+        let Some(plugin) = self.steps.get(step_type) else {
+            return Err(EngineError::PluginNotFound(step_type.into()));
+        };
+
+        plugin.execute_step(context, step).await
     }
 }

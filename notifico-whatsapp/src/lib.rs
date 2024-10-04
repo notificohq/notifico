@@ -1,52 +1,46 @@
-use crate::context::{Message, TG_BODY};
-use crate::step::STEPS;
+use crate::cloudapi::{Language, MessageType, MessagingProduct};
+use crate::context::{Message, WA_BODY};
+use crate::credentials::WhatsAppCredentials;
+use crate::step::{Step, STEPS};
 use async_trait::async_trait;
-use contact::TelegramContact;
-use notifico_core::credentials::{get_typed_credential, Credentials, TypedCredential};
+use notifico_core::credentials::{get_typed_credential, Credentials};
 use notifico_core::engine::plugin::{EnginePlugin, StepOutput};
 use notifico_core::engine::PipelineContext;
 use notifico_core::error::EngineError;
 use notifico_core::pipeline::SerializedStep;
+use notifico_core::recipient::MobilePhoneContact;
 use notifico_core::templater::{RenderResponse, Templater};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::borrow::Cow;
 use std::sync::Arc;
-use step::Step;
-use teloxide::prelude::Requester;
-use teloxide::Bot;
+use tracing::debug;
 
-const CHANNEL_NAME: &'static str = "telegram";
-
-mod contact;
+mod cloudapi;
 mod context;
+mod credentials;
 mod step;
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct TelegramBotCredentials {
-    token: String,
-}
+const CHANNEL_NAME: &str = "whatsapp";
 
-impl TypedCredential for TelegramBotCredentials {
-    const CREDENTIAL_TYPE: &'static str = "telegram_token";
-}
-
-pub struct TelegramPlugin {
+pub struct WaBusinessPlugin {
     templater: Arc<dyn Templater>,
     credentials: Arc<dyn Credentials>,
+    client: reqwest::Client,
 }
 
-impl TelegramPlugin {
+impl WaBusinessPlugin {
     pub fn new(templater: Arc<dyn Templater>, credentials: Arc<dyn Credentials>) -> Self {
         Self {
             templater,
             credentials,
+            client: reqwest::Client::new(),
         }
     }
 }
 
 #[async_trait]
-impl EnginePlugin for TelegramPlugin {
+impl EnginePlugin for WaBusinessPlugin {
     async fn execute_step(
         &self,
         context: &mut PipelineContext,
@@ -64,12 +58,11 @@ impl EnginePlugin for TelegramPlugin {
                     .templater
                     .render(CHANNEL_NAME, template_id, context.event_context.0.clone())
                     .await?;
-                let rendered_template: TelegramContent = rendered_template.try_into().unwrap();
+                let rendered_template: WhatsAppContent = rendered_template.try_into().unwrap();
 
-                context.plugin_contexts.insert(
-                    TG_BODY.into(),
-                    serde_json::to_value(rendered_template.body).unwrap(),
-                );
+                context
+                    .plugin_contexts
+                    .insert(WA_BODY.into(), Value::String(rendered_template.body));
             }
             Step::Send { credential } => {
                 let Some(recipient) = context.recipient.clone() else {
@@ -79,19 +72,40 @@ impl EnginePlugin for TelegramPlugin {
                 let message: Message =
                     serde_json::from_value(context.plugin_contexts.clone().into()).unwrap();
 
-                let contact: TelegramContact = recipient.get_primary_contact()?;
+                let contact: MobilePhoneContact = recipient.get_primary_contact()?;
 
                 // Send
-                let credential: TelegramBotCredentials = get_typed_credential(
+                let credential: WhatsAppCredentials = get_typed_credential(
                     self.credentials.as_ref(),
                     context.project_id,
                     &credential,
                 )?;
 
-                let bot = Bot::new(credential.token);
-                bot.send_message(contact.into_recipient(), message.body)
+                let wamessage = cloudapi::Message {
+                    messaging_product: MessagingProduct::Whatsapp,
+                    to: contact.number,
+                    language: Language {
+                        code: "en_US".into(),
+                    },
+                    message: MessageType::Text {
+                        preview_url: false,
+                        body: message.body,
+                    },
+                };
+
+                let url = format!(
+                    "https://graph.facebook.com/v20.0/{}/messages",
+                    credential.phone_id
+                );
+                let result = self
+                    .client
+                    .post(url)
+                    .header("Authorization", format!("Bearer {}", credential.token))
+                    .json(&wamessage)
+                    .send()
                     .await
                     .unwrap();
+                debug!("Response: {:?}", result);
             }
         }
 
@@ -104,11 +118,11 @@ impl EnginePlugin for TelegramPlugin {
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-pub struct TelegramContent {
+struct WhatsAppContent {
     pub body: String,
 }
 
-impl TryFrom<RenderResponse> for TelegramContent {
+impl TryFrom<RenderResponse> for WhatsAppContent {
     type Error = ();
 
     fn try_from(value: RenderResponse) -> Result<Self, Self::Error> {

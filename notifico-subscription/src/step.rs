@@ -1,4 +1,3 @@
-use notifico_core::pipeline::SerializedStep;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]

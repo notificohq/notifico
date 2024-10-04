@@ -11,6 +11,7 @@ use uuid::Uuid;
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug)]
 pub struct Pipeline {
+    pub channel: String,
     pub events: Vec<String>,
     pub steps: Vec<SerializedStep>,
 }
@@ -107,6 +108,8 @@ impl PipelineRunner {
                     trigger_event,
                     event_context,
                     plugin_contexts: Default::default(),
+                    messages: Default::default(),
+                    channel: pipeline.channel,
                 };
 
                 for step in pipeline.steps.iter() {

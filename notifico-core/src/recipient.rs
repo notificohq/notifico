@@ -11,13 +11,13 @@ pub struct Recipient {
 }
 
 impl Recipient {
-    pub fn get_primary_contact(&self, r#type: &str) -> Result<&Contact, EngineError> {
+    pub fn get_primary_contact<T: TypedContact>(&self) -> Result<T, EngineError> {
         for contact in &self.contacts {
-            if contact.r#type() == r#type {
-                return Ok(contact);
+            if contact.r#type() == T::CONTACT_TYPE {
+                return Ok(contact.clone().into_contact()?);
             }
         }
-        Err(EngineError::ContactNotFound(r#type.to_string()))
+        Err(EngineError::ContactNotFound(T::CONTACT_TYPE.to_string()))
     }
 }
 
@@ -34,6 +34,26 @@ impl Contact {
     pub fn into_json(self) -> Value {
         self.0
     }
+
+    pub fn into_contact<T>(self) -> Result<T, EngineError>
+    where
+        T: TypedContact + for<'de> Deserialize<'de>,
+    {
+        serde_json::from_value(self.0).map_err(|_| EngineError::InvalidContactFormat)
+    }
+}
+
+pub trait TypedContact: for<'de> Deserialize<'de> {
+    const CONTACT_TYPE: &'static str;
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct MobilePhoneContact {
+    pub number: String,
+}
+
+impl TypedContact for MobilePhoneContact {
+    const CONTACT_TYPE: &'static str = "mobile_phone";
 }
 
 #[async_trait]

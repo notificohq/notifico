@@ -5,7 +5,6 @@ mod step;
 mod templater;
 
 use crate::context::{Email, EMAIL_BODY_HTML, EMAIL_BODY_PLAINTEXT, EMAIL_FROM, EMAIL_SUBJECT};
-use crate::credentials::CREDENTIAL_TYPE;
 use crate::headers::ListUnsubscribe;
 use crate::step::STEPS;
 use crate::templater::RenderedEmail;
@@ -15,15 +14,20 @@ use lettre::{
     message::{Mailbox, MultiPart},
     AsyncSmtpTransport, AsyncTransport, Tokio1Executor,
 };
-use notifico_core::engine::plugin::{EnginePlugin, StepOutput};
 use notifico_core::{
-    credentials::Credentials, engine::PipelineContext, error::EngineError,
-    pipeline::SerializedStep, recipient::Contact, templater::Templater,
+    credentials::Credentials,
+    credentials::TypedCredential,
+    engine::plugin::{EnginePlugin, StepOutput},
+    engine::PipelineContext,
+    error::EngineError,
+    pipeline::SerializedStep,
+    recipient::TypedContact,
+    templater::Templater,
 };
 use serde::Deserialize;
 use std::borrow::Cow;
 use std::sync::Arc;
-use step::{CredentialSelector, Step};
+use step::Step;
 
 const CHANNEL_NAME: &'static str = "email";
 
@@ -32,12 +36,8 @@ pub struct EmailContact {
     address: Mailbox,
 }
 
-impl TryFrom<Contact> for EmailContact {
-    type Error = EngineError;
-
-    fn try_from(value: Contact) -> Result<Self, Self::Error> {
-        serde_json::from_value(value.into_json()).map_err(|_| EngineError::InvalidContactFormat)
-    }
+impl TypedContact for EmailContact {
+    const CONTACT_TYPE: &'static str = "email";
 }
 
 pub struct EmailPlugin {
@@ -89,13 +89,12 @@ impl EnginePlugin for EmailPlugin {
                     serde_json::to_value(rendered_template.body_plaintext).unwrap(),
                 );
             }
-            Step::Send(cred_selector) => {
+            Step::Send { credential } => {
                 let Some(recipient) = context.recipient.clone() else {
                     return Err(EngineError::RecipientNotSet);
                 };
 
-                let contact =
-                    EmailContact::try_from(recipient.get_primary_contact("email")?.clone())?;
+                let contact: EmailContact = recipient.get_primary_contact()?;
 
                 let message = {
                     let content: Email =
@@ -116,12 +115,14 @@ impl EnginePlugin for EmailPlugin {
                         .unwrap()
                 };
 
-                let smtpcred: SmtpServerCredentials = match cred_selector {
-                    CredentialSelector::SmtpName { smtp_name } => self
-                        .credentials
-                        .get_credential(context.project_id, CREDENTIAL_TYPE, &smtp_name)?
-                        .try_into()?,
-                };
+                let smtpcred: SmtpServerCredentials = self
+                    .credentials
+                    .get_credential(
+                        context.project_id,
+                        SmtpServerCredentials::CREDENTIAL_TYPE,
+                        &credential,
+                    )?
+                    .into_typed()?;
 
                 let transport = {
                     AsyncSmtpTransport::<Tokio1Executor>::from_url(&smtpcred.into_url())
