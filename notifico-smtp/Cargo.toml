@@ -11,5 +11,6 @@ lettre = { version = "0.11.9", features = ["serde", "tokio1", "tokio1-native-tls
 serde = { version = "1.0.210", features = ["derive"] }
 uuid = { version = "1.10.0", features = ["serde"] }
 url = "2.5.2"
+moka = { version = "0.12.8", features = ["future"] }
 
 notifico-core = { path = "../notifico-core" }

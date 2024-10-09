@@ -14,6 +14,7 @@ use lettre::{
     message::{Mailbox, MultiPart},
     AsyncSmtpTransport, AsyncTransport, Tokio1Executor,
 };
+use moka::future::Cache;
 use notifico_core::credentials::get_typed_credential;
 use notifico_core::{
     credentials::Credentials,
@@ -38,11 +39,30 @@ impl TypedContact for EmailContact {
 
 pub struct EmailPlugin {
     credentials: Arc<dyn Credentials>,
+    pools: Cache<String, AsyncSmtpTransport<Tokio1Executor>>,
 }
 
 impl EmailPlugin {
     pub fn new(credentials: Arc<dyn Credentials>) -> Self {
-        Self { credentials }
+        Self {
+            credentials,
+            pools: Cache::new(100),
+        }
+    }
+
+    pub async fn get_transport(
+        &self,
+        credential: SmtpServerCredentials,
+    ) -> AsyncSmtpTransport<Tokio1Executor> {
+        let cred_url = credential.into_url();
+        let transport = self.pools.get(&cred_url).await.unwrap_or_else(|| {
+            AsyncSmtpTransport::<Tokio1Executor>::from_url(&cred_url)
+                .unwrap()
+                .build()
+        });
+
+        self.pools.insert(cred_url, transport.clone()).await;
+        transport
     }
 }
 
@@ -70,11 +90,7 @@ impl EnginePlugin for EmailPlugin {
                 )
                 .await?;
 
-                let transport = {
-                    AsyncSmtpTransport::<Tokio1Executor>::from_url(&credential.into_url())
-                        .unwrap()
-                        .build()
-                };
+                let transport = self.get_transport(credential).await;
 
                 for message in context.messages.iter().cloned() {
                     let rendered: RenderedEmail = message.try_into().unwrap();
