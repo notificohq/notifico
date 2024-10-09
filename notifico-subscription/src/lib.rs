@@ -1,5 +1,6 @@
 mod context;
 mod entity;
+pub mod http;
 mod step;
 
 use crate::context::EMAIL_LIST_UNSUBSCRIBE;
@@ -8,10 +9,12 @@ use crate::step::STEPS;
 use entity::prelude::*;
 use hmac::Hmac;
 use jwt::SignWithKey;
-use notifico_core::engine::plugin::{EnginePlugin, StepOutput};
-use notifico_core::engine::PipelineContext;
-use notifico_core::error::EngineError;
-use notifico_core::pipeline::SerializedStep;
+use notifico_core::{
+    engine::PipelineContext,
+    engine::{EnginePlugin, StepOutput},
+    error::EngineError,
+    pipeline::SerializedStep,
+};
 use sea_orm::prelude::async_trait::async_trait;
 use sea_orm::sea_query::OnConflict;
 use sea_orm::ActiveValue::Set;

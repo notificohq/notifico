@@ -14,6 +14,7 @@ use figment::{
 };
 use hmac::{Hmac, Mac};
 use notifico_core::engine::Engine;
+use notifico_ncenter::NCenterPlugin;
 use notifico_smtp::EmailPlugin;
 use notifico_subscription::SubscriptionManager;
 use notifico_telegram::TelegramPlugin;
@@ -63,7 +64,7 @@ async fn main() {
     let db_connection = Database::connect(db_conn_options).await.unwrap();
 
     let sub_manager = Arc::new(SubscriptionManager::new(
-        db_connection,
+        db_connection.clone(),
         secret_hmac.clone(),
         config.http.subscriber_url.clone(),
     ));
@@ -74,12 +75,16 @@ async fn main() {
         config.projects[0].recipients.clone(),
     ));
 
+    let ncenter = Arc::new(NCenterPlugin::new(db_connection.clone()));
+
+    // Create Engine with plugins
     let mut engine = Engine::new();
     engine.add_plugin(Arc::new(TemplaterService::new("http://127.0.0.1:8000")));
     engine.add_plugin(Arc::new(TelegramPlugin::new(credentials.clone())));
     engine.add_plugin(Arc::new(EmailPlugin::new(credentials.clone())));
     engine.add_plugin(sub_manager.clone());
     engine.add_plugin(Arc::new(WaBusinessPlugin::new(credentials.clone())));
+    engine.add_plugin(ncenter.clone());
 
     let event_handler = EventHandler {
         pipeline_storage: pipelines.clone(),
@@ -92,6 +97,7 @@ async fn main() {
         event_handler.clone(),
         sub_manager.clone(),
         secret_hmac,
+        ncenter.clone(),
     ));
 
     tokio::signal::ctrl_c().await.unwrap();

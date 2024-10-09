@@ -1,8 +1,10 @@
 use async_trait::async_trait;
-use notifico_core::engine::plugin::{EnginePlugin, StepOutput};
-use notifico_core::engine::PipelineContext;
-use notifico_core::error::EngineError;
-use notifico_core::pipeline::SerializedStep;
+use notifico_core::{
+    engine::PipelineContext,
+    engine::{EnginePlugin, StepOutput},
+    error::EngineError,
+    pipeline::SerializedStep,
+};
 use reqwest_middleware::reqwest::Client;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_tracing::TracingMiddleware;

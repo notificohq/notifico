@@ -1,4 +1,4 @@
-use crate::engine::plugin::StepOutput;
+use crate::engine::StepOutput;
 use crate::engine::{Engine, EventContext, PipelineContext};
 use crate::error::EngineError;
 use crate::recipient::{Recipient, RecipientDirectory};
@@ -73,6 +73,14 @@ impl PipelineRunner {
         }
     }
 
+    /// Processes an event by executing the associated pipelines.
+    ///
+    /// # Parameters
+    ///
+    /// * `project_id` - The unique identifier of the project associated with the event.
+    /// * `trigger_event` - The name of the event that triggered the pipeline execution.
+    /// * `event_context` - The contextual information related to the event.
+    /// * `recipient_sel` - An optional selector for the recipient of the event.
     pub async fn process_event(
         &self,
         project_id: Uuid,
@@ -80,12 +88,12 @@ impl PipelineRunner {
         event_context: EventContext,
         recipient_sel: Option<RecipientSelector>,
     ) -> Result<(), EngineError> {
+        // Fetch the pipelines associated with the project and event
         let pipelines = self
             .pipeline_storage
             .get_pipelines(project_id, trigger_event)?;
 
-        let mut join_handles = JoinSet::new();
-
+        // Determine the recipient based on the recipient selector
         let recipient = match recipient_sel {
             None => None,
             Some(RecipientSelector::RecipientId { id }) => {
@@ -94,7 +102,8 @@ impl PipelineRunner {
             Some(RecipientSelector::Recipient(recipient)) => Some(recipient),
         };
 
-        // Pipeline;
+        // Execute each pipeline in a separate task in parallel
+        let mut join_handles = JoinSet::new();
         for pipeline in pipelines {
             let engine = self.engine.clone();
             let recipient = recipient.clone();
@@ -112,6 +121,7 @@ impl PipelineRunner {
                     channel: pipeline.channel,
                 };
 
+                // Execute each step in the pipeline
                 for step in pipeline.steps.iter() {
                     let result = engine.execute_step(&mut context, step).await;
                     match result {
@@ -126,6 +136,7 @@ impl PipelineRunner {
             });
         }
 
+        // Wait for all pipelines to complete
         join_handles.join_all().await;
         Ok(())
     }

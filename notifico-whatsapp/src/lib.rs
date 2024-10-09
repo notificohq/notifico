@@ -2,13 +2,15 @@ use crate::cloudapi::{Language, MessageType, MessagingProduct};
 use crate::credentials::WhatsAppCredentials;
 use crate::step::{Step, STEPS};
 use async_trait::async_trait;
-use notifico_core::credentials::{get_typed_credential, Credentials};
-use notifico_core::engine::plugin::{EnginePlugin, StepOutput};
-use notifico_core::engine::PipelineContext;
-use notifico_core::error::EngineError;
-use notifico_core::pipeline::SerializedStep;
-use notifico_core::recipient::MobilePhoneContact;
-use notifico_core::templater::RenderResponse;
+use notifico_core::{
+    credentials::{get_typed_credential, Credentials},
+    engine::PipelineContext,
+    engine::{EnginePlugin, StepOutput},
+    error::EngineError,
+    pipeline::SerializedStep,
+    recipient::MobilePhoneContact,
+    templater::RenderResponse,
+};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::borrow::Cow;
@@ -69,9 +71,7 @@ impl EnginePlugin for WaBusinessPlugin {
                     let wamessage = cloudapi::Message {
                         messaging_product: MessagingProduct::Whatsapp,
                         to: contact.number.clone(),
-                        language: Language {
-                            code: "en_US".into(),
-                        },
+                        language: "en_US".into(),
                         message: MessageType::Text {
                             preview_url: false,
                             body: message.body,

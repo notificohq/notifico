@@ -11,6 +11,14 @@ pub struct Language {
     pub code: String,
 }
 
+impl From<&str> for Language {
+    fn from(value: &str) -> Self {
+        Self {
+            code: value.to_string(),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct Message {
     pub messaging_product: MessagingProduct,

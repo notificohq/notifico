@@ -7,4 +7,4 @@ pub enum Step {
     Send { credential: String },
 }
 
-pub(crate) const STEPS: &'static [&'static str] = &["telegram.load_template", "telegram.send"];
+pub(crate) const STEPS: &[&str] = &["telegram.send"];

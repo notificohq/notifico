@@ -1,12 +1,14 @@
 use crate::step::STEPS;
 use async_trait::async_trait;
 use contact::TelegramContact;
-use notifico_core::credentials::{get_typed_credential, Credentials, TypedCredential};
-use notifico_core::engine::plugin::{EnginePlugin, StepOutput};
-use notifico_core::engine::PipelineContext;
-use notifico_core::error::EngineError;
-use notifico_core::pipeline::SerializedStep;
-use notifico_core::templater::RenderResponse;
+use notifico_core::{
+    credentials::{get_typed_credential, Credentials, TypedCredential},
+    engine::PipelineContext,
+    engine::{EnginePlugin, StepOutput},
+    error::EngineError,
+    pipeline::SerializedStep,
+    templater::RenderResponse,
+};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::borrow::Cow;

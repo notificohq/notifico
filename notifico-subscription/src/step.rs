@@ -9,4 +9,4 @@ pub enum Step {
     ListUnsubscribe,
 }
 
-pub(crate) const STEPS: &'static [&'static str] = &["sub.check", "sub.list_unsubscribe"];
+pub(crate) const STEPS: &[&str] = &["sub.check", "sub.list_unsubscribe"];

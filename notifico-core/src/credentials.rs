@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
 
+/// Generic credential with type information.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Credential {
     pub r#type: String,
@@ -23,6 +24,7 @@ impl Credential {
     }
 }
 
+/// Specific credential types should implement this trait.
 pub trait TypedCredential: for<'de> Deserialize<'de> {
     const CREDENTIAL_TYPE: &'static str;
 }

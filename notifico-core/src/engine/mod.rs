@@ -1,4 +1,3 @@
-use crate::engine::plugin::{EnginePlugin, StepOutput};
 use crate::error::EngineError;
 use crate::pipeline::SerializedStep;
 use crate::recipient::Recipient;
@@ -12,7 +11,8 @@ use std::sync::Arc;
 use tracing::instrument;
 use uuid::Uuid;
 
-pub mod plugin;
+mod plugin;
+pub use plugin::{EnginePlugin, StepOutput};
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 #[serde(transparent)]
@@ -29,6 +29,8 @@ pub struct PipelineContext {
     pub channel: String,
 }
 
+/// Engine is used to run steps in the pipeline.
+/// Can be cloned and shared across tasks.
 #[derive(Clone)]
 pub struct Engine {
     steps: HashMap<Cow<'static, str>, Arc<dyn EnginePlugin>>,

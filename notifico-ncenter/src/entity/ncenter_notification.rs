@@ -3,11 +3,15 @@
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
-#[sea_orm(table_name = "subscription_migrations")]
+#[sea_orm(table_name = "ncenter_notification")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
-    pub version: String,
-    pub applied_at: i64,
+    pub id: Uuid,
+    pub recipient_id: Uuid,
+    pub project_id: Uuid,
+    #[sea_orm(column_type = "JsonBinary")]
+    pub content: Json,
+    pub created_at: DateTime,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

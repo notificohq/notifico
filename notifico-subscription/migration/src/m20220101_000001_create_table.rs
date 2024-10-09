@@ -11,7 +11,7 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Subscription::Table)
                     .if_not_exists()
-                    .col(uuid(Subscription::Id).primary_key())
+                    .col(pk_uuid(Subscription::Id))
                     .col(uuid(Subscription::ProjectId))
                     .col(string(Subscription::Event))
                     .col(string(Subscription::Channel))

@@ -17,8 +17,7 @@ use lettre::{
 use notifico_core::credentials::get_typed_credential;
 use notifico_core::{
     credentials::Credentials,
-    engine::plugin::{EnginePlugin, StepOutput},
-    engine::PipelineContext,
+    engine::{EnginePlugin, PipelineContext, StepOutput},
     error::EngineError,
     pipeline::SerializedStep,
     recipient::TypedContact,

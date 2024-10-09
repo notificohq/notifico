@@ -7,4 +7,4 @@ pub enum Step {
     Send { credential: String },
 }
 
-pub const STEPS: &[&str] = &["whatsapp.load_template", "whatsapp.send"];
+pub const STEPS: &[&str] = &["whatsapp.send"];
