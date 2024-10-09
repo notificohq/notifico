@@ -1,5 +1,5 @@
 use crate::SubscriptionManager;
-use axum::extract::{Query, State};
+use axum::extract::Query;
 use axum::routing::get;
 use axum::{Extension, Router};
 use notifico_core::http::AuthorizedRecipient;

@@ -1,10 +1,9 @@
 use crate::event_handler::{EventHandler, ProcessEvent};
 use actix::Addr;
 use axum::extract::State;
-use axum::handler::Handler;
 use axum::{http::StatusCode, middleware, routing::post, Extension, Json, Router};
 use hmac::Hmac;
-use notifico_ncenter::http::get_router as ncenter_router;
+use notifico_ncenter::http::get_extapi_router as ncenter_router;
 use notifico_ncenter::NCenterPlugin;
 use notifico_subscription::http::get_router as subscription_router;
 use notifico_subscription::SubscriptionManager;

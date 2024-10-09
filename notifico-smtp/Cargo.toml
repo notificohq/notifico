@@ -7,7 +7,10 @@ edition = "2021"
 async-trait = "0.1.82"
 serde_json = "1.0.128"
 tracing = "0.1.40"
-lettre = { version = "0.11.9", features = ["serde", "tokio1", "tokio1-native-tls", "tracing"] }
+lettre = { version = "0.11.9", default-features = false, features = [
+    "smtp-transport", "pool", "hostname", "builder",
+    "serde", "tokio1-native-tls", "tracing"
+] }
 serde = { version = "1.0.210", features = ["derive"] }
 uuid = { version = "1.10.0", features = ["serde"] }
 url = "2.5.2"

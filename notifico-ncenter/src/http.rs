@@ -11,7 +11,9 @@ use sea_orm::{ColumnTrait, QueryOrder};
 use std::sync::Arc;
 use uuid::Uuid;
 
-pub fn get_router<S: Clone + Send + Sync + 'static>(ncenter: Arc<NCenterPlugin>) -> Router<S> {
+pub fn get_extapi_router<S: Clone + Send + Sync + 'static>(
+    ncenter: Arc<NCenterPlugin>,
+) -> Router<S> {
     Router::new()
         .route("/notifications", get(notifications))
         .layer(Extension(ncenter))

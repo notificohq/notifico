@@ -4,18 +4,15 @@ pub mod http;
 use crate::entity::ncenter_notification;
 use crate::entity::prelude::NcenterNotification;
 use async_trait::async_trait;
-use axum::Router;
 use chrono::Utc;
 use migration::{Migrator, MigratorTrait};
 use notifico_core::engine::{EnginePlugin, PipelineContext, StepOutput};
 use notifico_core::error::EngineError;
 use notifico_core::pipeline::SerializedStep;
 use sea_orm::ActiveValue::Set;
-use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
+use sea_orm::{DatabaseConnection, EntityTrait};
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
 use std::borrow::Cow;
-use std::sync::Arc;
 use uuid::Uuid;
 
 pub struct NCenterPlugin {

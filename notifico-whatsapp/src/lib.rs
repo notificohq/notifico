@@ -1,4 +1,4 @@
-use crate::cloudapi::{Language, MessageType, MessagingProduct};
+use crate::cloudapi::{MessageType, MessagingProduct};
 use crate::credentials::WhatsAppCredentials;
 use crate::step::{Step, STEPS};
 use async_trait::async_trait;

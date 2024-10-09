@@ -5,7 +5,7 @@ edition = "2021"
 rust-version = "1.81.0"
 
 [dependencies]
-tokio = { version = "1.40", features = ["full"] }
+tokio = { version = "1.40", features = ["macros", "rt", "sync"] }
 log = "0.4.22"
 futures = "0.3.31"
 tracing = "0.1.40"
@@ -14,7 +14,7 @@ serde = { version = "1.0.210", features = ["derive"] }
 sea-orm = { workspace = true }
 uuid = { version = "1.10.0", features = ["serde"] }
 serde_json = "1.0.128"
-reqwest = { version = "0.12.7", features = ["json"] }
+reqwest = { workspace = true }
 async-trait = "0.1.82"
 url = "2.5.2"
 figment = { version = "0.10.19", features = ["yaml", "env"] }
@@ -54,8 +54,8 @@ members = [
 ]
 
 [workspace.dependencies]
-sea-orm = { version = "1.1.0-rc.3", features = ["sqlx-sqlite", "sqlx-postgres", "sqlx-mysql", "runtime-tokio-rustls", "macros"] }
-reqwest = "0.12.8"
+sea-orm = { version = "1.1.0-rc.3", features = ["sqlx-sqlite", "sqlx-postgres", "sqlx-mysql", "runtime-tokio-native-tls", "macros"] }
+reqwest = { version = "0.12.8", default-features = false, features = ["json", "default-tls", "charset"] }
 axum = "0.8.0-alpha.1"
 
 [workspace.dependencies.sea-orm-migration]
@@ -64,7 +64,7 @@ features = [
     # Enable at least one `ASYNC_RUNTIME` and `DATABASE_DRIVER` feature if you want to run migration via CLI.
     # View the list of supported features at https://www.sea-ql.org/SeaORM/docs/install-and-config/database-and-async-runtime.
     # e.g.
-    "runtime-tokio-rustls", # `ASYNC_RUNTIME` feature
+    "runtime-tokio-native-tls", # `ASYNC_RUNTIME` feature
     "sqlx-sqlite", # `DATABASE_DRIVER` feature
     "sqlx-postgres", # `DATABASE_DRIVER` feature
     "sqlx-mysql", # `DATABASE_DRIVER` feature
