@@ -15,6 +15,7 @@ use figment::{
 use hmac::{Hmac, Mac};
 use notifico_core::engine::Engine;
 use notifico_ncenter::NCenterPlugin;
+use notifico_smpp::SmppPlugin;
 use notifico_smtp::EmailPlugin;
 use notifico_subscription::SubscriptionManager;
 use notifico_telegram::TelegramPlugin;
@@ -85,6 +86,7 @@ async fn main() {
     engine.add_plugin(sub_manager.clone());
     engine.add_plugin(Arc::new(WaBusinessPlugin::new(credentials.clone())));
     engine.add_plugin(ncenter.clone());
+    engine.add_plugin(Arc::new(SmppPlugin::new(credentials.clone())));
 
     let event_handler = EventHandler {
         pipeline_storage: pipelines.clone(),

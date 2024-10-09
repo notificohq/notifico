@@ -34,6 +34,7 @@ notifico-subscription = { path = "notifico-subscription" }
 notifico-whatsapp = { path = "notifico-whatsapp" }
 notifico-templater = { path = "notifico-templater" }
 notifico-ncenter = { path = "notifico-ncenter" }
+notifico-smpp = { path = "notifico-smpp" }
 
 [profile.release]
 opt-level = 3
@@ -50,7 +51,8 @@ members = [
     "notifico-whatsapp",
     "notifico-templater",
     "notifico-ncenter",
-    "notifico-ncenter/migration"
+    "notifico-ncenter/migration",
+    "notifico-smpp"
 ]
 
 [workspace.dependencies]

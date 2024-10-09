@@ -56,6 +56,12 @@ impl TypedContact for MobilePhoneContact {
     const CONTACT_TYPE: &'static str = "mobile_phone";
 }
 
+impl MobilePhoneContact {
+    pub fn msisdn(&self) -> &str {
+        self.number.strip_prefix("+").unwrap_or(&self.number)
+    }
+}
+
 #[async_trait]
 pub trait RecipientDirectory {
     async fn get_recipient(&self, id: Uuid) -> Option<Recipient>;
