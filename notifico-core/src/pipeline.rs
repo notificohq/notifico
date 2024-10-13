@@ -17,10 +17,10 @@ pub struct Pipeline {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type", rename_all = "snake_case")]
+#[serde(rename_all = "snake_case", untagged)]
 pub enum RecipientSelector {
     Recipient(Recipient),
-    RecipientId { id: Uuid },
+    RecipientId(String),
 }
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug)]
@@ -96,8 +96,8 @@ impl PipelineRunner {
         // Determine the recipient based on the recipient selector
         let recipient = match recipient_sel {
             None => None,
-            Some(RecipientSelector::RecipientId { id }) => {
-                self.recipient_storage.get_recipient(id).await
+            Some(RecipientSelector::RecipientId(id)) => {
+                self.recipient_storage.get_recipient(project_id, &id).await
             }
             Some(RecipientSelector::Recipient(recipient)) => Some(recipient),
         };

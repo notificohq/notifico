@@ -79,7 +79,7 @@ impl SubscriptionManager {
     pub async fn is_subscribed(
         &self,
         project_id: Uuid,
-        recipient_id: Uuid,
+        recipient_id: &str,
         event: &str,
         channel: &str,
     ) -> bool {
@@ -120,7 +120,7 @@ impl EnginePlugin for SubscriptionManager {
                 if self
                     .is_subscribed(
                         context.project_id,
-                        recipient.id,
+                        &recipient.id,
                         &context.trigger_event,
                         &channel,
                     )
@@ -145,7 +145,7 @@ impl EnginePlugin for SubscriptionManager {
                             self.subscriber_url.clone(),
                             context.project_id,
                             &context.trigger_event,
-                            recipient.id,
+                            &recipient.id,
                             "email"
                         )
                     )),
@@ -166,7 +166,7 @@ pub fn create_self_unsubscribe_url(
     subscriber_url: Url,
     project_id: Uuid,
     event: &str,
-    recipient_id: Uuid,
+    recipient_id: &str,
     channel: &str,
 ) -> Url {
     let mut claims = BTreeMap::new();

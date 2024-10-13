@@ -6,7 +6,8 @@ use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Recipient {
-    pub id: Uuid,
+    #[serde(default = "String::new")]
+    pub id: String,
     pub contacts: Vec<Contact>,
 }
 
@@ -64,5 +65,5 @@ impl MobilePhoneContact {
 
 #[async_trait]
 pub trait RecipientDirectory {
-    async fn get_recipient(&self, id: Uuid) -> Option<Recipient>;
+    async fn get_recipient(&self, project: Uuid, id: &str) -> Option<Recipient>;
 }

@@ -48,7 +48,7 @@ impl EnginePlugin for NCenterPlugin {
                 for message in context.messages.iter() {
                     let model = ncenter_notification::ActiveModel {
                         id: Set(Uuid::now_v7()),
-                        recipient_id: Set(recipient.id),
+                        recipient_id: Set(recipient.id.clone()),
                         project_id: Set(context.project_id),
                         content: Set(serde_json::to_value(&message.0).unwrap()),
                         created_at: Set(Utc::now().naive_utc()),

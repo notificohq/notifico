@@ -10,4 +10,8 @@ serde_json = "1.0.128"
 uuid = { version = "1.10.0", features = ["serde"] }
 tracing = "0.1.40"
 tokio = "1.40.0"
+hmac = "0.12.1"
+sha2 = "0.10.8"
+jwt = "0.16.0"
+axum = { workspace = true }
 

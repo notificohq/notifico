@@ -19,7 +19,9 @@ impl Actor for EventHandler {
 
 #[derive(actix::Message, Serialize, Deserialize)]
 #[rtype(result = "()")]
-pub struct ProcessEvent {
+pub struct ProcessEventRequest {
+    #[serde(default = "Uuid::now_v7")]
+    pub(crate) id: Uuid,
     #[serde(default = "Uuid::nil")]
     pub(crate) project_id: Uuid,
     pub(crate) event: String,
@@ -27,10 +29,10 @@ pub struct ProcessEvent {
     pub(crate) context: EventContext,
 }
 
-impl Handler<ProcessEvent> for EventHandler {
+impl Handler<ProcessEventRequest> for EventHandler {
     type Result = ResponseFuture<()>;
 
-    fn handle(&mut self, msg: ProcessEvent, _ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: ProcessEventRequest, _ctx: &mut Self::Context) -> Self::Result {
         let runner = PipelineRunner::new(
             self.pipeline_storage.clone(),
             self.engine.clone(),

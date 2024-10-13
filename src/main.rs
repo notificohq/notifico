@@ -1,12 +1,13 @@
 mod config;
 mod event_handler;
 mod http;
-pub mod recipients;
 
-use crate::config::{Config, SimpleCredentials, SimplePipelineStorage};
-use crate::recipients::MemoryRecipientDirectory;
+use crate::config::recipients::SimpleRecipientDirectory;
+use crate::config::Config;
 use actix::prelude::*;
 use clap::Parser;
+use config::credentials::SimpleCredentials;
+use config::pipelines::SimplePipelineStorage;
 use event_handler::EventHandler;
 use figment::{
     providers::{Env, Format, Yaml},
@@ -72,9 +73,7 @@ async fn main() {
 
     let credentials = Arc::new(SimpleCredentials::from_config(&config));
     let pipelines = Arc::new(SimplePipelineStorage::from_config(&config));
-    let directory = Arc::new(MemoryRecipientDirectory::new(
-        config.projects[0].recipients.clone(),
-    ));
+    let directory = Arc::new(SimpleRecipientDirectory::from_config(&config));
 
     let ncenter = Arc::new(NCenterPlugin::new(db_connection.clone()));
 
@@ -100,6 +99,7 @@ async fn main() {
         sub_manager.clone(),
         secret_hmac,
         ncenter.clone(),
+        config.http.bind,
     ));
 
     tokio::signal::ctrl_c().await.unwrap();

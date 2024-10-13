@@ -28,13 +28,13 @@ hmac = "0.12.1"
 anyhow = "1.0.89"
 
 notifico-core = { path = "notifico-core" }
-notifico-telegram = { path = "notifico-telegram" }
-notifico-smtp = { path = "notifico-smtp" }
+notifico-telegram = { path = "transports/notifico-telegram" }
+notifico-smtp = { path = "transports/notifico-smtp" }
 notifico-subscription = { path = "notifico-subscription" }
-notifico-whatsapp = { path = "notifico-whatsapp" }
+notifico-whatsapp = { path = "transports/notifico-whatsapp" }
 notifico-templater = { path = "notifico-templater" }
 notifico-ncenter = { path = "notifico-ncenter" }
-notifico-smpp = { path = "notifico-smpp" }
+notifico-smpp = { path = "transports/notifico-smpp" }
 
 [profile.release]
 opt-level = 3
@@ -44,15 +44,15 @@ codegen-units = 1
 [workspace]
 members = [
     "notifico-core",
-    "notifico-smtp",
-    "notifico-telegram",
+    "transports/notifico-smtp",
+    "transports/notifico-telegram",
+    "transports/notifico-whatsapp",
+    "transports/notifico-smpp",
     "notifico-subscription",
     "notifico-subscription/migration",
-    "notifico-whatsapp",
     "notifico-templater",
     "notifico-ncenter",
     "notifico-ncenter/migration",
-    "notifico-smpp"
 ]
 
 [workspace.dependencies]

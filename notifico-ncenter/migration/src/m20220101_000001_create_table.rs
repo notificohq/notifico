@@ -12,7 +12,7 @@ impl MigrationTrait for Migration {
                     .table(NcenterNotification::Table)
                     .if_not_exists()
                     .col(pk_uuid(NcenterNotification::Id))
-                    .col(uuid(NcenterNotification::RecipientId))
+                    .col(string(NcenterNotification::RecipientId))
                     .col(uuid(NcenterNotification::ProjectId))
                     .col(json_binary(NcenterNotification::Content))
                     .col(date_time(NcenterNotification::CreatedAt))

@@ -1,4 +1,4 @@
-use crate::http::SecretKey;
+use crate::http::{AuthorizedRecipient, SecretKey};
 use axum::body::Body;
 use axum::extract::{Query, Request};
 use axum::http::StatusCode;
@@ -6,7 +6,6 @@ use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
 use axum::{http, Extension, Json};
 use jwt::{Header, Token, VerifyWithKey};
-use notifico_core::http::AuthorizedRecipient;
 use serde::Deserialize;
 use serde_json::json;
 use std::collections::BTreeMap;
@@ -69,8 +68,7 @@ pub async fn authorize(
         }
     };
 
-    let token: Token<Header, BTreeMap<String, String>, _> =
-        token.verify_with_key(&skey.secret_key).unwrap();
+    let token: Token<Header, BTreeMap<String, String>, _> = token.verify_with_key(&skey.0).unwrap();
 
     let claims = token.claims();
     let (Some(recipient_id), Some(project_id)) = (claims.get("sub"), claims.get("proj")) else {

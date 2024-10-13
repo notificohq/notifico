@@ -11,4 +11,4 @@ async-trait = "0.1.82"
 reqwest = { workspace = true }
 tracing = "0.1.40"
 
-notifico-core = { path = "../notifico-core" }
+notifico-core = { path = "../../notifico-core" }

@@ -16,4 +16,4 @@ uuid = { version = "1.10.0", features = ["serde"] }
 url = "2.5.2"
 moka = { version = "0.12.8", features = ["future"] }
 
-notifico-core = { path = "../notifico-core" }
+notifico-core = { path = "../../notifico-core" }
