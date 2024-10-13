@@ -13,7 +13,6 @@ use figment::{
     providers::{Env, Format, Yaml},
     Figment,
 };
-use hmac::{Hmac, Mac};
 use notifico_core::engine::Engine;
 use notifico_ncenter::NCenterPlugin;
 use notifico_smpp::SmppPlugin;
@@ -57,7 +56,7 @@ async fn main() {
         .merge(Env::prefixed("NOTIFICO_"))
         .extract()
         .unwrap();
-    let secret_hmac = Hmac::new_from_slice(config.secret_key.as_bytes()).unwrap();
+    let secret_hmac = config.secret_key.as_bytes();
 
     debug!("Config: {:?}", config);
 
@@ -67,7 +66,7 @@ async fn main() {
 
     let sub_manager = Arc::new(SubscriptionManager::new(
         db_connection.clone(),
-        secret_hmac.clone(),
+        secret_hmac.to_vec(),
         config.http.subscriber_url.clone(),
     ));
 
@@ -97,7 +96,7 @@ async fn main() {
     tokio::spawn(http::start(
         event_handler.clone(),
         sub_manager.clone(),
-        secret_hmac,
+        secret_hmac.to_vec(),
         ncenter.clone(),
         config.http.bind,
     ));

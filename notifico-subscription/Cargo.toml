@@ -6,13 +6,11 @@ edition = "2021"
 [dependencies]
 url = "2.5.2"
 uuid = { version = "1.10.0", features = ["v7"] }
-jwt = "0.16.0"
-sha2 = "0.10.8"
-hmac = "0.12.1"
 serde_json = "1.0.128"
 sea-orm = { workspace = true }
 tracing = "0.1.40"
 serde = { version = "1.0.210", features = ["derive"] }
 axum = { workspace = true }
+jsonwebtoken = "9.3.0"
 
 notifico-core = { path = "../notifico-core" }

@@ -31,7 +31,7 @@ async fn notifications(
     Extension(ncenter): Extension<Arc<NCenterPlugin>>,
 ) -> Json<Vec<Notification>> {
     let notifications: Vec<ncenter_notification::Model> = NcenterNotification::find()
-        .filter(ncenter_notification::Column::RecipientId.eq(recipient.recipient_id))
+        .filter(ncenter_notification::Column::RecipientId.eq(recipient.recipient_id.clone()))
         .filter(ncenter_notification::Column::ProjectId.eq(recipient.project_id))
         .order_by_desc(ncenter_notification::Column::CreatedAt)
         .all(&ncenter.db)

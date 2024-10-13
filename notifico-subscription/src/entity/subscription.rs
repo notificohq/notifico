@@ -10,7 +10,7 @@ pub struct Model {
     pub project_id: Uuid,
     pub event: String,
     pub channel: String,
-    pub recipient_id: Uuid,
+    pub recipient_id: String,
     pub is_subscribed: bool,
 }
 

@@ -28,7 +28,7 @@ pub(crate) async fn list_unsubscribe(
     sub_manager
         .unsubscribe(
             auth.project_id,
-            auth.recipient_id,
+            &auth.recipient_id,
             &params.event,
             &params.channel,
             false,

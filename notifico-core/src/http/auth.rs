@@ -5,16 +5,28 @@ use axum::http::StatusCode;
 use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
 use axum::{http, Extension, Json};
-use jwt::{Header, Token, VerifyWithKey};
-use serde::Deserialize;
+use jsonwebtoken::{DecodingKey, Validation};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::collections::BTreeMap;
 use std::sync::Arc;
 use uuid::Uuid;
 
 pub struct AuthError {
     message: String,
     status_code: StatusCode,
+}
+
+#[derive(Clone, Deserialize, Serialize)]
+pub enum Scopes {
+    RecipientApi,
+}
+
+#[derive(Clone, Deserialize, Serialize)]
+pub struct Claims {
+    pub proj: Uuid,  // Project ID
+    pub sub: String, // Recipient ID
+    pub scopes: Scopes,
+    pub exp: usize,
 }
 
 impl IntoResponse for AuthError {
@@ -41,6 +53,7 @@ pub async fn authorize(
 ) -> Result<Response<Body>, AuthError> {
     let auth_header = req.headers_mut().get(http::header::AUTHORIZATION);
 
+    // Extract token from query parameters or Authorization header
     let token = match (params.token, auth_header) {
         (Some(query_token), _) => query_token.clone(),
         (_, Some(auth_header)) => {
@@ -68,19 +81,28 @@ pub async fn authorize(
         }
     };
 
-    let token: Token<Header, BTreeMap<String, String>, _> = token.verify_with_key(&skey.0).unwrap();
+    let token = jsonwebtoken::decode::<Claims>(
+        &token,
+        &DecodingKey::from_secret(&skey.0),
+        &Validation::default(),
+    );
 
-    let claims = token.claims();
-    let (Some(recipient_id), Some(project_id)) = (claims.get("sub"), claims.get("proj")) else {
-        return Err(AuthError {
-            status_code: StatusCode::FORBIDDEN,
-            message: "Invalid JWT claims".to_string(),
-        });
+    let token = match token {
+        Ok(token) => token,
+        Err(_) => {
+            return Err(AuthError {
+                message: "Invalid JWT token".to_string(),
+                status_code: StatusCode::FORBIDDEN,
+            })
+        }
     };
 
+    let project_id = token.claims.proj;
+    let recipient_id = token.claims.sub;
+
     let recipient = AuthorizedRecipient {
-        project_id: project_id.parse::<Uuid>().unwrap(),
-        recipient_id: recipient_id.parse::<Uuid>().unwrap(),
+        project_id,
+        recipient_id,
     };
 
     req.extensions_mut().insert(Arc::new(recipient));

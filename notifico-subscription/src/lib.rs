@@ -7,8 +7,8 @@ use crate::context::EMAIL_LIST_UNSUBSCRIBE;
 use crate::entity::subscription;
 use crate::step::STEPS;
 use entity::prelude::*;
-use hmac::Hmac;
-use jwt::SignWithKey;
+use jsonwebtoken::{EncodingKey, Header};
+use notifico_core::http::auth::{Claims, Scopes};
 use notifico_core::{
     engine::PipelineContext,
     engine::{EnginePlugin, StepOutput},
@@ -21,9 +21,9 @@ use sea_orm::ActiveValue::Set;
 use sea_orm::{ColumnTrait, EntityTrait};
 use sea_orm::{DatabaseConnection, EntityOrSelect, QueryFilter};
 use serde_json::Value;
-use sha2::Sha256;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
+use std::time::{SystemTime, UNIX_EPOCH};
 use step::Step;
 use tracing::error;
 use url::Url;
@@ -31,12 +31,12 @@ use uuid::Uuid;
 
 pub struct SubscriptionManager {
     db: DatabaseConnection,
-    secret_key: Hmac<Sha256>,
+    secret_key: Vec<u8>,
     subscriber_url: Url,
 }
 
 impl SubscriptionManager {
-    pub fn new(db: DatabaseConnection, secret_key: Hmac<Sha256>, subscriber_url: Url) -> Self {
+    pub fn new(db: DatabaseConnection, secret_key: Vec<u8>, subscriber_url: Url) -> Self {
         Self {
             db,
             secret_key,
@@ -47,7 +47,7 @@ impl SubscriptionManager {
     pub async fn unsubscribe(
         &self,
         project_id: Uuid,
-        recipient_id: Uuid,
+        recipient_id: &str,
         event: &str,
         channel: &str,
         is_subscribed: bool,
@@ -57,7 +57,7 @@ impl SubscriptionManager {
             project_id: Set(project_id),
             event: Set(event.to_string()),
             channel: Set(channel.to_string()),
-            recipient_id: Set(recipient_id),
+            recipient_id: Set(recipient_id.to_string()),
             is_subscribed: Set(is_subscribed),
         };
 
@@ -162,7 +162,7 @@ impl EnginePlugin for SubscriptionManager {
 
 // Implements one-click List-Unsubscribe style URL generation
 pub fn create_self_unsubscribe_url(
-    key: Hmac<Sha256>,
+    key: Vec<u8>,
     subscriber_url: Url,
     project_id: Uuid,
     event: &str,
@@ -173,7 +173,18 @@ pub fn create_self_unsubscribe_url(
     claims.insert("sub", recipient_id.to_string());
     claims.insert("proj", project_id.to_string());
 
-    let token = claims.sign_with_key(&key).unwrap();
+    let claims = Claims {
+        proj: project_id,
+        sub: recipient_id.to_string(),
+        scopes: Scopes::RecipientApi,
+        exp: SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as _,
+    };
+
+    let token =
+        jsonwebtoken::encode(&Header::default(), &claims, &EncodingKey::from_secret(&key)).unwrap();
     let url = format!(
         "{}/unsubscribe?token={}&event={}&channel={}",
         subscriber_url, token, event, channel
