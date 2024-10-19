@@ -2,7 +2,6 @@ use actix::prelude::*;
 use notifico_core::engine::{Engine, EventContext};
 use notifico_core::pipeline::RecipientSelector;
 use notifico_core::pipeline::{PipelineRunner, PipelineStorage};
-use notifico_core::recipient::RecipientDirectory;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use uuid::Uuid;
@@ -10,7 +9,6 @@ use uuid::Uuid;
 pub struct EventHandler {
     pub(crate) pipeline_storage: Arc<dyn PipelineStorage>,
     pub(crate) engine: Engine,
-    pub(crate) recipient_storage: Arc<dyn RecipientDirectory>,
 }
 
 impl Actor for EventHandler {
@@ -33,11 +31,7 @@ impl Handler<ProcessEventRequest> for EventHandler {
     type Result = ResponseFuture<()>;
 
     fn handle(&mut self, msg: ProcessEventRequest, _ctx: &mut Self::Context) -> Self::Result {
-        let runner = PipelineRunner::new(
-            self.pipeline_storage.clone(),
-            self.engine.clone(),
-            self.recipient_storage.clone(),
-        );
+        let runner = PipelineRunner::new(self.pipeline_storage.clone(), self.engine.clone());
         Box::pin(async move {
             runner
                 .process_event(msg.project_id, &msg.event, msg.context, msg.recipient)

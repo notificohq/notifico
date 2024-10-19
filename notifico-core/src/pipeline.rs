@@ -1,7 +1,7 @@
 use crate::engine::StepOutput;
 use crate::engine::{Engine, EventContext, PipelineContext};
 use crate::error::EngineError;
-use crate::recipient::{Recipient, RecipientDirectory};
+use crate::recipient::Recipient;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::sync::Arc;
@@ -20,7 +20,6 @@ pub struct Pipeline {
 #[serde(rename_all = "snake_case", untagged)]
 pub enum RecipientSelector {
     Recipient(Recipient),
-    RecipientId(String),
 }
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug)]
@@ -57,19 +56,13 @@ pub trait PipelineStorage: Send + Sync {
 pub struct PipelineRunner {
     pipeline_storage: Arc<dyn PipelineStorage>,
     engine: Engine,
-    recipient_storage: Arc<dyn RecipientDirectory>,
 }
 
 impl PipelineRunner {
-    pub fn new(
-        pipeline_storage: Arc<dyn PipelineStorage>,
-        engine: Engine,
-        recipient_storage: Arc<dyn RecipientDirectory>,
-    ) -> Self {
+    pub fn new(pipeline_storage: Arc<dyn PipelineStorage>, engine: Engine) -> Self {
         Self {
             pipeline_storage,
             engine,
-            recipient_storage,
         }
     }
 
@@ -96,9 +89,6 @@ impl PipelineRunner {
         // Determine the recipient based on the recipient selector
         let recipient = match recipient_sel {
             None => None,
-            Some(RecipientSelector::RecipientId(id)) => {
-                self.recipient_storage.get_recipient(project_id, &id).await
-            }
             Some(RecipientSelector::Recipient(recipient)) => Some(recipient),
         };
 

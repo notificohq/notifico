@@ -1,32 +1,28 @@
 use notifico_core::credentials::Credential;
 use notifico_core::pipeline::Pipeline;
-use notifico_core::recipient::Recipient;
 use serde::Deserialize;
 use std::net::SocketAddr;
-use url::Url;
+use std::path::PathBuf;
 use uuid::Uuid;
 
 pub mod credentials;
 pub mod pipelines;
-pub mod recipients;
 
 #[derive(Debug, Deserialize)]
 pub(crate) struct Config {
     pub projects: Vec<Project>,
-    pub secret_key: String,
     pub http: Http,
-    pub db: Database,
+    pub templates: TemplatesConfig,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Http {
     pub bind: SocketAddr,
-    pub subscriber_url: Url,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct Database {
-    pub url: Url,
+pub(crate) struct TemplatesConfig {
+    pub(crate) path: PathBuf,
 }
 
 #[derive(Debug, Deserialize)]
@@ -35,5 +31,4 @@ pub struct Project {
     pub id: Uuid,
     pub pipelines: Vec<Pipeline>,
     pub credentials: Vec<Credential>,
-    pub recipients: Vec<Recipient>,
 }
