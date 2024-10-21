@@ -19,9 +19,9 @@ struct PipelineKey<'a> {
 }
 
 #[derive(Default)]
-pub struct SimplePipelineStorage(HashMap<PipelineKey<'static>, Vec<Arc<Pipeline>>>);
+pub struct MemoryPipelineStorage(HashMap<PipelineKey<'static>, Vec<Arc<Pipeline>>>);
 
-impl SimplePipelineStorage {
+impl MemoryPipelineStorage {
     pub fn from_config(config: &PipelineConfig) -> Self {
         let mut slf = Self::default();
         for pipeline in config.pipelines.iter() {
@@ -41,13 +41,13 @@ impl SimplePipelineStorage {
     }
 }
 
-impl PipelineStorage for SimplePipelineStorage {
+impl PipelineStorage for MemoryPipelineStorage {
     fn get_pipelines(&self, project: Uuid, event_name: &str) -> Result<Vec<Pipeline>, EngineError> {
         if let Some(pipelines) = self.0.get(&PipelineKey {
             project,
             event: event_name.into(),
         }) {
-            Ok(pipelines.into_iter().map(|p| p.as_ref()).cloned().collect())
+            Ok(pipelines.iter().map(|p| p.as_ref()).cloned().collect())
         } else {
             Ok(Vec::new())
         }

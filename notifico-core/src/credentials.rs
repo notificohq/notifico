@@ -29,11 +29,11 @@ pub trait TypedCredential: for<'de> Deserialize<'de> {
 }
 
 #[async_trait]
-pub trait Credentials: Send + Sync {
+pub trait CredentialStorage: Send + Sync {
     async fn get_credential(&self, project: Uuid, name: &str) -> Result<Credential, EngineError>;
 }
 
-impl dyn Credentials {
+impl dyn CredentialStorage {
     pub async fn get_typed_credential<T>(&self, project: Uuid, name: &str) -> Result<T, EngineError>
     where
         T: TypedCredential,

@@ -17,7 +17,7 @@ use lettre::{
 use moka::future::Cache;
 use notifico_core::step::SerializedStep;
 use notifico_core::{
-    credentials::Credentials,
+    credentials::CredentialStorage,
     engine::{EnginePlugin, PipelineContext, StepOutput},
     error::EngineError,
     recipient::TypedContact,
@@ -37,12 +37,12 @@ impl TypedContact for EmailContact {
 }
 
 pub struct EmailPlugin {
-    credentials: Arc<dyn Credentials>,
+    credentials: Arc<dyn CredentialStorage>,
     pools: Cache<String, AsyncSmtpTransport<Tokio1Executor>>,
 }
 
 impl EmailPlugin {
-    pub fn new(credentials: Arc<dyn Credentials>) -> Self {
+    pub fn new(credentials: Arc<dyn CredentialStorage>) -> Self {
         Self {
             credentials,
             pools: Cache::new(100),

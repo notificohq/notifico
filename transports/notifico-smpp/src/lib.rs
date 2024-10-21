@@ -6,7 +6,7 @@ use crate::step::{Step, STEPS};
 use async_trait::async_trait;
 use futures_util::sink::SinkExt;
 use futures_util::StreamExt;
-use notifico_core::credentials::Credentials;
+use notifico_core::credentials::CredentialStorage;
 use notifico_core::engine::{EnginePlugin, PipelineContext, StepOutput};
 use notifico_core::error::EngineError;
 use notifico_core::recipient::MobilePhoneContact;
@@ -37,11 +37,11 @@ use tokio_util::codec::{FramedRead, FramedWrite};
 use tracing::debug;
 
 pub struct SmppPlugin {
-    credentials: Arc<dyn Credentials>,
+    credentials: Arc<dyn CredentialStorage>,
 }
 
 impl SmppPlugin {
-    pub fn new(credentials: Arc<dyn Credentials>) -> Self {
+    pub fn new(credentials: Arc<dyn CredentialStorage>) -> Self {
         Self { credentials }
     }
 }

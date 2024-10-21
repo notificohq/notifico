@@ -6,7 +6,7 @@ pipelines:
       - send_notification
     steps:
       - step: templates.load
-        templates: [ "zerna" ]
+        templates: [ "zerna.toml" ]
       - step: telegram.send
         credential: telegram_bot_1
   - channel: email
@@ -14,27 +14,6 @@ pipelines:
       - send_notification
     steps:
       - step: templates.load
-        templates: [ "zerna" ]
+        templates: [ "zerna.toml" ]
       - step: email.send
         credential: mailman_1
-#  - channel: sms
-#    events:
-#      - send_notification
-#    steps:
-#      - step: templates.load
-#        templates: [ "01927545-56db-7479-b249-fe2064052e47" ]
-#      - step: smpp.send
-#        credential: smsman_1
-#  - channel: ncenter
-#    events:
-#      - send_notification
-#    steps:
-#      - step: ncenter.send
-#  - events:
-#      - send_notification
-#    channel: whatsapp
-#    steps:
-#      - step: whatsapp.load_template
-#        template_id: "0192572f-050f-7b3c-8b48-004a46ef8107"
-#      - step: whatsapp.send
-#        credential: whatsapp_bot_1

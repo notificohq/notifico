@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use contact::TelegramContact;
 use notifico_core::step::SerializedStep;
 use notifico_core::{
-    credentials::{Credentials, TypedCredential},
+    credentials::{CredentialStorage, TypedCredential},
     engine::PipelineContext,
     engine::{EnginePlugin, StepOutput},
     error::EngineError,
@@ -26,15 +26,15 @@ pub struct TelegramBotCredentials {
 }
 
 impl TypedCredential for TelegramBotCredentials {
-    const CREDENTIAL_TYPE: &'static str = "telegram_token";
+    const CREDENTIAL_TYPE: &'static str = "telegram_bot";
 }
 
 pub struct TelegramPlugin {
-    credentials: Arc<dyn Credentials>,
+    credentials: Arc<dyn CredentialStorage>,
 }
 
 impl TelegramPlugin {
-    pub fn new(credentials: Arc<dyn Credentials>) -> Self {
+    pub fn new(credentials: Arc<dyn CredentialStorage>) -> Self {
         Self { credentials }
     }
 }

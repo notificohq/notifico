@@ -11,3 +11,4 @@ serde_json = "1.0.130"
 async-trait = "0.1.83"
 tokio = { version = "1.40.0", features = ["fs"] }
 tracing = "0.1.40"
+toml = "0.8.19"

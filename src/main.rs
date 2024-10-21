@@ -4,8 +4,8 @@ mod http;
 use crate::config::pipelines::PipelineConfig;
 use crate::config::Config;
 use clap::Parser;
-use config::credentials::SimpleCredentials;
-use config::pipelines::SimplePipelineStorage;
+use config::credentials::MemoryCredentialStorage;
+use config::pipelines::MemoryPipelineStorage;
 use figment::providers::Toml;
 use figment::{
     providers::{Env, Format, Yaml},
@@ -62,8 +62,8 @@ async fn main() {
         .extract()
         .unwrap();
 
-    let credentials = Arc::new(SimpleCredentials::from_config(credential_config).unwrap());
-    let pipelines = Arc::new(SimplePipelineStorage::from_config(&pipelines_config));
+    let credentials = Arc::new(MemoryCredentialStorage::from_config(credential_config).unwrap());
+    let pipelines = Arc::new(MemoryPipelineStorage::from_config(&pipelines_config));
 
     // Create Engine with plugins
     let mut engine = Engine::new();

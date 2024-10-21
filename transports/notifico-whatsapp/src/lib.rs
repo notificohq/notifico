@@ -4,7 +4,7 @@ use crate::step::{Step, STEPS};
 use async_trait::async_trait;
 use notifico_core::step::SerializedStep;
 use notifico_core::{
-    credentials::Credentials,
+    credentials::CredentialStorage,
     engine::PipelineContext,
     engine::{EnginePlugin, StepOutput},
     error::EngineError,
@@ -22,12 +22,12 @@ mod credentials;
 mod step;
 
 pub struct WaBusinessPlugin {
-    credentials: Arc<dyn Credentials>,
+    credentials: Arc<dyn CredentialStorage>,
     client: reqwest::Client,
 }
 
 impl WaBusinessPlugin {
-    pub fn new(credentials: Arc<dyn Credentials>) -> Self {
+    pub fn new(credentials: Arc<dyn CredentialStorage>) -> Self {
         Self {
             credentials,
             client: reqwest::Client::new(),

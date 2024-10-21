@@ -10,5 +10,5 @@ pub struct SmppServerCredentials {
 }
 
 impl TypedCredential for SmppServerCredentials {
-    const CREDENTIAL_TYPE: &'static str = "smpp_server";
+    const CREDENTIAL_TYPE: &'static str = "smpp";
 }

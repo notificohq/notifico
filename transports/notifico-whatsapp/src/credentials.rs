@@ -8,5 +8,5 @@ pub struct WhatsAppCredentials {
 }
 
 impl TypedCredential for WhatsAppCredentials {
-    const CREDENTIAL_TYPE: &'static str = "whatsapp_token";
+    const CREDENTIAL_TYPE: &'static str = "whatsapp_business";
 }

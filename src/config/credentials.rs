@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use notifico_core::credentials::{Credential, Credentials};
+use notifico_core::credentials::{Credential, CredentialStorage};
 use notifico_core::error::EngineError;
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -12,11 +12,11 @@ struct CredentialKey<'a> {
 }
 
 #[derive(Default, Debug)]
-pub struct SimpleCredentials(HashMap<CredentialKey<'static>, Credential>);
+pub struct MemoryCredentialStorage(HashMap<CredentialKey<'static>, Credential>);
 
-impl SimpleCredentials {
+impl MemoryCredentialStorage {
     pub fn from_config(config: serde_json::Value) -> Result<Self, serde_json::Error> {
-        let mut creds = SimpleCredentials::default();
+        let mut creds = MemoryCredentialStorage::default();
 
         let obj = config.as_object().unwrap().clone();
         for (r#type, v) in obj {
@@ -58,7 +58,7 @@ impl SimpleCredentials {
 }
 
 #[async_trait]
-impl Credentials for SimpleCredentials {
+impl CredentialStorage for MemoryCredentialStorage {
     async fn get_credential(&self, project: Uuid, name: &str) -> Result<Credential, EngineError> {
         let key = CredentialKey {
             project,

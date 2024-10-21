@@ -1,3 +1,6 @@
+mod descriptor;
+
+use crate::descriptor::{Descriptor, TemplateSourceSelector};
 use async_trait::async_trait;
 use minijinja::Environment;
 use notifico_core::engine::{EnginePlugin, PipelineContext, StepOutput};
@@ -9,13 +12,6 @@ use serde_json::{Map, Value};
 use std::borrow::Cow;
 use std::path::{Path, PathBuf};
 use tracing::info;
-
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-enum TemplateSourceSelector {
-    Content(String),
-    File(PathBuf),
-}
 
 pub struct LocalTemplater {
     basepath: PathBuf,
@@ -51,7 +47,7 @@ impl LocalTemplater {
         // Construct the path to the template descriptor file based on the channel and template name
         let template_dir = self.basepath.join(&context.channel);
         let descriptor_path = match template {
-            TemplateSelector::ByName(name) => template_dir.join(name + ".json"),
+            TemplateSelector::ByName(name) => template_dir.join(name),
         };
 
         // Read the template descriptor file
@@ -60,15 +56,15 @@ impl LocalTemplater {
             .map_err(|_| EngineError::TemplateRenderingError)?;
 
         // Parse the template descriptor JSON into a map
-        let descriptor_json: Map<String, Value> = serde_json::from_str(&descriptor).unwrap();
+        let descriptor: Descriptor = toml::from_str(&descriptor).unwrap();
 
         // Initialize an empty map to store the rendered template data
         let mut data = Map::new();
 
         // Iterate over the parts in the template descriptor
-        for (part, selector) in descriptor_json {
+        for (part, selector) in descriptor.template {
             // Deserialize the template source selector
-            let selector: TemplateSourceSelector = serde_json::from_value(selector).unwrap();
+            let selector: TemplateSourceSelector = selector.try_into().unwrap();
 
             // Determine the template source based on the selector
             let content = match selector {
