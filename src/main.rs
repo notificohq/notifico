@@ -1,46 +1,42 @@
 mod config;
-mod event_handler;
 mod http;
 
+use crate::config::pipelines::PipelineConfig;
 use crate::config::Config;
-use actix::prelude::*;
 use clap::Parser;
 use config::credentials::SimpleCredentials;
 use config::pipelines::SimplePipelineStorage;
-use event_handler::EventHandler;
+use figment::providers::Toml;
 use figment::{
     providers::{Env, Format, Yaml},
     Figment,
 };
 use notifico_core::engine::Engine;
+use notifico_core::pipeline::runner::PipelineRunner;
 use notifico_smpp::SmppPlugin;
 use notifico_smtp::EmailPlugin;
 use notifico_telegram::TelegramPlugin;
 use notifico_template::LocalTemplater;
 use notifico_whatsapp::WaBusinessPlugin;
+use std::path::PathBuf;
 use std::sync::Arc;
-use tracing::debug;
+use tracing::info;
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
-use uuid::Uuid;
 
-#[derive(Parser, Debug)]
-#[command(version, about, long_about = None)]
+#[derive(Parser)]
 struct Args {
-    #[arg(short, long)]
-    event: String,
-
-    #[arg(short, long)]
-    context: String,
-
-    #[arg(short, long)]
-    recipient: Uuid,
+    #[arg(short, long, value_name = "FILE")]
+    config: Option<PathBuf>,
 }
 
-#[actix::main]
+#[tokio::main]
 async fn main() {
     if std::env::var("RUST_LOG").is_err() {
         std::env::set_var("RUST_LOG", "info");
     }
+
+    let args = Args::parse();
+    let config_path = args.config.unwrap_or_else(|| "notifico.toml".into());
 
     tracing_subscriber::registry()
         .with(fmt::layer())
@@ -48,34 +44,40 @@ async fn main() {
         .init();
 
     let config: Config = Figment::new()
-        .merge(Yaml::file("notifico.yml"))
+        .merge(Toml::file(config_path))
         .merge(Env::prefixed("NOTIFICO_"))
         .extract()
         .unwrap();
 
-    debug!("Config: {:?}", config);
+    info!("Config: {:#?}", config);
 
-    // let args = Args::parse();
+    let credential_config: serde_json::Value = Figment::new()
+        .merge(Toml::file(config.credentials.clone()))
+        .merge(Env::prefixed("NOTIFICO_CREDENTIAL_"))
+        .extract()
+        .unwrap();
 
-    let credentials = Arc::new(SimpleCredentials::from_config(&config));
-    let pipelines = Arc::new(SimplePipelineStorage::from_config(&config));
+    let pipelines_config: PipelineConfig = Figment::new()
+        .merge(Yaml::file(config.pipelines.clone()))
+        .extract()
+        .unwrap();
+
+    let credentials = Arc::new(SimpleCredentials::from_config(credential_config).unwrap());
+    let pipelines = Arc::new(SimplePipelineStorage::from_config(&pipelines_config));
 
     // Create Engine with plugins
     let mut engine = Engine::new();
-    engine.add_plugin(Arc::new(LocalTemplater::new(&config.templates.path)));
+    engine.add_plugin(Arc::new(LocalTemplater::new(&config.templates)));
 
     engine.add_plugin(Arc::new(TelegramPlugin::new(credentials.clone())));
     engine.add_plugin(Arc::new(EmailPlugin::new(credentials.clone())));
     engine.add_plugin(Arc::new(WaBusinessPlugin::new(credentials.clone())));
     engine.add_plugin(Arc::new(SmppPlugin::new(credentials.clone())));
 
-    let event_handler = EventHandler {
-        pipeline_storage: pipelines.clone(),
-        engine,
-    }
-    .start();
+    // Create PipelineRunner, the core component of the Notifico system
+    let runner = Arc::new(PipelineRunner::new(pipelines.clone(), engine));
 
-    tokio::spawn(http::start(event_handler.clone(), config.http.bind));
+    tokio::spawn(http::start(runner.clone(), config.http.bind));
 
     tokio::signal::ctrl_c().await.unwrap();
 }

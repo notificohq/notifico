@@ -2,12 +2,11 @@ use async_trait::async_trait;
 use minijinja::Environment;
 use notifico_core::engine::{EnginePlugin, PipelineContext, StepOutput};
 use notifico_core::error::EngineError;
-use notifico_core::pipeline::SerializedStep;
+use notifico_core::step::SerializedStep;
 use notifico_core::templater::RenderResponse;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::borrow::Cow;
-use std::fs;
 use std::path::{Path, PathBuf};
 use tracing::info;
 
@@ -56,8 +55,9 @@ impl LocalTemplater {
         };
 
         // Read the template descriptor file
-        let descriptor =
-            fs::read_to_string(descriptor_path).map_err(|_| EngineError::TemplateRenderingError)?;
+        let descriptor = tokio::fs::read_to_string(descriptor_path)
+            .await
+            .map_err(|_| EngineError::TemplateRenderingError)?;
 
         // Parse the template descriptor JSON into a map
         let descriptor_json: Map<String, Value> = serde_json::from_str(&descriptor).unwrap();
@@ -75,10 +75,9 @@ impl LocalTemplater {
                 TemplateSourceSelector::Content(content) => content,
                 TemplateSourceSelector::File(file) => {
                     // Read the template content from a file
-                    let content = tokio::fs::read_to_string(template_dir.join(file))
+                    tokio::fs::read_to_string(template_dir.join(file))
                         .await
-                        .map_err(|_| EngineError::TemplateRenderingError)?;
-                    content
+                        .map_err(|_| EngineError::TemplateRenderingError)?
                 }
             };
 

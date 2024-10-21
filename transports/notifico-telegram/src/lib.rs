@@ -1,12 +1,12 @@
 use crate::step::STEPS;
 use async_trait::async_trait;
 use contact::TelegramContact;
+use notifico_core::step::SerializedStep;
 use notifico_core::{
-    credentials::{get_typed_credential, Credentials, TypedCredential},
+    credentials::{Credentials, TypedCredential},
     engine::PipelineContext,
     engine::{EnginePlugin, StepOutput},
     error::EngineError,
-    pipeline::SerializedStep,
     templater::RenderResponse,
 };
 use serde::{Deserialize, Serialize};
@@ -54,12 +54,10 @@ impl EnginePlugin for TelegramPlugin {
                     return Err(EngineError::RecipientNotSet);
                 };
 
-                let credential: TelegramBotCredentials = get_typed_credential(
-                    self.credentials.as_ref(),
-                    context.project_id,
-                    &credential,
-                )
-                .await?;
+                let credential: TelegramBotCredentials = self
+                    .credentials
+                    .get_typed_credential(context.project_id, &credential)
+                    .await?;
                 let bot = Bot::new(credential.token);
                 let contact: TelegramContact = recipient.get_primary_contact()?;
 

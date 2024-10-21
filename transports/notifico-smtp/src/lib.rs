@@ -15,12 +15,11 @@ use lettre::{
     AsyncSmtpTransport, AsyncTransport, Tokio1Executor,
 };
 use moka::future::Cache;
-use notifico_core::credentials::get_typed_credential;
+use notifico_core::step::SerializedStep;
 use notifico_core::{
     credentials::Credentials,
     engine::{EnginePlugin, PipelineContext, StepOutput},
     error::EngineError,
-    pipeline::SerializedStep,
     recipient::TypedContact,
 };
 use serde::Deserialize;
@@ -83,12 +82,10 @@ impl EnginePlugin for EmailPlugin {
 
                 let contact: EmailContact = recipient.get_primary_contact()?;
 
-                let credential: SmtpServerCredentials = get_typed_credential(
-                    self.credentials.as_ref(),
-                    context.project_id,
-                    &credential,
-                )
-                .await?;
+                let credential: SmtpServerCredentials = self
+                    .credentials
+                    .get_typed_credential(context.project_id, &credential)
+                    .await?;
 
                 let transport = self.get_transport(credential).await;
 

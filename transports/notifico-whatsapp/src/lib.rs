@@ -2,12 +2,12 @@ use crate::cloudapi::{MessageType, MessagingProduct};
 use crate::credentials::WhatsAppCredentials;
 use crate::step::{Step, STEPS};
 use async_trait::async_trait;
+use notifico_core::step::SerializedStep;
 use notifico_core::{
-    credentials::{get_typed_credential, Credentials},
+    credentials::Credentials,
     engine::PipelineContext,
     engine::{EnginePlugin, StepOutput},
     error::EngineError,
-    pipeline::SerializedStep,
     recipient::MobilePhoneContact,
     templater::RenderResponse,
 };
@@ -53,12 +53,10 @@ impl EnginePlugin for WaBusinessPlugin {
                 let contact: MobilePhoneContact = recipient.get_primary_contact()?;
 
                 // Send
-                let credential: WhatsAppCredentials = get_typed_credential(
-                    self.credentials.as_ref(),
-                    context.project_id,
-                    &credential,
-                )
-                .await?;
+                let credential: WhatsAppCredentials = self
+                    .credentials
+                    .get_typed_credential(context.project_id, &credential)
+                    .await?;
 
                 let url = format!(
                     "https://graph.facebook.com/v20.0/{}/messages",

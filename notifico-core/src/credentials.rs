@@ -8,7 +8,6 @@ use uuid::Uuid;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Credential {
     pub r#type: String,
-    pub name: String,
     pub value: Value,
 }
 
@@ -31,24 +30,16 @@ pub trait TypedCredential: for<'de> Deserialize<'de> {
 
 #[async_trait]
 pub trait Credentials: Send + Sync {
-    async fn get_credential(
-        &self,
-        project: Uuid,
-        r#type: &str,
-        name: &str,
-    ) -> Result<Credential, EngineError>;
+    async fn get_credential(&self, project: Uuid, name: &str) -> Result<Credential, EngineError>;
 }
 
-pub async fn get_typed_credential<T>(
-    credentials: &dyn Credentials,
-    project: Uuid,
-    name: &str,
-) -> Result<T, EngineError>
-where
-    T: TypedCredential,
-{
-    credentials
-        .get_credential(project, T::CREDENTIAL_TYPE, name)
-        .await
-        .and_then(|c| c.into_typed())
+impl dyn Credentials {
+    pub async fn get_typed_credential<T>(&self, project: Uuid, name: &str) -> Result<T, EngineError>
+    where
+        T: TypedCredential,
+    {
+        self.get_credential(project, name)
+            .await
+            .and_then(|c| c.into_typed())
+    }
 }

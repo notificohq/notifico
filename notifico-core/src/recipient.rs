@@ -15,7 +15,7 @@ impl Recipient {
     pub fn get_primary_contact<T: TypedContact>(&self) -> Result<T, EngineError> {
         for contact in &self.contacts {
             if contact.r#type() == T::CONTACT_TYPE {
-                return Ok(contact.clone().into_contact()?);
+                return contact.clone().into_contact();
             }
         }
         Err(EngineError::ContactNotFound(T::CONTACT_TYPE.to_string()))

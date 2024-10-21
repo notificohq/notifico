@@ -6,11 +6,11 @@ use crate::step::{Step, STEPS};
 use async_trait::async_trait;
 use futures_util::sink::SinkExt;
 use futures_util::StreamExt;
-use notifico_core::credentials::{get_typed_credential, Credentials};
+use notifico_core::credentials::Credentials;
 use notifico_core::engine::{EnginePlugin, PipelineContext, StepOutput};
 use notifico_core::error::EngineError;
-use notifico_core::pipeline::SerializedStep;
 use notifico_core::recipient::MobilePhoneContact;
+use notifico_core::step::SerializedStep;
 use notifico_core::templater::RenderResponse;
 use rusmpp::commands::tlvs::tlv::message_submission_request::MessageSubmissionRequestTLVValue;
 use rusmpp::commands::types::{
@@ -61,12 +61,10 @@ impl EnginePlugin for SmppPlugin {
                     return Err(EngineError::RecipientNotSet);
                 };
 
-                let credential: SmppServerCredentials = get_typed_credential(
-                    self.credentials.as_ref(),
-                    context.project_id,
-                    &credential,
-                )
-                .await?;
+                let credential: SmppServerCredentials = self
+                    .credentials
+                    .get_typed_credential(context.project_id, &credential)
+                    .await?;
 
                 let stream = TcpStream::connect((credential.host.clone(), credential.port))
                     .await

@@ -1,20 +1,20 @@
-use crate::event_handler::{EventHandler, ProcessEventRequest};
-use actix::Addr;
 use axum::extract::State;
 use axum::{http::StatusCode, routing::post, Json, Router};
+use notifico_core::pipeline::runner::{PipelineRunner, ProcessEventRequest};
 use std::net::SocketAddr;
+use std::sync::Arc;
 
 #[derive(Clone)]
 struct SharedState {
-    event_handler: Addr<EventHandler>,
+    runner: Arc<PipelineRunner>,
 }
 
-pub(crate) async fn start(event_handler: Addr<EventHandler>, bind: SocketAddr) {
-    let state = SharedState { event_handler };
+pub(crate) async fn start(runner: Arc<PipelineRunner>, bind: SocketAddr) {
+    let state = SharedState { runner };
 
     let ingest = Router::new().route("/v1/send", post(send));
 
-    let app = Router::new().nest("/ingest", ingest).with_state(state);
+    let app = Router::new().nest("/api/ingest", ingest).with_state(state);
 
     let listener = tokio::net::TcpListener::bind(bind).await.unwrap();
     axum::serve(listener, app).await.unwrap();
@@ -24,7 +24,7 @@ async fn send(
     State(state): State<SharedState>,
     Json(payload): Json<ProcessEventRequest>,
 ) -> StatusCode {
-    state.event_handler.send(payload).await.unwrap();
+    state.runner.process_eventrequest(payload).await;
 
     StatusCode::CREATED
 }

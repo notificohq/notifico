@@ -1,0 +1,6 @@
+templates = "/home/gamepad/notifico/templates"
+pipelines = "pipelines.yml"
+credentials = "credentials.toml"
+
+[http]
+bind = "[::]:3000"

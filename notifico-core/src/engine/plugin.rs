@@ -1,6 +1,6 @@
 use crate::engine::PipelineContext;
 use crate::error::EngineError;
-use crate::pipeline::SerializedStep;
+use crate::step::SerializedStep;
 use async_trait::async_trait;
 use std::any::Any;
 use std::borrow::Cow;

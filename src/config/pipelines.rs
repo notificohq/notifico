@@ -1,54 +1,55 @@
-use crate::config::Config;
 use notifico_core::error::EngineError;
-use notifico_core::pipeline::{Pipeline, PipelineStorage};
+use notifico_core::pipeline::storage::PipelineStorage;
+use notifico_core::pipeline::Pipeline;
+use serde::Deserialize;
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::sync::Arc;
 use uuid::Uuid;
 
-#[derive(Default)]
-pub struct SimplePipelineStorage {
-    eventmap: HashMap<Uuid, HashMap<String, Vec<Arc<Pipeline>>>>,
+#[derive(Deserialize)]
+pub struct PipelineConfig {
+    pipelines: Vec<Pipeline>,
 }
 
+#[derive(Eq, PartialEq, Hash, Clone)]
+struct PipelineKey<'a> {
+    project: Uuid,
+    event: Cow<'a, str>,
+}
+
+#[derive(Default)]
+pub struct SimplePipelineStorage(HashMap<PipelineKey<'static>, Vec<Arc<Pipeline>>>);
+
 impl SimplePipelineStorage {
-    pub fn from_config(config: &Config) -> Self {
+    pub fn from_config(config: &PipelineConfig) -> Self {
         let mut slf = Self::default();
-        for project in config.projects.iter() {
-            slf.add_project(project.id, project.pipelines.clone());
-        }
-        slf
-    }
-
-    pub fn add_project(&mut self, project: Uuid, pipelines: Vec<Pipeline>) {
-        if self.eventmap.get(&project).is_some() {
-            panic!("Project already exists: {}", project);
-        }
-
-        let mut eventmap = HashMap::new();
-
-        for pipeline in pipelines.into_iter().map(|p| Arc::new(p)) {
-            for event in pipeline.events.iter().cloned() {
-                eventmap
-                    .entry(event)
+        for pipeline in config.pipelines.iter() {
+            let pipeline = Arc::new(pipeline.clone());
+            for event in pipeline.events.iter() {
+                let key = PipelineKey {
+                    project: Uuid::nil(),
+                    event: Cow::Owned(event.clone()),
+                };
+                slf.0
+                    .entry(key)
                     .or_insert_with(Vec::new)
-                    .push(pipeline.clone());
+                    .push(pipeline.clone())
             }
         }
-
-        self.eventmap.insert(project, eventmap);
+        slf
     }
 }
 
 impl PipelineStorage for SimplePipelineStorage {
     fn get_pipelines(&self, project: Uuid, event_name: &str) -> Result<Vec<Pipeline>, EngineError> {
-        let Some(eventmap) = self.eventmap.get(&project) else {
-            return Err(EngineError::ProjectNotFound(project));
-        };
-
-        if let Some(pipelines) = eventmap.get(event_name) {
-            Ok(pipelines.iter().map(|p| p.as_ref().clone()).collect())
+        if let Some(pipelines) = self.0.get(&PipelineKey {
+            project,
+            event: event_name.into(),
+        }) {
+            Ok(pipelines.into_iter().map(|p| p.as_ref()).cloned().collect())
         } else {
-            Ok(vec![])
+            Ok(Vec::new())
         }
     }
 }

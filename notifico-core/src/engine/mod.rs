@@ -1,6 +1,6 @@
 use crate::error::EngineError;
-use crate::pipeline::SerializedStep;
 use crate::recipient::Recipient;
+use crate::step::SerializedStep;
 use crate::templater::RenderResponse;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};

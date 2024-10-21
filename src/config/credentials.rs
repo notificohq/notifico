@@ -1,51 +1,73 @@
-use crate::config::Config;
 use async_trait::async_trait;
 use notifico_core::credentials::{Credential, Credentials};
 use notifico_core::error::EngineError;
+use std::borrow::Cow;
 use std::collections::HashMap;
 use uuid::Uuid;
 
-#[derive(Default)]
-pub struct SimpleCredentials {
-    creds: HashMap<Uuid, Vec<Credential>>,
+#[derive(Eq, PartialEq, Hash, Debug)]
+struct CredentialKey<'a> {
+    project: Uuid,
+    name: Cow<'a, str>,
 }
 
+#[derive(Default, Debug)]
+pub struct SimpleCredentials(HashMap<CredentialKey<'static>, Credential>);
+
 impl SimpleCredentials {
-    pub fn from_config(config: &Config) -> Self {
-        let mut slf = Self::default();
-        for project in config.projects.iter() {
-            slf.add_project(project.id, project.credentials.clone());
+    pub fn from_config(config: serde_json::Value) -> Result<Self, serde_json::Error> {
+        let mut creds = SimpleCredentials::default();
+
+        let obj = config.as_object().unwrap().clone();
+        for (r#type, v) in obj {
+            let obj = v.as_object().unwrap().clone();
+            for (name_or_project_id, value) in obj {
+                if let Ok(project_id) = Uuid::parse_str(&name_or_project_id) {
+                    for (name, value) in value.as_object().unwrap().iter() {
+                        creds.add_credential(
+                            project_id,
+                            name.clone(),
+                            r#type.clone(),
+                            value.clone(),
+                        );
+                    }
+                } else {
+                    creds.add_credential(Uuid::nil(), name_or_project_id, r#type.clone(), value);
+                };
+            }
         }
-        slf
+
+        Ok(creds)
     }
 
-    fn add_project(&mut self, project: Uuid, credentials: Vec<Credential>) {
-        if self.creds.insert(project, credentials).is_some() {
-            panic!("Project already exists: {}", project);
-        }
+    pub fn add_credential(
+        &mut self,
+        project: Uuid,
+        name: String,
+        r#type: String,
+        value: serde_json::Value,
+    ) {
+        self.0.insert(
+            CredentialKey {
+                project,
+                name: Cow::Owned(name),
+            },
+            Credential { r#type, value },
+        );
     }
 }
 
 #[async_trait]
 impl Credentials for SimpleCredentials {
-    async fn get_credential(
-        &self,
-        project: Uuid,
-        r#type: &str,
-        name: &str,
-    ) -> Result<Credential, EngineError> {
-        let Some(creds) = self.creds.get(&project) else {
-            return Err(EngineError::ProjectNotFound(project));
+    async fn get_credential(&self, project: Uuid, name: &str) -> Result<Credential, EngineError> {
+        let key = CredentialKey {
+            project,
+            name: Cow::from(name),
         };
 
-        for cred in creds.iter() {
-            if cred.r#type == r#type && cred.name == name {
-                return Ok(cred.clone());
-            }
-        }
-        Err(EngineError::CredentialNotFound(
-            r#type.to_string().into(),
-            name.into(),
-        ))
+        self.0
+            .get(&key)
+            .cloned()
+            .ok_or(EngineError::CredentialNotFound)
     }
 }
