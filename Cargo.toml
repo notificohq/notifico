@@ -8,6 +8,7 @@ members = [
     "transports/notifico-smpp",
     "notifico-template",
     "notifico-worker",
+    "notifico-apiserver",
 ]
 
 [workspace.dependencies]

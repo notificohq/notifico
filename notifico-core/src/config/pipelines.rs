@@ -1,6 +1,6 @@
-use notifico_core::error::EngineError;
-use notifico_core::pipeline::storage::PipelineStorage;
-use notifico_core::pipeline::Pipeline;
+use crate::error::EngineError;
+use crate::pipeline::storage::PipelineStorage;
+use crate::pipeline::Pipeline;
 use serde::Deserialize;
 use std::borrow::Cow;
 use std::collections::HashMap;

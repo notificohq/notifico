@@ -1,16 +1,15 @@
-mod config;
-mod http;
+mod amqp;
 
-use crate::config::pipelines::PipelineConfig;
-use crate::config::Config;
 use clap::Parser;
-use config::credentials::MemoryCredentialStorage;
-use config::pipelines::MemoryPipelineStorage;
 use figment::providers::Toml;
 use figment::{
     providers::{Env, Format, Yaml},
     Figment,
 };
+use notifico_core::config::credentials::MemoryCredentialStorage;
+use notifico_core::config::pipelines::MemoryPipelineStorage;
+use notifico_core::config::pipelines::PipelineConfig;
+use notifico_core::config::Config;
 use notifico_core::engine::Engine;
 use notifico_core::pipeline::runner::PipelineRunner;
 use notifico_smpp::SmppPlugin;
@@ -77,7 +76,7 @@ async fn main() {
     // Create PipelineRunner, the core component of the Notifico system
     let runner = Arc::new(PipelineRunner::new(pipelines.clone(), engine));
 
-    tokio::spawn(http::start(runner.clone(), config.http.bind));
+    tokio::spawn(amqp::start(runner.clone(), config.amqp));
 
     tokio::signal::ctrl_c().await.unwrap();
 }

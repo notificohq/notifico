@@ -1,6 +1,6 @@
+use crate::credentials::{Credential, CredentialStorage};
+use crate::error::EngineError;
 use async_trait::async_trait;
-use notifico_core::credentials::{Credential, CredentialStorage};
-use notifico_core::error::EngineError;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use uuid::Uuid;

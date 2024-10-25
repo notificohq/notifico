@@ -9,6 +9,8 @@
       <sourceFolder url="file://$MODULE_DIR$/transports/notifico-smtp/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/transports/notifico-telegram/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/transports/notifico-whatsapp/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/notifico-apiserver/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/notifico-worker/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />
