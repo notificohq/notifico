@@ -16,7 +16,8 @@ pub struct AuthError {
     status_code: StatusCode,
 }
 
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize, Eq, PartialEq)]
+#[serde(rename = "snake_case")]
 pub enum Scopes {
     RecipientApi,
 }
@@ -25,7 +26,7 @@ pub enum Scopes {
 pub struct Claims {
     pub proj: Uuid,  // Project ID
     pub sub: String, // Recipient ID
-    pub scopes: Scopes,
+    pub scopes: Vec<Scopes>,
     pub exp: usize,
 }
 
@@ -48,6 +49,7 @@ pub struct QueryParams {
 pub async fn authorize(
     Query(params): Query<QueryParams>,
     Extension(skey): Extension<Arc<SecretKey>>,
+    Extension(scope): Extension<Scopes>,
     mut req: Request,
     next: Next,
 ) -> Result<Response<Body>, AuthError> {
@@ -96,6 +98,14 @@ pub async fn authorize(
             })
         }
     };
+
+    // Check scopes
+    if !token.claims.scopes.contains(&scope) {
+        return Err(AuthError {
+            message: "Insufficient scopes".to_string(),
+            status_code: StatusCode::FORBIDDEN,
+        });
+    }
 
     let project_id = token.claims.proj;
     let recipient_id = token.claims.sub;
