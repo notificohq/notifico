@@ -11,19 +11,10 @@ impl SerializedStep {
         self.0["step"].as_str().expect("Step type must be a string")
     }
 
-    fn into_inner(self) -> serde_json::Map<String, Value> {
-        self.0
-    }
-
-    fn into_value(self) -> Value {
-        Value::Object(self.into_inner())
-    }
-
     pub fn convert_step<T>(self) -> Result<T, EngineError>
     where
         T: for<'de> Deserialize<'de>,
     {
-        let s = serde_json::to_string(&self.into_value()).map_err(EngineError::InvalidStep)?;
-        serde_json::from_str(&s).map_err(EngineError::InvalidStep)
+        T::deserialize(self.0).map_err(EngineError::InvalidStep)
     }
 }
