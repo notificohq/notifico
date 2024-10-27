@@ -1,3 +1,4 @@
+mod amqp;
 mod http;
 
 use clap::Parser;
@@ -41,36 +42,11 @@ async fn main() {
     info!("Config: {:#?}", config);
 
     // AMQP sender
-    let mut connection = Connection::open("connection-1", config.amqp.connection_url())
-        .await
-        .unwrap();
-
-    let mut session = Session::begin(&mut connection).await.unwrap();
-
-    let address = match config.amqp {
-        Amqp::Bind { .. } => String::default(),
-        Amqp::Broker { address, .. } => address,
-    };
-
-    let mut sender = Sender::attach(&mut session, "rust-sender-link-1", address)
-        .await
-        .unwrap();
 
     let (request_tx, mut request_rx) = tokio::sync::mpsc::channel(1);
 
     tokio::spawn(http::start(config.http.bind, request_tx));
+    tokio::spawn(amqp::run(config.amqp, request_rx));
 
-    loop {
-        tokio::select! {
-            req = request_rx.recv() => {
-                info!("Sending message");
-                let msg = serde_json::to_string(&req).unwrap();
-                let _outcome = sender.send(msg).await.unwrap();
-            }
-            _ = tokio::signal::ctrl_c() => {
-                info!("Shutting down");
-                break;
-            }
-        }
-    }
+    tokio::signal::ctrl_c().await.unwrap();
 }
