@@ -17,7 +17,7 @@ pub struct AuthError {
     status_code: StatusCode,
 }
 
-pub struct Scope(String);
+pub struct Scope(pub String);
 
 #[derive(Clone, Deserialize, Serialize)]
 pub struct Claims {
@@ -43,10 +43,11 @@ pub struct QueryParams {
 }
 
 /// Extracts the token from the query parameters or from Authorization header.
+#[allow(private_interfaces)]
 pub async fn authorize(
     Query(params): Query<QueryParams>,
     Extension(skey): Extension<Arc<SecretKey>>,
-    Extension(scope): Extension<Scope>,
+    Extension(scope): Extension<Arc<Scope>>,
     mut req: Request,
     next: Next,
 ) -> Result<Response<Body>, AuthError> {

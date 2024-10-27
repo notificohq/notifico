@@ -13,9 +13,9 @@ impl MigrationTrait for Migration {
                     .if_not_exists()
                     .col(pk_uuid(Subscription::Id))
                     .col(uuid(Subscription::ProjectId))
+                    .col(uuid(Subscription::RecipientId))
                     .col(string(Subscription::Event))
                     .col(string(Subscription::Channel))
-                    .col(uuid(Subscription::RecipientId))
                     .col(boolean(Subscription::IsSubscribed))
                     .to_owned(),
             )
@@ -27,8 +27,6 @@ impl MigrationTrait for Migration {
                     .name("idx_subscription_project_id")
                     .table(Subscription::Table)
                     .col(Subscription::ProjectId)
-                    .col(Subscription::Event)
-                    .col(Subscription::Channel)
                     .col(Subscription::RecipientId)
                     .unique()
                     .to_owned(),

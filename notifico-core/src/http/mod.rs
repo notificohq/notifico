@@ -1,3 +1,4 @@
+pub mod admin;
 pub mod auth;
 
 use uuid::Uuid;

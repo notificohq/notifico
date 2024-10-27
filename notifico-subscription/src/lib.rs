@@ -9,6 +9,7 @@ use crate::step::STEPS;
 use entity::prelude::*;
 use jsonwebtoken::{EncodingKey, Header};
 use migration::{Migrator, MigratorTrait};
+use notifico_core::http::admin::{apply_list_params, ListQueryParams};
 use notifico_core::http::auth::Claims;
 use notifico_core::step::SerializedStep;
 use notifico_core::{
@@ -19,7 +20,7 @@ use notifico_core::{
 use sea_orm::prelude::async_trait::async_trait;
 use sea_orm::sea_query::OnConflict;
 use sea_orm::ActiveValue::Set;
-use sea_orm::{ColumnTrait, EntityTrait};
+use sea_orm::{ColumnTrait, EntityTrait, PaginatorTrait};
 use sea_orm::{DatabaseConnection, EntityOrSelect, QueryFilter};
 use serde_json::Value;
 use std::borrow::Cow;
@@ -59,9 +60,9 @@ impl SubscriptionManager {
         let model = subscription::ActiveModel {
             id: Set(Uuid::now_v7()),
             project_id: Set(project_id),
+            recipient_id: Set(recipient_id),
             event: Set(event.to_string()),
             channel: Set(channel.to_string()),
-            recipient_id: Set(recipient_id),
             is_subscribed: Set(is_subscribed),
         };
 
@@ -103,6 +104,42 @@ impl SubscriptionManager {
                 false
             }
         }
+    }
+}
+
+impl SubscriptionManager {
+    pub async fn list_subscriptions(
+        &self,
+        params: ListQueryParams,
+    ) -> Result<(Vec<subscription::Model>, u64), EngineError> {
+        let mut query_count = Subscription::find();
+        query_count = apply_list_params(query_count, params.clone()).unwrap();
+        let count = query_count.count(&self.db).await.unwrap();
+
+        let mut query = Subscription::find();
+        query = apply_list_params(query, params).unwrap();
+
+        let results = query.all(&self.db).await.unwrap();
+        Ok((results, count))
+    }
+
+    pub async fn get_by_id(&self, id: Uuid) -> Result<Option<subscription::Model>, EngineError> {
+        let query = Subscription::find_by_id(id).one(&self.db).await.unwrap();
+        Ok(query)
+    }
+
+    pub async fn update_subscription(
+        &self,
+        id: Uuid,
+        is_subscribed: bool,
+    ) -> Result<(), EngineError> {
+        let model = subscription::ActiveModel {
+            id: Set(id),
+            is_subscribed: Set(is_subscribed),
+            ..Default::default()
+        };
+        Subscription::update(model).exec(&self.db).await.unwrap();
+        Ok(())
     }
 }
 
@@ -178,16 +215,18 @@ pub fn create_self_unsubscribe_url(
         exp: SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
-            .as_secs() as _,
+            .as_secs()
+            + 60 * 60 * 24 * 30,
     };
 
     let token =
         jsonwebtoken::encode(&Header::default(), &claims, &EncodingKey::from_secret(&key)).unwrap();
 
-    //TODO: Optimize URL creation to avoid unnecessary allocations and format machinery
-    let url = format!(
-        "{}/unsubscribe?token={}&event={}",
-        subscriber_url, token, event
-    );
-    Url::parse(&url).unwrap()
+    //TODO: Optimize URL creation to avoid format machinery
+    subscriber_url
+        .join(&format!(
+            "api/recipient/v1/list_unsubscribe?token={}&event={}",
+            token, event
+        ))
+        .unwrap()
 }

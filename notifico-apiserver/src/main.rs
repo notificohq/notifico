@@ -9,6 +9,7 @@ use figment::{
     Figment,
 };
 use notifico_core::config::Config;
+use notifico_core::http::SecretKey;
 use notifico_subscription::SubscriptionManager;
 use sea_orm::{ConnectOptions, Database};
 use std::path::PathBuf;
@@ -60,6 +61,7 @@ async fn main() {
     let ext = HttpExtensions {
         sender: request_tx,
         subman,
+        secret_key: SecretKey(config.secret_key.as_bytes().to_vec()),
     };
 
     tokio::spawn(http::start(config.http.bind, ext));

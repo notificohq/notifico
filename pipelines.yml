@@ -15,5 +15,6 @@ pipelines:
     steps:
       - step: templates.load
         templates: [ "zerna.toml" ]
+      - step: sub.list_unsubscribe
       - step: email.send
         credential: mailman_1

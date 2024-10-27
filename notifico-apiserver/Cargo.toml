@@ -17,6 +17,7 @@ clap = { version = "4.5.20", features = ["derive", "color", "usage"] }
 fe2o3-amqp = "0.13.1"
 axum = { workspace = true }
 sea-orm = { workspace = true }
+tower-http = { version = "0.6.1", features = ["cors"] }
 
 notifico-core = { path = "../notifico-core" }
 notifico-subscription = { path = "../notifico-subscription" }

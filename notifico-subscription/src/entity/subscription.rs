@@ -8,9 +8,9 @@ pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
     pub project_id: Uuid,
+    pub recipient_id: Uuid,
     pub event: String,
     pub channel: String,
-    pub recipient_id: Uuid,
     pub is_subscribed: bool,
 }
 

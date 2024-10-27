@@ -2,7 +2,7 @@ templates = "/home/gamepad/notifico/templates"
 pipelines = "pipelines.yml"
 credentials = "credentials.toml"
 secret_key = "weak-secret-key"
-external_url = "http://127.0.0.1/"
+external_url = "http://127.0.0.1:3000"
 
 [http]
 bind = "[::]:3000"
