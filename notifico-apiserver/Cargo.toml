@@ -18,3 +18,4 @@ fe2o3-amqp = "0.13.1"
 axum = { workspace = true }
 
 notifico-core = { path = "../notifico-core" }
+#notifico-subscription = { path = "../notifico-subscription" }

@@ -6,8 +6,8 @@ use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Recipient {
-    #[serde(default = "String::new")]
-    pub id: String,
+    #[serde(default = "Uuid::nil")]
+    pub id: Uuid,
     pub contacts: Vec<Contact>,
 }
 

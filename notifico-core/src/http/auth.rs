@@ -24,8 +24,8 @@ pub enum Scopes {
 
 #[derive(Clone, Deserialize, Serialize)]
 pub struct Claims {
-    pub proj: Uuid,  // Project ID
-    pub sub: String, // Recipient ID
+    pub proj: Uuid, // Project ID
+    pub sub: Uuid,  // Recipient ID
     pub scopes: Vec<Scopes>,
     pub exp: usize,
 }
