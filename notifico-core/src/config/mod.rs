@@ -24,7 +24,7 @@ pub struct Http {
 #[serde(untagged)]
 pub enum Amqp {
     Bind { bind: SocketAddr },
-    Broker { url: Url, queue: String },
+    Broker { url: Url, address: String },
 }
 
 impl Amqp {

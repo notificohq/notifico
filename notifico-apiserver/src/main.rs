@@ -9,7 +9,6 @@ use figment::{
 };
 use notifico_core::config::{Amqp, Config};
 use std::path::PathBuf;
-use std::sync::Arc;
 use tracing::info;
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
@@ -48,15 +47,14 @@ async fn main() {
 
     let mut session = Session::begin(&mut connection).await.unwrap();
 
-    let queue_name = match config.amqp {
+    let address = match config.amqp {
         Amqp::Bind { .. } => String::default(),
-        Amqp::Broker { queue, .. } => queue,
+        Amqp::Broker { address, .. } => address,
     };
 
-    let mut sender = Sender::attach(&mut session, "rust-sender-link-1", queue_name)
+    let mut sender = Sender::attach(&mut session, "rust-sender-link-1", address)
         .await
         .unwrap();
-    //
 
     let (request_tx, mut request_rx) = tokio::sync::mpsc::channel(1);
 

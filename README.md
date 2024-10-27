@@ -3,6 +3,10 @@
 Notifico is a self-hosted, open-source notification server that delivers real-time notifications
 to various clients via email, SMS, messengers and other means of communication.
 
+## Features
+
+- AMQP 1.0 support
+
 ## Usage
 
 http://<server_url>/api/ingest/v1/send

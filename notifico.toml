@@ -8,4 +8,4 @@ bind = "[::]:3000"
 [amqp]
 #bind = "[::]:5432"
 url = "amqp://guest:guest@127.0.0.1"
-queue = "notifico1"
+address = "notifico1"

@@ -5,6 +5,7 @@ use notifico_core::pipeline::runner::PipelineRunner;
 use std::sync::Arc;
 use tokio::net::TcpListener;
 use tracing::info;
+use url::Url;
 use uuid::Uuid;
 
 pub async fn start(runner: Arc<PipelineRunner>, config: Amqp) {
@@ -36,8 +37,11 @@ pub async fn start(runner: Arc<PipelineRunner>, config: Amqp) {
                             let link_acceptor = LinkAcceptor::new();
                             match link_acceptor.accept(&mut session).await.unwrap() {
                                 LinkEndpoint::Sender(_) => {}
-                                LinkEndpoint::Receiver(recver) => {
-                                    process_link(recver, runner).await
+                                LinkEndpoint::Receiver(receiver) => {
+                                    let res = process_link(receiver, runner.clone()).await;
+                                    if let Err(e) = res {
+                                        info!("Error processing AMQP connection: {}", e);
+                                    }
                                 }
                             }
                         });
@@ -45,30 +49,36 @@ pub async fn start(runner: Arc<PipelineRunner>, config: Amqp) {
                 });
             }
         }
-        Amqp::Broker { url, queue } => {
-            let mut connection = Connection::open(container_id, url.clone()).await.unwrap();
-
-            let mut session = Session::begin(&mut connection).await.unwrap();
-
-            let receiver = Receiver::attach(&mut session, "rust-receiver-link-1", queue.clone())
-                .await
-                .unwrap();
-
-            process_link(receiver, runner).await;
-        }
+        Amqp::Broker { url, address } => loop {
+            let res = connect_to_broker(url.clone(), &address, &container_id, runner.clone()).await;
+            if let Err(e) = res {
+                info!("Error processing AMQP broker: {}", e);
+                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+            }
+        },
     }
 }
 
-async fn process_link(mut receiver: Receiver, runner: Arc<PipelineRunner>) {
+async fn connect_to_broker(
+    url: Url,
+    address: &str,
+    container_id: &str,
+    runner: Arc<PipelineRunner>,
+) -> anyhow::Result<()> {
+    info!("Connecting to AMQP broker: {}", url);
+    let mut connection = Connection::open(container_id, url.clone()).await?;
+    info!("Connected to AMQP broker: {}", url);
+    let mut session = Session::begin(&mut connection).await?;
+    let receiver = Receiver::attach(&mut session, "rust-receiver-link-1", address).await?;
+    process_link(receiver, runner).await
+}
+
+async fn process_link(mut receiver: Receiver, runner: Arc<PipelineRunner>) -> anyhow::Result<()> {
     loop {
-        if let Ok(delivery) = receiver.recv::<String>().await {
-            receiver.accept(&delivery).await.unwrap();
+        let delivery = receiver.recv::<String>().await?;
 
-            let eventrequest = serde_json::from_str(delivery.body()).unwrap();
-
-            runner.process_eventrequest(eventrequest).await;
-        } else {
-            break;
-        }
+        receiver.accept(&delivery).await?;
+        let eventrequest = serde_json::from_str(delivery.body())?;
+        runner.process_eventrequest(eventrequest).await;
     }
 }
