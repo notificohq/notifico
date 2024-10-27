@@ -1,6 +1,8 @@
 templates = "/home/gamepad/notifico/templates"
 pipelines = "pipelines.yml"
 credentials = "credentials.toml"
+secret_key = "weak-secret-key"
+external_url = "http://127.0.0.1/"
 
 [http]
 bind = "[::]:3000"
@@ -9,3 +11,6 @@ bind = "[::]:3000"
 #bind = "[::]:5432"
 url = "amqp://guest:guest@127.0.0.1"
 address = "notifico1"
+
+[db]
+url = "sqlite://db.sqlite3"

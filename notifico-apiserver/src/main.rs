@@ -1,15 +1,18 @@
 mod amqp;
 mod http;
 
+use crate::http::HttpExtensions;
 use clap::Parser;
-use fe2o3_amqp::{Connection, Sender, Session};
 use figment::providers::Toml;
 use figment::{
     providers::{Env, Format},
     Figment,
 };
-use notifico_core::config::{Amqp, Config};
+use notifico_core::config::Config;
+use notifico_subscription::SubscriptionManager;
+use sea_orm::{ConnectOptions, Database};
 use std::path::PathBuf;
+use std::sync::Arc;
 use tracing::info;
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
@@ -41,11 +44,25 @@ async fn main() {
 
     info!("Config: {:#?}", config);
 
-    // AMQP sender
+    let (request_tx, request_rx) = tokio::sync::mpsc::channel(1);
 
-    let (request_tx, mut request_rx) = tokio::sync::mpsc::channel(1);
+    let db_conn_options = ConnectOptions::new(config.db.url.to_string());
+    let db_connection = Database::connect(db_conn_options).await.unwrap();
 
-    tokio::spawn(http::start(config.http.bind, request_tx));
+    // Initializing plugins
+    let subman = Arc::new(SubscriptionManager::new(
+        db_connection,
+        config.secret_key.as_bytes().to_vec(),
+        config.external_url,
+    ));
+    subman.setup().await.unwrap();
+
+    let ext = HttpExtensions {
+        sender: request_tx,
+        subman,
+    };
+
+    tokio::spawn(http::start(config.http.bind, ext));
     tokio::spawn(amqp::run(config.amqp, request_rx));
 
     tokio::signal::ctrl_c().await.unwrap();

@@ -14,9 +14,11 @@ use notifico_core::engine::Engine;
 use notifico_core::pipeline::runner::PipelineRunner;
 use notifico_smpp::SmppPlugin;
 use notifico_smtp::EmailPlugin;
+use notifico_subscription::SubscriptionManager;
 use notifico_telegram::TelegramPlugin;
 use notifico_template::LocalTemplater;
 use notifico_whatsapp::WaBusinessPlugin;
+use sea_orm::{ConnectOptions, Database};
 use std::path::PathBuf;
 use std::sync::Arc;
 use tracing::info;
@@ -61,6 +63,9 @@ async fn main() {
         .extract()
         .unwrap();
 
+    let db_conn_options = ConnectOptions::new(config.db.url.to_string());
+    let db_connection = Database::connect(db_conn_options).await.unwrap();
+
     let credentials = Arc::new(MemoryCredentialStorage::from_config(credential_config).unwrap());
     let pipelines = Arc::new(MemoryPipelineStorage::from_config(&pipelines_config));
 
@@ -72,6 +77,16 @@ async fn main() {
     engine.add_plugin(Arc::new(EmailPlugin::new(credentials.clone())));
     engine.add_plugin(Arc::new(WaBusinessPlugin::new(credentials.clone())));
     engine.add_plugin(Arc::new(SmppPlugin::new(credentials.clone())));
+
+    let subman = Arc::new(SubscriptionManager::new(
+        db_connection,
+        config.secret_key.as_bytes().to_vec(),
+        config.external_url,
+    ));
+    engine.add_plugin(subman.clone());
+
+    // Setup stateful plugins
+    subman.setup().await.unwrap();
 
     // Create PipelineRunner, the core component of the Notifico system
     let runner = Arc::new(PipelineRunner::new(pipelines.clone(), engine));

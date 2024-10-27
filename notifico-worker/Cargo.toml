@@ -17,6 +17,7 @@ clap = { version = "4.5.20", features = ["derive", "color", "usage"] }
 fe2o3-amqp = { version = "0.13.1", features = ["acceptor"] }
 anyhow = "1.0.91"
 url = "2.5.2"
+sea-orm = { workspace = true }
 
 notifico-core = { path = "../notifico-core" }
 notifico-telegram = { path = "../transports/notifico-telegram" }

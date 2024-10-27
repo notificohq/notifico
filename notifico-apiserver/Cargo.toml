@@ -16,6 +16,7 @@ figment = { version = "0.10.19", features = ["yaml", "env", "toml"] }
 clap = { version = "4.5.20", features = ["derive", "color", "usage"] }
 fe2o3-amqp = "0.13.1"
 axum = { workspace = true }
+sea-orm = { workspace = true }
 
 notifico-core = { path = "../notifico-core" }
 notifico-subscription = { path = "../notifico-subscription" }

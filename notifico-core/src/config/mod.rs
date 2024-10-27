@@ -13,6 +13,10 @@ pub struct Config {
     pub credentials: PathBuf,
     pub pipelines: PathBuf,
     pub amqp: Amqp,
+    pub db: Db,
+
+    pub secret_key: String,
+    pub external_url: Url,
 }
 
 #[derive(Debug, Deserialize)]
@@ -34,4 +38,9 @@ impl Amqp {
             Self::Broker { url, .. } => url.clone(),
         }
     }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Db {
+    pub url: Url,
 }

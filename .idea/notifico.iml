@@ -11,6 +11,7 @@
       <sourceFolder url="file://$MODULE_DIR$/transports/notifico-whatsapp/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/notifico-apiserver/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/notifico-worker/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/notifico-subscription/migration/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/notifico-subscription/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>

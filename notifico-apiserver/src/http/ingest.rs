@@ -1,13 +1,14 @@
+use crate::http::HttpExtensions;
 use axum::http::StatusCode;
 use axum::routing::post;
 use axum::{Extension, Json, Router};
 use notifico_core::pipeline::runner::ProcessEventRequest;
 use tokio::sync::mpsc::Sender;
 
-pub(crate) fn get_router(sender: Sender<ProcessEventRequest>) -> Router {
+pub(crate) fn get_router(ext: HttpExtensions) -> Router {
     Router::new()
         .route("/v1/send", post(send))
-        .layer(Extension(sender))
+        .layer(Extension(ext.sender))
 }
 
 async fn send(

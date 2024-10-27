@@ -8,6 +8,7 @@ use axum::{http, Extension, Json};
 use jsonwebtoken::{DecodingKey, Validation};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::collections::BTreeSet;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -16,18 +17,14 @@ pub struct AuthError {
     status_code: StatusCode,
 }
 
-#[derive(Clone, Deserialize, Serialize, Eq, PartialEq)]
-#[serde(rename = "snake_case")]
-pub enum Scopes {
-    RecipientApi,
-}
+pub struct Scope(String);
 
 #[derive(Clone, Deserialize, Serialize)]
 pub struct Claims {
     pub proj: Uuid, // Project ID
     pub sub: Uuid,  // Recipient ID
-    pub scopes: Vec<Scopes>,
-    pub exp: usize,
+    pub scopes: BTreeSet<String>,
+    pub exp: u64,
 }
 
 impl IntoResponse for AuthError {
@@ -49,7 +46,7 @@ pub struct QueryParams {
 pub async fn authorize(
     Query(params): Query<QueryParams>,
     Extension(skey): Extension<Arc<SecretKey>>,
-    Extension(scope): Extension<Scopes>,
+    Extension(scope): Extension<Scope>,
     mut req: Request,
     next: Next,
 ) -> Result<Response<Body>, AuthError> {
@@ -100,7 +97,7 @@ pub async fn authorize(
     };
 
     // Check scopes
-    if !token.claims.scopes.contains(&scope) {
+    if !token.claims.scopes.contains(&scope.0) {
         return Err(AuthError {
             message: "Insufficient scopes".to_string(),
             status_code: StatusCode::FORBIDDEN,

@@ -4,6 +4,7 @@ use notifico_core::pipeline::runner::ProcessEventRequest;
 use tokio::sync::mpsc::Receiver;
 use tracing::info;
 
+//TODO: reconnect to AMQP on failure
 pub async fn run(config: Amqp, mut event_rx: Receiver<ProcessEventRequest>) {
     let mut connection = Connection::open("connection-1", config.connection_url())
         .await
