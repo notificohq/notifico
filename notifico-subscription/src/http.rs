@@ -7,9 +7,7 @@ use notifico_core::http::AuthorizedRecipient;
 use serde::Deserialize;
 use std::sync::Arc;
 
-pub fn get_router<S: Clone + Send + Sync + 'static>(
-    ncenter: Arc<SubscriptionManager>,
-) -> Router<S> {
+pub fn get_router(ncenter: Arc<SubscriptionManager>) -> Router {
     Router::new()
         .route("/v1/list_unsubscribe", get(list_unsubscribe))
         .layer(middleware::from_fn(authorize))

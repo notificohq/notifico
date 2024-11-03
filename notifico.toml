@@ -5,7 +5,8 @@ secret_key = "weak-secret-key"
 external_url = "http://127.0.0.1:3000"
 
 [http]
-bind = "[::]:3000"
+serviceapi_bind = "[::]:3000"
+clientapi_bind = "[::]:3001"
 
 [amqp]
 #bind = "[::]:5432"

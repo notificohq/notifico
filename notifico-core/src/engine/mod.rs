@@ -9,12 +9,13 @@ use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 use tracing::instrument;
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 mod plugin;
 pub use plugin::{EnginePlugin, StepOutput};
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(transparent)]
 pub struct EventContext(pub Map<String, Value>);
 

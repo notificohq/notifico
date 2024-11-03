@@ -10,7 +10,3 @@ pub struct Pipeline {
     pub events: Vec<String>,
     pub steps: Vec<SerializedStep>,
 }
-
-// Process Request
-
-// Runner

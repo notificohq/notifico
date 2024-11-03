@@ -113,8 +113,7 @@ impl EnginePlugin for SmppPlugin {
                     let payload: Vec<u8> = rendered
                         .body
                         .encode_utf16()
-                        .map(|c| c.to_be_bytes())
-                        .flatten()
+                        .flat_map(|c| c.to_be_bytes())
                         .collect();
 
                     let submit_sm_command = Command::new(

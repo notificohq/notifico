@@ -61,10 +61,14 @@ async fn main() {
     let ext = HttpExtensions {
         sender: request_tx,
         subman,
-        secret_key: SecretKey(config.secret_key.as_bytes().to_vec()),
+        secret_key: Arc::new(SecretKey(config.secret_key.as_bytes().to_vec())),
     };
 
-    tokio::spawn(http::start(config.http.bind, ext));
+    tokio::spawn(http::start(
+        config.http.serviceapi_bind,
+        config.http.clientapi_bind,
+        ext,
+    ));
     tokio::spawn(amqp::run(config.amqp, request_rx));
 
     tokio::signal::ctrl_c().await.unwrap();

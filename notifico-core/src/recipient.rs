@@ -2,9 +2,10 @@ use crate::error::EngineError;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use utoipa::ToSchema;
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct Recipient {
     #[serde(default = "Uuid::nil")]
     pub id: Uuid,
@@ -22,7 +23,7 @@ impl Recipient {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, ToSchema)]
 pub struct Contact(Value);
 
 impl Contact {

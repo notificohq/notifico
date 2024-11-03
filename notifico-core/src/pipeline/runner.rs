@@ -7,9 +7,10 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::task::JoinSet;
 use tracing::error;
+use utoipa::ToSchema;
 use uuid::Uuid;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct ProcessEventRequest {
     #[serde(default = "Uuid::now_v7")]
     pub(crate) id: Uuid,
@@ -20,7 +21,7 @@ pub struct ProcessEventRequest {
     pub(crate) context: EventContext,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "snake_case", untagged)]
 pub enum RecipientSelector {
     Recipient(Recipient),

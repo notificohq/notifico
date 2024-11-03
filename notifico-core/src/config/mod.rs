@@ -21,7 +21,8 @@ pub struct Config {
 
 #[derive(Debug, Deserialize)]
 pub struct Http {
-    pub bind: SocketAddr,
+    pub serviceapi_bind: SocketAddr,
+    pub clientapi_bind: SocketAddr,
 }
 
 #[derive(Debug, Deserialize)]
