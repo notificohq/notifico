@@ -3,73 +3,73 @@ mod http;
 
 use crate::http::HttpExtensions;
 use clap::Parser;
-use figment::providers::Toml;
-use figment::{
-    providers::{Env, Format},
-    Figment,
-};
-use notifico_core::config::Config;
 use notifico_core::http::SecretKey;
 use notifico_subscription::SubscriptionManager;
 use sea_orm::{ConnectOptions, Database};
-use std::path::PathBuf;
+use std::net::SocketAddr;
 use std::sync::Arc;
 use tracing::info;
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
+use url::Url;
 
-#[derive(Parser)]
+#[derive(Parser, Debug)]
 struct Args {
-    #[arg(short, long, value_name = "FILE")]
-    config: Option<PathBuf>,
+    #[clap(long, env = "NOTIFICO_DB_URL")]
+    db_url: Url,
+    #[clap(long, env = "NOTIFICO_SECRET_KEY")]
+    secret_key: String,
+    #[clap(long, env = "NOTIFICO_AMQP_URL")]
+    amqp: Url,
+    #[clap(long, env = "NOTIFICO_SERVICE_API_BIND")]
+    service_api_bind: SocketAddr,
+    #[clap(long, env = "NOTIFICO_CLIENT_API_BIND")]
+    client_api_bind: SocketAddr,
+    #[clap(long, env = "NOTIFICO_CLIENT_API_URL")]
+    client_api_url: Url,
 }
 
 #[tokio::main]
 async fn main() {
+    dotenvy::dotenv().unwrap();
+
     if std::env::var("RUST_LOG").is_err() {
         std::env::set_var("RUST_LOG", "info");
     }
 
     let args = Args::parse();
-    let config_path = args.config.unwrap_or_else(|| "notifico.toml".into());
 
     tracing_subscriber::registry()
         .with(fmt::layer())
         .with(EnvFilter::from_default_env())
         .init();
 
-    let config: Config = Figment::new()
-        .merge(Toml::file(config_path))
-        .merge(Env::prefixed("NOTIFICO_"))
-        .extract()
-        .unwrap();
+    info!("Config: {:#?}", args);
 
-    info!("Config: {:#?}", config);
-
-    let (request_tx, request_rx) = tokio::sync::mpsc::channel(1);
-
-    let db_conn_options = ConnectOptions::new(config.db.url.to_string());
+    let db_conn_options = ConnectOptions::new(args.db_url.to_string());
     let db_connection = Database::connect(db_conn_options).await.unwrap();
 
     // Initializing plugins
     let subman = Arc::new(SubscriptionManager::new(
         db_connection,
-        config.secret_key.as_bytes().to_vec(),
-        config.external_url,
+        args.secret_key.as_bytes().to_vec(),
+        args.client_api_url,
     ));
     subman.setup().await.unwrap();
+
+    let (request_tx, request_rx) = tokio::sync::mpsc::channel(1);
 
     let ext = HttpExtensions {
         sender: request_tx,
         subman,
-        secret_key: Arc::new(SecretKey(config.secret_key.as_bytes().to_vec())),
+        secret_key: Arc::new(SecretKey(args.secret_key.as_bytes().to_vec())),
     };
 
     tokio::spawn(http::start(
-        config.http.serviceapi_bind,
-        config.http.clientapi_bind,
+        args.service_api_bind,
+        args.client_api_bind,
         ext,
     ));
-    tokio::spawn(amqp::run(config.amqp, request_rx));
+    tokio::spawn(amqp::run(args.amqp, request_rx));
 
     tokio::signal::ctrl_c().await.unwrap();
 }

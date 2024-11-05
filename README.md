@@ -5,20 +5,25 @@ to various clients via email, SMS, messengers and other means of communication.
 
 ## Features
 
-- AMQP 1.0 support
+- Reliability
 
 ## Usage
 
-http://<server_url>/api/ingest/v1/send
-
-## Roadmap:
+## 🎯 Roadmap:
 
 - Admin panel
 - Push support (FCM, APNS)
-- Slack support
-- Microsoft Teams support
-- Mattermost support
 - Subscription API for recipients
 - List-Unsubscribe support
 - Bounce handling for Emails
 - debounce.io and similar services support
+
+## 🚆 Transports:
+
+- [x] SMTP (email)
+- [x] SMPP (SMS)
+- [x] Telegram
+- [x] WhatsApp Business
+- [ ] Microsoft Teams
+- [ ] Mattermost
+- [ ] Slack

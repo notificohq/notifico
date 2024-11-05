@@ -4,23 +4,24 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-tokio = { version = "1.40", features = ["macros", "rt", "sync", "rt-multi-thread", "signal"] }
-futures = "0.3.31"
-tracing = "0.1.40"
-tracing-subscriber = { version = "0.3.18", features = ["env-filter", "fmt"] }
-serde = { version = "1.0.210", features = ["derive"] }
-uuid = { version = "1.11.0", features = ["serde", "v7"] }
-serde_json = "1.0.130"
-async-trait = "0.1.83"
-figment = { version = "0.10.19", features = ["yaml", "env", "toml"] }
-clap = { version = "4.5.20", features = ["derive", "color", "usage"] }
-fe2o3-amqp = "0.13.1"
-axum = { workspace = true }
-sea-orm = { workspace = true }
-tower-http = { version = "0.6.1", features = ["cors"] }
-utoipa = { version = "5.1.3", features = ["axum_extras"] }
-utoipa-swagger-ui = { version = "8", features = ["axum"] }
-utoipa-redoc = { version = "5.0.0", features = ["axum"] }
-
 notifico-core = { path = "../notifico-core" }
 notifico-subscription = { path = "../notifico-subscription" }
+
+async-trait = "0.1.83"
+axum = { workspace = true }
+clap = { version = "4.5.20", features = ["derive", "color", "usage", "env"] }
+dotenvy = "0.15.7"
+fe2o3-amqp = "0.13.1"
+futures = "0.3.31"
+sea-orm = { workspace = true }
+serde = { version = "1.0.210", features = ["derive"] }
+serde_json = "1.0.130"
+tokio = { version = "1.41", features = ["macros", "rt", "sync", "rt-multi-thread", "signal"] }
+tower-http = { version = "0.6.1", features = ["cors"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter", "fmt"] }
+url = { version = "2.5.3", features = ["serde"] }
+utoipa = { version = "5.2.0", features = ["axum_extras"] }
+utoipa-redoc = { version = "5.0.0", features = ["axum"] }
+utoipa-swagger-ui = { version = "8", features = ["axum"] }
+uuid = { version = "1.11.0", features = ["serde", "v7"] }

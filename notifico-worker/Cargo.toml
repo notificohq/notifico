@@ -4,21 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-tokio = { version = "1.40", features = ["macros", "rt", "sync", "rt-multi-thread"] }
-futures = "0.3.31"
-tracing = "0.1.40"
-tracing-subscriber = { version = "0.3.18", features = ["env-filter", "fmt"] }
-serde = { version = "1.0.210", features = ["derive"] }
-uuid = { version = "1.11.0", features = ["serde", "v7", "v4"] }
-serde_json = "1.0.130"
-async-trait = "0.1.83"
-figment = { version = "0.10.19", features = ["yaml", "env", "toml"] }
-clap = { version = "4.5.20", features = ["derive", "color", "usage"] }
-fe2o3-amqp = { version = "0.13.1", features = ["acceptor"] }
-anyhow = "1.0.91"
-url = "2.5.2"
-sea-orm = { workspace = true }
-
 notifico-core = { path = "../notifico-core" }
 notifico-telegram = { path = "../transports/notifico-telegram" }
 notifico-smtp = { path = "../transports/notifico-smtp" }
@@ -26,3 +11,21 @@ notifico-whatsapp = { path = "../transports/notifico-whatsapp" }
 notifico-smpp = { path = "../transports/notifico-smpp" }
 notifico-template = { path = "../notifico-template" }
 notifico-subscription = { path = "../notifico-subscription" }
+
+anyhow = "1.0.91"
+async-trait = "0.1.83"
+clap = { workspace = true }
+fe2o3-amqp = { version = "0.13.1", features = ["acceptor"] }
+figment = { version = "0.10.19", features = ["yaml", "env", "toml"] }
+futures = "0.3.31"
+sea-orm = { workspace = true }
+serde = { version = "1.0.210", features = ["derive"] }
+serde_json = "1.0.130"
+tokio = { version = "1.41", features = ["macros", "rt", "sync", "rt-multi-thread"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter", "fmt"] }
+url = "2.5.2"
+uuid = { version = "1.11.0", features = ["serde", "v7"] }
+
+[features]
+default = []

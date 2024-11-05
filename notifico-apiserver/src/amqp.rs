@@ -1,23 +1,18 @@
 use fe2o3_amqp::{Connection, Sender, Session};
-use notifico_core::config::Amqp;
 use notifico_core::pipeline::runner::ProcessEventRequest;
 use tokio::sync::mpsc::Receiver;
 use tracing::info;
+use url::Url;
 
 //TODO: reconnect to AMQP on failure
-pub async fn run(config: Amqp, mut event_rx: Receiver<ProcessEventRequest>) {
-    let mut connection = Connection::open("connection-1", config.connection_url())
+pub async fn run(amqp_url: Url, mut event_rx: Receiver<ProcessEventRequest>) {
+    let mut connection = Connection::open("connection-1", amqp_url.clone())
         .await
         .unwrap();
 
     let mut session = Session::begin(&mut connection).await.unwrap();
 
-    let address = match config {
-        Amqp::Bind { .. } => String::default(),
-        Amqp::Broker { address, .. } => address,
-    };
-
-    let mut sender = Sender::attach(&mut session, "rust-sender-link-1", address)
+    let mut sender = Sender::attach(&mut session, "rust-sender-link-1", amqp_url.path())
         .await
         .unwrap();
 
