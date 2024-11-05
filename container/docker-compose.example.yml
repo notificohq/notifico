@@ -1,0 +1,35 @@
+version: "3"
+services:
+  apiserver:
+    build:
+      context: ..
+      dockerfile: container/apiserver.dockerfile
+    environment:
+      NOTIFICO_AMQP_URL: amqp://guest:guest@rabbitmq:5672/
+      NOTIFICO_SECRET_KEY: weak-secret-key
+      NOTIFICO_DB_URL: postgres://postgres:1q2w3e4r@postgres:5432/postgres
+      NOTIFICO_CLIENT_API_URL: http://127.0.0.1:9000/
+    ports:
+      - "8000:8000"
+      - "9000:9000"
+  worker:
+    build:
+      context: ..
+      dockerfile: container/worker.dockerfile
+    environment:
+      NOTIFICO_AMQP_URL: amqp://guest:guest@rabbitmq:5672/
+      NOTIFICO_SECRET_KEY: weak-secret-key
+      NOTIFICO_DB_URL: postgres://postgres:1q2w3e4r@postgres:5432/postgres
+      NOTIFICO_CLIENT_API_URL: http://127.0.0.1:9000/
+    volumes:
+      - "../pipelines.yml:/var/notifico/pipelines.yml"
+  rabbitmq:
+    image: rabbitmq:4.0
+    ports:
+      - "5672:5672"
+  postgres:
+    image: postgres:16
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: 1q2w3e4r

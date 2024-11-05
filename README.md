@@ -5,16 +5,18 @@ to various clients via email, SMS, messengers and other means of communication.
 
 ## Features
 
-- Reliability
+- High performance
+- Optimized for HA configurations. Notifico uses AMQP 1.0 for distributing tasks between workers.
+- List-Unsubscribe support
 
 ## Usage
 
 ## 🎯 Roadmap:
 
 - Admin panel
-- Push support (FCM, APNS)
+- Message view tracking and statistics
 - Subscription API for recipients
-- List-Unsubscribe support
+- Push support (FCM, APNS)
 - Bounce handling for Emails
 - debounce.io and similar services support
 

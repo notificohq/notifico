@@ -12,7 +12,9 @@ COPY --from=builder target/release/notifico-apiserver /
 
 # Service API
 EXPOSE 8000
+ENV NOTIFICO_SERVICE_API_BIND=[::]:8000
 # Client API
 EXPOSE 9000
+ENV NOTIFICO_CLIENT_API_BIND=[::]:9000
 
 ENTRYPOINT ["/notifico-apiserver"]

@@ -8,7 +8,7 @@ use tracing::info;
 use url::Url;
 use uuid::Uuid;
 
-pub async fn start(runner: Arc<PipelineRunner>, config: Amqp) {
+pub async fn start(runner: Arc<PipelineRunner>, config: Amqp, worker_addr: String) {
     let worker_uuid = Uuid::new_v4();
 
     let container_id = format!("notifico-worker-{}", worker_uuid);
@@ -51,7 +51,7 @@ pub async fn start(runner: Arc<PipelineRunner>, config: Amqp) {
         }
         (Some(url), None) => loop {
             let res =
-                connect_to_broker(url.clone(), &url.path(), &container_id, runner.clone()).await;
+                connect_to_broker(url.clone(), &worker_addr, &container_id, runner.clone()).await;
             if let Err(e) = res {
                 info!("Error processing AMQP broker: {}", e);
                 tokio::time::sleep(std::time::Duration::from_secs(1)).await;

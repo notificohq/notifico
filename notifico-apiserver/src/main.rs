@@ -20,6 +20,12 @@ struct Args {
     secret_key: String,
     #[clap(long, env = "NOTIFICO_AMQP_URL")]
     amqp: Url,
+    #[clap(
+        long,
+        env = "NOTIFICO_AMQP_WORKERS_ADDR",
+        default_value = "notifico_workers"
+    )]
+    amqp_addr: String,
     #[clap(long, env = "NOTIFICO_SERVICE_API_BIND")]
     service_api_bind: SocketAddr,
     #[clap(long, env = "NOTIFICO_CLIENT_API_BIND")]
@@ -30,7 +36,7 @@ struct Args {
 
 #[tokio::main]
 async fn main() {
-    dotenvy::dotenv().unwrap();
+    let _ = dotenvy::dotenv();
 
     if std::env::var("RUST_LOG").is_err() {
         std::env::set_var("RUST_LOG", "info");
@@ -69,7 +75,7 @@ async fn main() {
         args.client_api_bind,
         ext,
     ));
-    tokio::spawn(amqp::run(args.amqp, request_rx));
+    tokio::spawn(amqp::run(args.amqp, args.amqp_addr, request_rx));
 
     tokio::signal::ctrl_c().await.unwrap();
 }

@@ -35,12 +35,30 @@ struct Args {
     client_api_url: Url,
     #[clap(flatten)]
     amqp: Amqp,
+    #[clap(
+        long,
+        env = "NOTIFICO_AMQP_WORKERS_ADDR",
+        default_value = "notifico_workers"
+    )]
+    amqp_addr: String,
 
-    #[clap(long, env = "NOTIFICO_TEMPLATES_PATH")]
+    #[clap(
+        long,
+        env = "NOTIFICO_TEMPLATES_PATH",
+        default_value = "/var/notifico/templates/"
+    )]
     templates_path: PathBuf,
-    #[clap(long, env = "NOTIFICO_CREDENTIALS_PATH")]
+    #[clap(
+        long,
+        env = "NOTIFICO_CREDENTIALS_PATH",
+        default_value = "/var/notifico/credentials.toml"
+    )]
     credentials_path: PathBuf,
-    #[clap(long, env = "NOTIFICO_PIPELINES_PATH")]
+    #[clap(
+        long,
+        env = "NOTIFICO_PIPELINES_PATH",
+        default_value = "/var/notifico/pipelines.yml"
+    )]
     pipelines_path: PathBuf,
 }
 
@@ -55,7 +73,7 @@ pub struct Amqp {
 
 #[tokio::main]
 async fn main() {
-    dotenvy::dotenv().unwrap();
+    let _ = dotenvy::dotenv();
 
     if std::env::var("RUST_LOG").is_err() {
         std::env::set_var("RUST_LOG", "info");
@@ -109,7 +127,7 @@ async fn main() {
     // Create PipelineRunner, the core component of the Notifico system
     let runner = Arc::new(PipelineRunner::new(pipelines.clone(), engine));
 
-    tokio::spawn(amqp::start(runner.clone(), args.amqp));
+    tokio::spawn(amqp::start(runner.clone(), args.amqp, args.amqp_addr));
 
     tokio::signal::ctrl_c().await.unwrap();
 }

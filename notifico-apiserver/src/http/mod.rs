@@ -23,7 +23,7 @@ pub(crate) struct HttpExtensions {
 }
 
 #[derive(OpenApi)]
-#[openapi(info(description = "My Api description"), paths(ingest::send))]
+#[openapi(info(description = "Notifico Service API"), paths(ingest::send))]
 struct ApiDoc;
 
 pub(crate) async fn start(

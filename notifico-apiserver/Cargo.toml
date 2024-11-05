@@ -7,8 +7,10 @@ edition = "2021"
 notifico-core = { path = "../notifico-core" }
 notifico-subscription = { path = "../notifico-subscription" }
 
+anyhow = "1.0.93"
 async-trait = "0.1.83"
 axum = { workspace = true }
+backoff = { version = "0.4.0", features = ["tokio"] }
 clap = { version = "4.5.20", features = ["derive", "color", "usage", "env"] }
 dotenvy = "0.15.7"
 fe2o3-amqp = "0.13.1"
