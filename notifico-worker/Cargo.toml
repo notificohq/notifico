@@ -15,6 +15,7 @@ notifico-subscription = { path = "../notifico-subscription" }
 anyhow = "1.0.91"
 async-trait = "0.1.83"
 clap = { workspace = true }
+dotenvy = "0.15.7"
 fe2o3-amqp = { version = "0.13.1", features = ["acceptor"] }
 figment = { version = "0.10.19", features = ["yaml", "env", "toml"] }
 futures = "0.3.31"

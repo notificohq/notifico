@@ -1,6 +1,6 @@
+use crate::Amqp;
 use fe2o3_amqp::acceptor::{ConnectionAcceptor, LinkAcceptor, LinkEndpoint, SessionAcceptor};
 use fe2o3_amqp::{Connection, Receiver, Session};
-use notifico_core::config::Amqp;
 use notifico_core::pipeline::runner::PipelineRunner;
 use std::sync::Arc;
 use tokio::net::TcpListener;
@@ -13,8 +13,8 @@ pub async fn start(runner: Arc<PipelineRunner>, config: Amqp) {
 
     let container_id = format!("notifico-worker-{}", worker_uuid);
 
-    match config {
-        Amqp::Bind { bind } => {
+    match (config.amqp_url, config.amqp_bind) {
+        (None, Some(bind)) => {
             let tcp_listener = TcpListener::bind(bind).await.unwrap();
             let connection_acceptor = ConnectionAcceptor::new(container_id);
 
@@ -49,13 +49,17 @@ pub async fn start(runner: Arc<PipelineRunner>, config: Amqp) {
                 });
             }
         }
-        Amqp::Broker { url, address } => loop {
-            let res = connect_to_broker(url.clone(), &address, &container_id, runner.clone()).await;
+        (Some(url), None) => loop {
+            let res =
+                connect_to_broker(url.clone(), &url.path(), &container_id, runner.clone()).await;
             if let Err(e) = res {
                 info!("Error processing AMQP broker: {}", e);
                 tokio::time::sleep(std::time::Duration::from_secs(1)).await;
             }
         },
+        _ => {
+            panic!("Invalid AMQP configuration");
+        }
     }
 }
 
