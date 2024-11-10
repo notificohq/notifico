@@ -1,5 +1,5 @@
 mod context;
-mod entity;
+pub mod entity;
 pub mod http;
 mod step;
 
@@ -9,7 +9,7 @@ use crate::step::STEPS;
 use entity::prelude::*;
 use jsonwebtoken::{EncodingKey, Header};
 use migration::{Migrator, MigratorTrait};
-use notifico_core::http::admin::{apply_list_params, ListQueryParams};
+use notifico_core::http::admin::{ListQueryParams, ListableTrait};
 use notifico_core::http::auth::Claims;
 use notifico_core::step::SerializedStep;
 use notifico_core::{
@@ -113,18 +113,18 @@ impl SubscriptionManager {
         params: ListQueryParams,
     ) -> Result<(Vec<subscription::Model>, u64), EngineError> {
         let mut query_count = Subscription::find();
-        query_count = apply_list_params(query_count, params.clone()).unwrap();
-        let count = query_count.count(&self.db).await.unwrap();
+        query_count = query_count.apply_params(&params).unwrap();
+        let count = query_count.count(&self.db).await?;
 
         let mut query = Subscription::find();
-        query = apply_list_params(query, params).unwrap();
+        query = query.apply_params(&params).unwrap();
 
-        let results = query.all(&self.db).await.unwrap();
+        let results = query.all(&self.db).await?;
         Ok((results, count))
     }
 
     pub async fn get_by_id(&self, id: Uuid) -> Result<Option<subscription::Model>, EngineError> {
-        let query = Subscription::find_by_id(id).one(&self.db).await.unwrap();
+        let query = Subscription::find_by_id(id).one(&self.db).await?;
         Ok(query)
     }
 
@@ -138,7 +138,7 @@ impl SubscriptionManager {
             is_subscribed: Set(is_subscribed),
             ..Default::default()
         };
-        Subscription::update(model).exec(&self.db).await.unwrap();
+        Subscription::update(model).exec(&self.db).await?;
         Ok(())
     }
 }
@@ -162,7 +162,7 @@ impl EnginePlugin for SubscriptionManager {
                     .is_subscribed(
                         context.project_id,
                         recipient.id,
-                        &context.trigger_event,
+                        &context.event_name,
                         &channel,
                     )
                     .await
@@ -185,7 +185,7 @@ impl EnginePlugin for SubscriptionManager {
                             self.secret_key.clone(),
                             self.subscriber_url.clone(),
                             context.project_id,
-                            &context.trigger_event,
+                            &context.event_name,
                             recipient.id,
                         )
                     )),

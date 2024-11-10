@@ -14,6 +14,10 @@
       <sourceFolder url="file://$MODULE_DIR$/notifico-subscription/migration/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/notifico-subscription/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/notifico-admin/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/notifico-dbpipeline/migration/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/notifico-dbpipeline/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/notifico-project/migration/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/notifico-project/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />

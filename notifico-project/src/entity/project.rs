@@ -3,15 +3,11 @@
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
-#[sea_orm(table_name = "subscription")]
+#[sea_orm(table_name = "project")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
-    pub project_id: Uuid,
-    pub recipient_id: Uuid,
-    pub event: String,
-    pub channel: String,
-    pub is_subscribed: bool,
+    pub name: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

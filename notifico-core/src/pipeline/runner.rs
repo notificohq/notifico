@@ -57,14 +57,15 @@ impl PipelineRunner {
     pub async fn process_event(
         &self,
         project_id: Uuid,
-        trigger_event: &str,
+        event_name: &str,
         event_context: EventContext,
         recipient_sel: Option<RecipientSelector>,
     ) -> Result<(), EngineError> {
         // Fetch the pipelines associated with the project and event
         let pipelines = self
             .pipeline_storage
-            .get_pipelines(project_id, trigger_event)?;
+            .get_pipelines_for_event(project_id, event_name)
+            .await?;
 
         // Determine the recipient based on the recipient selector
         let recipient = match recipient_sel {
@@ -78,13 +79,13 @@ impl PipelineRunner {
             let engine = self.engine.clone();
             let recipient = recipient.clone();
             let event_context = event_context.clone();
-            let trigger_event = trigger_event.to_string();
+            let event_name = event_name.to_string();
 
             join_handles.spawn(async move {
                 let context = PipelineContext {
                     project_id,
                     recipient,
-                    trigger_event,
+                    event_name,
                     event_context,
                     plugin_contexts: Default::default(),
                     messages: Default::default(),

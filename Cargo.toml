@@ -11,12 +11,16 @@ members = [
     "notifico-apiserver",
     "notifico-subscription",
     "notifico-subscription/migration",
+    "notifico-dbpipeline",
+    "notifico-dbpipeline/migration",
+    "notifico-project",
+    "notifico-project/migration",
 ]
 
 [workspace.dependencies]
 sea-orm = { version = "1.1.0", features = ["sqlx-sqlite", "sqlx-postgres", "sqlx-mysql", "runtime-tokio-native-tls", "macros"] }
 reqwest = { version = "0.12.8", default-features = false, features = ["json", "default-tls", "charset"] }
-axum = "0.7.7"
+axum = { version = "0.7.7", features = ["macros"] }
 clap = { version = "4.5.20", features = ["derive", "color", "usage", "env"] }
 
 [workspace.dependencies.sea-orm-migration]

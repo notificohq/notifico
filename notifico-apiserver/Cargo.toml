@@ -6,6 +6,8 @@ edition = "2021"
 [dependencies]
 notifico-core = { path = "../notifico-core" }
 notifico-subscription = { path = "../notifico-subscription" }
+notifico-dbpipeline = { path = "../notifico-dbpipeline" }
+notifico-project = { path = "../notifico-project" }
 
 anyhow = "1.0.93"
 async-trait = "0.1.83"

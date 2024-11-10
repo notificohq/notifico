@@ -3,14 +3,13 @@ mod amqp;
 use clap::Parser;
 use figment::providers::Toml;
 use figment::{
-    providers::{Env, Format, Yaml},
+    providers::{Env, Format},
     Figment,
 };
 use notifico_core::config::credentials::MemoryCredentialStorage;
-use notifico_core::config::pipelines::MemoryPipelineStorage;
-use notifico_core::config::pipelines::PipelineConfig;
 use notifico_core::engine::Engine;
 use notifico_core::pipeline::runner::PipelineRunner;
+use notifico_dbpipeline::DbPipelineStorage;
 use notifico_smpp::SmppPlugin;
 use notifico_smtp::EmailPlugin;
 use notifico_subscription::SubscriptionManager;
@@ -94,16 +93,11 @@ async fn main() {
         .extract()
         .unwrap();
 
-    let pipelines_config: PipelineConfig = Figment::new()
-        .merge(Yaml::file(args.pipelines_path.clone()))
-        .extract()
-        .unwrap();
-
     let db_conn_options = ConnectOptions::new(args.db_url.to_string());
     let db_connection = Database::connect(db_conn_options).await.unwrap();
 
     let credentials = Arc::new(MemoryCredentialStorage::from_config(credential_config).unwrap());
-    let pipelines = Arc::new(MemoryPipelineStorage::from_config(&pipelines_config));
+    let pipelines = Arc::new(DbPipelineStorage::new(db_connection.clone()));
 
     // Create Engine with plugins
     let mut engine = Engine::new();

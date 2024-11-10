@@ -19,30 +19,34 @@ pub struct SubscriptionItem {
     pub is_subscribed: bool,
 }
 
+impl From<notifico_subscription::entity::subscription::Model> for SubscriptionItem {
+    fn from(value: notifico_subscription::entity::subscription::Model) -> Self {
+        SubscriptionItem {
+            id: value.id,
+            project_id: value.project_id,
+            recipient_id: value.recipient_id,
+            event: value.event,
+            channel: value.channel,
+            is_subscribed: value.is_subscribed,
+        }
+    }
+}
+
 pub async fn list_subscriptions(
     Query(params): Query<ListQueryParams>,
     Extension(subman): Extension<Arc<SubscriptionManager>>,
 ) -> (HeaderMap, Json<Vec<SubscriptionItem>>) {
     let (query_result, count) = subman.list_subscriptions(params).await.unwrap();
 
-    let mut result = vec![];
-    let subscriptions = query_result.into_iter();
-
-    for subscription in subscriptions {
-        result.push(SubscriptionItem {
-            id: subscription.id,
-            project_id: subscription.project_id,
-            recipient_id: subscription.recipient_id,
-            event: subscription.event,
-            channel: subscription.channel,
-            is_subscribed: subscription.is_subscribed,
-        });
-    }
+    let subscriptions = query_result
+        .into_iter()
+        .map(SubscriptionItem::from)
+        .collect();
 
     let mut headers = HeaderMap::new();
     headers.insert(CONTENT_RANGE, count.into());
 
-    (headers, Json(result))
+    (headers, Json(subscriptions))
 }
 
 pub async fn get_subscription(
@@ -54,17 +58,7 @@ pub async fn get_subscription(
     let Some(result) = result else {
         return Json(json!({}));
     };
-    Json(
-        serde_json::to_value(SubscriptionItem {
-            id: result.id,
-            project_id: result.project_id,
-            recipient_id: result.recipient_id,
-            event: result.event,
-            channel: result.channel,
-            is_subscribed: result.is_subscribed,
-        })
-        .unwrap(),
-    )
+    Json(serde_json::to_value(SubscriptionItem::from(result)).unwrap())
 }
 
 #[derive(Clone, Deserialize)]
@@ -83,12 +77,5 @@ pub async fn update_subscription(
         .unwrap();
 
     let result = subman.get_by_id(id).await.unwrap().unwrap();
-    Json(SubscriptionItem {
-        id: result.id,
-        project_id: result.project_id,
-        recipient_id: result.recipient_id,
-        event: result.event,
-        channel: result.channel,
-        is_subscribed: result.is_subscribed,
-    })
+    Json(result.into())
 }

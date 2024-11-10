@@ -23,7 +23,7 @@ pub struct EventContext(pub Map<String, Value>);
 pub struct PipelineContext {
     pub project_id: Uuid,
     pub recipient: Option<Recipient>,
-    pub trigger_event: String,
+    pub event_name: String,
     pub event_context: EventContext,
     pub plugin_contexts: Map<String, Value>,
     pub messages: Vec<RenderResponse>,
