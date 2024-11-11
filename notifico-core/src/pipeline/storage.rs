@@ -1,5 +1,5 @@
 use crate::error::EngineError;
-use crate::http::admin::ListQueryParams;
+use crate::http::admin::{ListQueryParams, PaginatedResult};
 use crate::pipeline::{Event, Pipeline};
 use async_trait::async_trait;
 use uuid::Uuid;
@@ -21,5 +21,8 @@ pub trait PipelineStorage: Send + Sync {
         params: ListQueryParams,
     ) -> Result<(Vec<(Pipeline, Vec<Event>)>, u64), EngineError>;
 
-    async fn list_events(&self, params: ListQueryParams) -> Result<(Vec<Event>, u64), EngineError>;
+    async fn list_events(
+        &self,
+        params: ListQueryParams,
+    ) -> Result<PaginatedResult<Event>, EngineError>;
 }

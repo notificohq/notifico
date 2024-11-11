@@ -19,6 +19,19 @@ impl MigrationTrait for Migration {
             .await?;
 
         manager
+            .create_index(
+                Index::create()
+                    .unique()
+                    .table(Event::Table)
+                    .name("idx_u_event_name")
+                    .if_not_exists()
+                    .col(Event::ProjectId)
+                    .col(Event::Name)
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
             .create_table(
                 Table::create()
                     .table(Pipeline::Table)

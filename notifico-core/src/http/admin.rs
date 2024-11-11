@@ -1,11 +1,11 @@
 use anyhow::bail;
-use sea_orm::QueryFilter;
-use sea_orm::{ColumnTrait, EntityTrait, QueryOrder, QuerySelect, Select};
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect, Select};
 use serde::Deserialize;
 use serde_json::Value;
 use std::collections::BTreeMap;
 use std::error::Error;
 use std::str::FromStr;
+use uuid::Uuid;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "UPPERCASE")]
@@ -24,6 +24,7 @@ impl From<SortOrder> for sea_orm::Order {
 }
 
 pub trait ListableTrait: QuerySelect {
+    fn apply_filter(self, params: &ListQueryParams) -> anyhow::Result<Self>;
     fn apply_params(self, params: &ListQueryParams) -> anyhow::Result<Self>;
 }
 
@@ -32,6 +33,36 @@ where
     ET: EntityTrait,
     <ET::Column as FromStr>::Err: Error + Send + Sync,
 {
+    fn apply_filter(mut self, params: &ListQueryParams) -> anyhow::Result<Self> {
+        if let Some(filter) = &params.filter {
+            let filter: BTreeMap<String, Value> = serde_json::from_str(filter)?;
+
+            for (col, val) in filter.into_iter() {
+                let column = ET::Column::from_str(&col)?;
+                let filters = match val {
+                    Value::String(v) => vec![Value::String(v)],
+                    Value::Array(v) => v,
+                    _ => {
+                        bail!("Invalid filter value type: {col}. Expected string or array of strings.")
+                    }
+                };
+
+                let mut values: Vec<sea_orm::Value> = vec![];
+                for filter in filters {
+                    if let Ok(uuid) = Uuid::deserialize(filter.clone()) {
+                        values.push(uuid.into());
+                    } else if let Value::String(s) = filter {
+                        values.push(s.into());
+                    } else {
+                        values.push(filter.into())
+                    }
+                }
+                self = self.filter(column.is_in(values));
+            }
+        }
+        Ok(self)
+    }
+
     fn apply_params(mut self, params: &ListQueryParams) -> anyhow::Result<Self> {
         if let Some(order) = &params.sort {
             let order: (String, SortOrder) = serde_json::from_str(order)?;
@@ -43,19 +74,7 @@ where
 
             self = self.offset(range.0).limit(range.1 - range.0);
         }
-        if let Some(filter) = &params.filter {
-            let filter: BTreeMap<String, Value> = serde_json::from_str(filter)?;
-
-            for (col, val) in filter.into_iter() {
-                match val {
-                    Value::String(v) => self = self.filter(ET::Column::from_str(&col)?.eq(v)),
-                    Value::Array(v) => self = self.filter(ET::Column::from_str(&col)?.is_in(v)),
-                    _ => {
-                        bail!("Invalid filter value type: {col}. Expected string or array of strings.")
-                    }
-                }
-            }
-        }
+        self = self.apply_filter(params)?;
         Ok(self)
     }
 }
