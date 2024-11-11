@@ -2,6 +2,7 @@ use migration::{Migrator, MigratorTrait};
 use notifico_core::http::admin::{ListQueryParams, ListableTrait, PaginatedResult};
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, PaginatorTrait, Set};
 use serde::Serialize;
+use std::error::Error;
 use uuid::Uuid;
 
 mod entity;
@@ -21,11 +22,11 @@ impl ProjectController {
         Self { db }
     }
 
-    pub async fn setup(&self) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn setup(&self) -> Result<(), Box<dyn Error>> {
         Ok(Migrator::up(&self.db, None).await?)
     }
 
-    pub async fn create(&self, name: &str) -> Result<Project, Box<dyn std::error::Error>> {
+    pub async fn create(&self, name: &str) -> Result<Project, Box<dyn Error>> {
         let id = Uuid::now_v7();
 
         entity::project::ActiveModel {
@@ -41,7 +42,7 @@ impl ProjectController {
         })
     }
 
-    pub async fn get_by_id(&self, id: Uuid) -> Result<Option<Project>, Box<dyn std::error::Error>> {
+    pub async fn get_by_id(&self, id: Uuid) -> Result<Option<Project>, Box<dyn Error>> {
         let query = entity::project::Entity::find_by_id(id)
             .one(&self.db)
             .await?;
@@ -51,7 +52,7 @@ impl ProjectController {
     pub async fn list(
         &self,
         params: ListQueryParams,
-    ) -> Result<PaginatedResult<Project>, Box<dyn std::error::Error>> {
+    ) -> Result<PaginatedResult<Project>, Box<dyn Error>> {
         let query = entity::project::Entity::find()
             .apply_params(&params)?
             .all(&self.db)
@@ -63,11 +64,7 @@ impl ProjectController {
         })
     }
 
-    pub async fn update(
-        &self,
-        id: Uuid,
-        name: &str,
-    ) -> Result<Project, Box<dyn std::error::Error>> {
+    pub async fn update(&self, id: Uuid, name: &str) -> Result<Project, Box<dyn Error>> {
         entity::project::ActiveModel {
             id: Set(id),
             name: Set(name.to_string()),
@@ -80,7 +77,7 @@ impl ProjectController {
         })
     }
 
-    pub async fn delete(&self, id: Uuid) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn delete(&self, id: Uuid) -> Result<(), Box<dyn Error>> {
         if id.is_nil() {
             return Ok(());
         }

@@ -7,9 +7,10 @@ use notifico_core::pipeline::{Event, Pipeline};
 use sea_orm::prelude::Uuid;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, LoaderTrait, PaginatorTrait,
-    QueryFilter, QuerySelect,
+    QueryFilter, QuerySelect, Set,
 };
 use serde::Deserialize;
+use std::error::Error;
 
 mod entity;
 
@@ -113,6 +114,56 @@ impl PipelineStorage for DbPipelineStorage {
                 .count(&self.db)
                 .await?,
         })
+    }
+
+    async fn get_event_by_id(&self, id: Uuid) -> Result<Option<Event>, Box<dyn Error>> {
+        let model = entity::event::Entity::find_by_id(id).one(&self.db).await?;
+
+        Ok(model.map(Event::from))
+    }
+
+    async fn create_event(
+        &self,
+        project_id: Uuid,
+        name: &str,
+    ) -> Result<Event, Box<dyn std::error::Error>> {
+        let id = Uuid::now_v7();
+
+        entity::event::ActiveModel {
+            id: Set(id),
+            project_id: Set(project_id),
+            name: Set(name.to_string()),
+        }
+        .insert(&self.db)
+        .await?;
+
+        Ok(Event {
+            id,
+            project_id,
+            name: name.to_string(),
+        })
+    }
+
+    async fn update_event(&self, id: Uuid, name: &str) -> Result<Event, Box<dyn Error>> {
+        entity::event::ActiveModel {
+            id: Set(id),
+            name: Set(name.to_string()),
+            ..Default::default()
+        }
+        .update(&self.db)
+        .await?;
+
+        Ok(self.get_event_by_id(id).await?.unwrap())
+    }
+
+    async fn delete_event(&self, id: Uuid) -> Result<(), Box<dyn Error>> {
+        entity::event::ActiveModel {
+            id: Set(id),
+            ..Default::default()
+        }
+        .delete(&self.db)
+        .await?;
+        Ok(())
     }
 }
 

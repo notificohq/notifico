@@ -9,14 +9,26 @@ pub mod subscription;
 
 pub(crate) fn get_router(ext: HttpExtensions) -> Router {
     Router::new()
+        // Subscriptions
         .route("/v1/subscriptions", get(subscription::list_subscriptions))
         .route("/v1/subscriptions/:id", get(subscription::get_subscription))
         .route(
             "/v1/subscriptions/:id",
             put(subscription::update_subscription),
         )
+        // Pipelines
         .route("/v1/pipelines", get(pipeline::list_pipelines))
-        .route("/v1/events", get(event::list_events))
+        // Events
+        .route(
+            "/v1/events",
+            get(event::list_events).post(event::create_event),
+        )
+        .route(
+            "/v1/events/:id",
+            get(event::get_event)
+                .put(event::update_event)
+                .delete(event::delete_event),
+        )
         // Projects
         .route(
             "/v1/projects",
