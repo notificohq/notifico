@@ -18,6 +18,7 @@ pub(crate) fn get_router(ext: HttpExtensions) -> Router {
         )
         // Pipelines
         .route("/v1/pipelines", get(pipeline::list_pipelines))
+        .route("/v1/pipelines/:id", get(pipeline::get_pipeline))
         // Events
         .route(
             "/v1/events",

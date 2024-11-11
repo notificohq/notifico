@@ -26,13 +26,13 @@ pub async fn list_events(
 pub async fn get_event(
     Path((id,)): Path<(Uuid,)>,
     Extension(pipeline_storage): Extension<Arc<dyn PipelineStorage>>,
-) -> (StatusCode, Json<Value>) {
+) -> (StatusCode, Json<Option<Event>>) {
     let result = pipeline_storage.get_event_by_id(id).await.unwrap();
 
     let Some(result) = result else {
-        return (StatusCode::NOT_FOUND, Json(json!({})));
+        return (StatusCode::NOT_FOUND, Json(None));
     };
-    (StatusCode::OK, Json(serde_json::to_value(result).unwrap()))
+    (StatusCode::OK, Json(Some(result)))
 }
 
 #[derive(Deserialize)]

@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use migration::{Migrator, MigratorTrait};
 use notifico_core::error::EngineError;
 use notifico_core::http::admin::{ListQueryParams, ListableTrait, PaginatedResult};
-use notifico_core::pipeline::storage::PipelineStorage;
+use notifico_core::pipeline::storage::{PipelineResult, PipelineStorage};
 use notifico_core::pipeline::{Event, Pipeline};
 use sea_orm::prelude::Uuid;
 use sea_orm::{
@@ -46,53 +46,56 @@ impl PipelineStorage for DbPipelineStorage {
     }
 
     // For management API
-    async fn list_pipelines_with_events(
+    async fn list_pipelines(
         &self,
         params: ListQueryParams,
-    ) -> Result<(Vec<(Pipeline, Vec<Event>)>, u64), EngineError> {
-        let mut query_count = entity::pipeline::Entity::find();
-        query_count = query_count.apply_filter(&params).unwrap();
-        let count = query_count.count(&self.db).await?;
-
-        let mut query = entity::pipeline::Entity::find();
-        query = query.apply_params(&params).unwrap();
-
-        //
-        // let project = Uuid::nil();
-        // let mid = Uuid::now_v7();
-        // let m = entity::pipeline::ActiveModel {
-        //     id: Set(mid),
-        //     project_id: Set(project),
-        //     channel: Set("email".to_string()),
-        //     steps: Set(json!([])),
-        // };
-        // m.insert(&self.db).await?;
-        //
-        // let meid = Uuid::now_v7();
-        // let me = entity::event::ActiveModel {
-        //     id: Set(meid),
-        //     project_id: Set(project),
-        //     name: Set("send_email".to_string()),
-        // };
-        // me.insert(&self.db).await?;
-        //
-        // let mx = entity::pipeline_event_j::ActiveModel {
-        //     pipeline_id: Set(mid),
-        //     event_id: Set(meid),
-        // };
-        // mx.insert(&self.db).await?;
-        //
-        let events = query
+    ) -> Result<PaginatedResult<PipelineResult>, EngineError> {
+        let events = entity::pipeline::Entity::find()
+            .apply_params(&params)
+            .unwrap()
             .find_with_related(entity::event::Entity)
             .all(&self.db)
             .await?;
 
-        let results: Result<Vec<(Pipeline, Vec<Event>)>, EngineError> = events
+        let results: Result<Vec<PipelineResult>, EngineError> = events
             .into_iter()
-            .map(|(p, e)| Ok((p.try_into()?, e.into_iter().map(Event::from).collect())))
+            .map(|(p, e)| {
+                Ok(PipelineResult {
+                    pipeline: p.try_into()?,
+                    event_ids: e.into_iter().map(|e| e.id).collect(),
+                })
+            })
             .collect();
+        let results = results?;
 
-        Ok((results?, count))
+        Ok(PaginatedResult {
+            items: results,
+            total_count: entity::pipeline::Entity::find()
+                .apply_filter(&params)
+                .unwrap()
+                .count(&self.db)
+                .await?,
+        })
+    }
+
+    async fn get_pipeline_by_id(&self, id: Uuid) -> Result<Option<PipelineResult>, EngineError> {
+        let events = entity::pipeline::Entity::find_by_id(id)
+            .find_with_related(entity::event::Entity)
+            .all(&self.db)
+            .await?;
+
+        let results: Result<Vec<PipelineResult>, EngineError> = events
+            .into_iter()
+            .map(|(p, e)| {
+                Ok(PipelineResult {
+                    pipeline: p.try_into()?,
+                    event_ids: e.into_iter().map(|e| e.id).collect(),
+                })
+            })
+            .collect();
+        let results = results?;
+
+        Ok(results.first().cloned())
     }
 
     async fn list_events(

@@ -24,13 +24,13 @@ pub async fn list_projects(
 pub async fn get_project(
     Path((id,)): Path<(Uuid,)>,
     Extension(controller): Extension<Arc<ProjectController>>,
-) -> (StatusCode, Json<Value>) {
+) -> (StatusCode, Json<Option<Project>>) {
     let result = controller.get_by_id(id).await.unwrap();
 
     let Some(result) = result else {
-        return (StatusCode::NOT_FOUND, Json(json!({})));
+        return (StatusCode::NOT_FOUND, Json(None));
     };
-    (StatusCode::OK, Json(serde_json::to_value(result).unwrap()))
+    (StatusCode::OK, Json(Some(result)))
 }
 
 #[derive(Deserialize)]

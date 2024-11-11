@@ -1,11 +1,13 @@
-use axum::extract::Query;
+use crate::http::admin::project::ProjectUpdate;
+use axum::extract::{Path, Query};
 use axum::http::header::CONTENT_RANGE;
-use axum::http::HeaderMap;
+use axum::http::{HeaderMap, StatusCode};
 use axum::{Extension, Json};
-use notifico_core::http::admin::ListQueryParams;
-use notifico_core::pipeline::storage::PipelineStorage;
+use notifico_core::http::admin::{ListQueryParams, PaginatedResult};
+use notifico_core::pipeline::storage::{PipelineResult, PipelineStorage};
 use notifico_core::step::SerializedStep;
 use serde::Serialize;
+use serde_json::Value;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -15,28 +17,62 @@ pub struct PipelineItem {
     pub project_id: Uuid,
     pub event_ids: Vec<Uuid>,
     pub steps: Vec<SerializedStep>,
+    pub channel: String,
+}
+
+impl From<PipelineResult> for PipelineItem {
+    fn from(value: PipelineResult) -> Self {
+        Self {
+            id: value.pipeline.id,
+            project_id: value.pipeline.project_id,
+            steps: value.pipeline.steps.clone(),
+            channel: value.pipeline.channel,
+
+            event_ids: value.event_ids,
+        }
+    }
 }
 
 pub async fn list_pipelines(
     Query(params): Query<ListQueryParams>,
     Extension(pipeline_storage): Extension<Arc<dyn PipelineStorage>>,
 ) -> (HeaderMap, Json<Vec<PipelineItem>>) {
-    let (query_result, count) = pipeline_storage
-        .list_pipelines_with_events(params)
-        .await
-        .unwrap();
+    let PaginatedResult { items, total_count } =
+        pipeline_storage.list_pipelines(params).await.unwrap();
 
-    let pipelines = query_result
-        .into_iter()
-        .map(|(pipeline, events)| PipelineItem {
-            id: pipeline.id,
-            project_id: pipeline.project_id,
-            event_ids: events.into_iter().map(|e| e.id).collect(),
-            steps: pipeline.steps.clone(),
-        });
+    let pipelines = items.into_iter().map(PipelineItem::from).collect();
 
     let mut headers = HeaderMap::new();
-    headers.insert(CONTENT_RANGE, count.into());
+    headers.insert(CONTENT_RANGE, total_count.into());
 
-    (headers, Json(pipelines.collect()))
+    (headers, Json(pipelines))
+}
+
+pub async fn get_pipeline(
+    Path((id,)): Path<(Uuid,)>,
+    Extension(pipeline_storage): Extension<Arc<dyn PipelineStorage>>,
+) -> (StatusCode, Json<Option<PipelineItem>>) {
+    let result = pipeline_storage
+        .get_pipeline_by_id(id)
+        .await
+        .unwrap()
+        .map(PipelineItem::from);
+
+    let Some(result) = result else {
+        return (StatusCode::NOT_FOUND, Json(None));
+    };
+    (StatusCode::OK, Json(Some(result)))
+}
+
+pub async fn update_pipeline(
+    Extension(pipeline_storage): Extension<Arc<dyn PipelineStorage>>,
+    Path((id,)): Path<(Uuid,)>,
+    Json(update): Json<ProjectUpdate>,
+) -> (StatusCode, Json<Value>) {
+    let result = pipeline_storage.update(id, &update.name).await.unwrap();
+
+    (
+        StatusCode::ACCEPTED,
+        Json(serde_json::to_value(result).unwrap()),
+    )
 }
