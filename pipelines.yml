@@ -1,5 +1,3 @@
-events:
-  - name: send_notification
 pipelines:
   - channel: telegram
     events:

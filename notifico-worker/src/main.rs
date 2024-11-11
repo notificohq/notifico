@@ -1,15 +1,12 @@
 mod amqp;
 
 use clap::Parser;
-use figment::providers::Toml;
-use figment::{
-    providers::{Env, Format},
-    Figment,
-};
+use figment::providers::Yaml;
+use figment::{providers::Format, providers::Toml, Figment};
 use notifico_core::config::credentials::MemoryCredentialStorage;
+use notifico_core::config::pipelines::{MemoryPipelineStorage, PipelineConfig};
 use notifico_core::engine::Engine;
 use notifico_core::pipeline::runner::PipelineRunner;
-use notifico_dbpipeline::DbPipelineStorage;
 use notifico_smpp::SmppPlugin;
 use notifico_smtp::EmailPlugin;
 use notifico_subscription::SubscriptionManager;
@@ -39,7 +36,7 @@ struct Args {
         env = "NOTIFICO_AMQP_WORKERS_ADDR",
         default_value = "notifico_workers"
     )]
-    amqp_addr: String,
+    amqp_workers_addr: String,
 
     #[clap(
         long,
@@ -89,7 +86,11 @@ async fn main() {
 
     let credential_config: serde_json::Value = Figment::new()
         .merge(Toml::file(args.credentials_path.clone()))
-        .merge(Env::prefixed("NOTIFICO_CREDENTIAL_"))
+        .extract()
+        .unwrap();
+
+    let pipeline_config: PipelineConfig = Figment::new()
+        .merge(Yaml::file(args.pipelines_path.clone()))
         .extract()
         .unwrap();
 
@@ -97,7 +98,7 @@ async fn main() {
     let db_connection = Database::connect(db_conn_options).await.unwrap();
 
     let credentials = Arc::new(MemoryCredentialStorage::from_config(credential_config).unwrap());
-    let pipelines = Arc::new(DbPipelineStorage::new(db_connection.clone()));
+    let pipelines = Arc::new(MemoryPipelineStorage::from_config(&pipeline_config));
 
     // Create Engine with plugins
     let mut engine = Engine::new();
@@ -121,7 +122,11 @@ async fn main() {
     // Create PipelineRunner, the core component of the Notifico system
     let runner = Arc::new(PipelineRunner::new(pipelines.clone(), engine));
 
-    tokio::spawn(amqp::start(runner.clone(), args.amqp, args.amqp_addr));
+    tokio::spawn(amqp::start(
+        runner.clone(),
+        args.amqp,
+        args.amqp_workers_addr,
+    ));
 
     tokio::signal::ctrl_c().await.unwrap();
 }

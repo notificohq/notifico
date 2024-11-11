@@ -4,8 +4,6 @@ mod http;
 use crate::http::HttpExtensions;
 use clap::Parser;
 use notifico_core::http::SecretKey;
-use notifico_dbpipeline::DbPipelineStorage;
-use notifico_project::ProjectController;
 use notifico_subscription::SubscriptionManager;
 use sea_orm::{ConnectOptions, Database};
 use std::net::SocketAddr;
@@ -64,20 +62,12 @@ async fn main() {
     ));
     subman.setup().await.unwrap();
 
-    let pipeline_storage = Arc::new(DbPipelineStorage::new(db_connection.clone()));
-    pipeline_storage.setup().await.unwrap();
-
-    let projects = Arc::new(ProjectController::new(db_connection.clone()));
-    projects.setup().await.unwrap();
-
     let (request_tx, request_rx) = tokio::sync::mpsc::channel(1);
 
     let ext = HttpExtensions {
-        projects_controller: projects,
         sender: request_tx,
         subman,
         secret_key: Arc::new(SecretKey(args.secret_key.as_bytes().to_vec())),
-        pipeline_storage,
     };
 
     tokio::spawn(http::start(
