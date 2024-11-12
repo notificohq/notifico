@@ -12,3 +12,6 @@ async-trait = "0.1.83"
 tokio = { version = "1.40.0", features = ["fs"] }
 tracing = "0.1.40"
 toml = "0.8.19"
+notifico-template-migration = { path = "migration" }
+sea-orm = { workspace = true }
+uuid = { version = "1.11.0", features = ["serde"] }

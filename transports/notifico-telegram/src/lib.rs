@@ -7,7 +7,7 @@ use notifico_core::{
     engine::PipelineContext,
     engine::{EnginePlugin, StepOutput},
     error::EngineError,
-    templater::RenderResponse,
+    templater::RenderedTemplate,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -85,10 +85,10 @@ pub struct TelegramContent {
     pub body: String,
 }
 
-impl TryFrom<RenderResponse> for TelegramContent {
+impl TryFrom<RenderedTemplate> for TelegramContent {
     type Error = ();
 
-    fn try_from(value: RenderResponse) -> Result<Self, Self::Error> {
+    fn try_from(value: RenderedTemplate) -> Result<Self, Self::Error> {
         serde_json::from_value(Value::from_iter(value.0)).map_err(|_| ())
     }
 }

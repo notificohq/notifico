@@ -11,7 +11,7 @@ use notifico_core::engine::{EnginePlugin, PipelineContext, StepOutput};
 use notifico_core::error::EngineError;
 use notifico_core::recipient::MobilePhoneContact;
 use notifico_core::step::SerializedStep;
-use notifico_core::templater::RenderResponse;
+use notifico_core::templater::RenderedTemplate;
 use rusmpp::commands::tlvs::tlv::message_submission_request::MessageSubmissionRequestTLVValue;
 use rusmpp::commands::types::{
     DataCoding, EsmClass, InterfaceVersion, Npi, RegisteredDelivery, ServiceType, Ton,
@@ -196,10 +196,10 @@ pub struct SmsContent {
     pub source_address: String,
 }
 
-impl TryFrom<RenderResponse> for SmsContent {
+impl TryFrom<RenderedTemplate> for SmsContent {
     type Error = ();
 
-    fn try_from(value: RenderResponse) -> Result<Self, Self::Error> {
+    fn try_from(value: RenderedTemplate) -> Result<Self, Self::Error> {
         serde_json::from_value(Value::from_iter(value.0)).map_err(|_| ())
     }
 }

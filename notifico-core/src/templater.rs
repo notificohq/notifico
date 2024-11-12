@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
-use serde_json::{Map, Value};
+use std::collections::HashMap;
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 #[serde(transparent)]
-pub struct RenderResponse(pub Map<String, Value>);
+pub struct RenderedTemplate(pub HashMap<String, String>);

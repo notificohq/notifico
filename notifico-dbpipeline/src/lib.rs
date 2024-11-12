@@ -6,8 +6,8 @@ use notifico_core::pipeline::storage::{PipelineResult, PipelineStorage};
 use notifico_core::pipeline::{Event, Pipeline};
 use sea_orm::prelude::Uuid;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, LoaderTrait, PaginatorTrait,
-    QueryFilter, QuerySelect, Set,
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
+    Set,
 };
 use serde::Deserialize;
 use std::collections::HashSet;

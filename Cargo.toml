@@ -7,6 +7,7 @@ members = [
     "transports/notifico-whatsapp",
     "transports/notifico-smpp",
     "notifico-template",
+    "notifico-template/migration",
     "notifico-worker",
     "notifico-apiserver",
     "notifico-subscription",

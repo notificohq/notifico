@@ -1,33 +1,40 @@
-mod descriptor;
+mod db;
+pub mod entity;
+mod error;
+pub mod source;
 
-use crate::descriptor::{Descriptor, TemplateSourceSelector};
 use async_trait::async_trait;
+use error::TemplaterError;
 use minijinja::Environment;
 use notifico_core::engine::{EnginePlugin, PipelineContext, StepOutput};
 use notifico_core::error::EngineError;
 use notifico_core::step::SerializedStep;
-use notifico_core::templater::RenderResponse;
+use notifico_core::templater::RenderedTemplate;
 use serde::{Deserialize, Serialize};
-use serde_json::{Map, Value};
+use source::TemplateSource;
 use std::borrow::Cow;
-use std::path::{Path, PathBuf};
+use std::collections::HashMap;
+use std::sync::Arc;
 use tracing::info;
 
-pub struct LocalTemplater {
-    basepath: PathBuf,
+#[derive(Default)]
+pub struct PreRenderedTemplate(pub HashMap<String, String>);
+
+pub struct Templater {
+    source: Arc<dyn TemplateSource>,
     env: Environment<'static>,
 }
 
-impl LocalTemplater {
-    pub fn new(basepath: &Path) -> Self {
+impl Templater {
+    pub fn new(source: Arc<dyn TemplateSource>) -> Self {
         Self {
-            basepath: basepath.into(),
+            source,
             env: Environment::new(),
         }
     }
 }
 
-impl LocalTemplater {
+impl Templater {
     /// Renders a template based on the provided `TemplateSelector` and the given `PipelineContext`.
     ///
     /// # Parameters
@@ -42,58 +49,27 @@ impl LocalTemplater {
     async fn render_template(
         &self,
         context: &mut PipelineContext,
-        template: TemplateSelector,
-    ) -> Result<RenderResponse, EngineError> {
-        // Construct the path to the template descriptor file based on the channel and template name
-        let template_dir = self.basepath.join(&context.channel);
-        let descriptor_path = match template {
-            TemplateSelector::ByName(name) => template_dir.join(name),
-        };
-
-        // Read the template descriptor file
-        let descriptor = tokio::fs::read_to_string(descriptor_path)
-            .await
-            .map_err(|_| EngineError::TemplateRenderingError)?;
-
-        // Parse the template descriptor JSON into a map
-        let descriptor: Descriptor = toml::from_str(&descriptor).unwrap();
-
-        // Initialize an empty map to store the rendered template data
-        let mut data = Map::new();
-
-        // Iterate over the parts in the template descriptor
-        for (part, selector) in descriptor.template {
-            // Deserialize the template source selector
-            let selector: TemplateSourceSelector = selector.try_into().unwrap();
-
-            // Determine the template source based on the selector
-            let content = match selector {
-                TemplateSourceSelector::Content(content) => content,
-                TemplateSourceSelector::File(file) => {
-                    // Read the template content from a file
-                    tokio::fs::read_to_string(template_dir.join(file))
-                        .await
-                        .map_err(|_| EngineError::TemplateRenderingError)?
-                }
-            };
-
+        template: PreRenderedTemplate,
+    ) -> Result<RenderedTemplate, TemplaterError> {
+        let mut data = HashMap::new();
+        for (part_name, part_content) in template.0 {
             // Render the template using the minijinja environment and the event context
             let rendered_tpl = self
                 .env
-                .render_str(&content, context.event_context.clone())
+                .render_str(&part_content, context.event_context.clone())
                 .unwrap();
 
             // Insert the rendered template part into the data map
-            data.insert(part, Value::String(rendered_tpl));
+            data.insert(part_name, rendered_tpl);
         }
 
         // Return the rendered template data
-        Ok(RenderResponse(data))
+        Ok(RenderedTemplate(data))
     }
 }
 
 #[async_trait]
-impl EnginePlugin for LocalTemplater {
+impl EnginePlugin for Templater {
     async fn execute_step(
         &self,
         context: &mut PipelineContext,
@@ -104,6 +80,10 @@ impl EnginePlugin for LocalTemplater {
         match step {
             Step::Load { templates } => {
                 for template in templates {
+                    let template = self
+                        .source
+                        .get_template(context.project_id, context.channel.as_str(), template)
+                        .await?;
                     let rendered_template = self.render_template(context, template).await?;
                     info!("{:?}", rendered_template);
                     context.messages.push(rendered_template);
@@ -121,7 +101,7 @@ impl EnginePlugin for LocalTemplater {
 
 #[derive(Serialize, Deserialize)]
 #[serde(untagged)]
-enum TemplateSelector {
+pub enum TemplateSelector {
     ByName(String),
 }
 

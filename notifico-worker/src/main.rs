@@ -14,7 +14,8 @@ use notifico_smpp::SmppPlugin;
 use notifico_smtp::EmailPlugin;
 use notifico_subscription::SubscriptionManager;
 use notifico_telegram::TelegramPlugin;
-use notifico_template::LocalTemplater;
+use notifico_template::source::local::LocalTemplateSource;
+use notifico_template::Templater;
 use notifico_whatsapp::WaBusinessPlugin;
 use sea_orm::{ConnectOptions, Database};
 use std::net::SocketAddr;
@@ -101,7 +102,9 @@ async fn main() {
 
     // Create Engine with plugins
     let mut engine = Engine::new();
-    engine.add_plugin(Arc::new(LocalTemplater::new(&args.templates_path)));
+
+    let templater_source = Arc::new(LocalTemplateSource::new(&args.templates_path));
+    engine.add_plugin(Arc::new(Templater::new(templater_source)));
 
     engine.add_plugin(Arc::new(TelegramPlugin::new(credentials.clone())));
     engine.add_plugin(Arc::new(EmailPlugin::new(credentials.clone())));

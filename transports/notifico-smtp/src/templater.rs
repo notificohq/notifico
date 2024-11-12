@@ -1,5 +1,5 @@
 use lettre::message::Mailbox;
-use notifico_core::templater::RenderResponse;
+use notifico_core::templater::RenderedTemplate;
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -11,10 +11,10 @@ pub struct RenderedEmail {
     pub body_plaintext: String,
 }
 
-impl TryFrom<RenderResponse> for RenderedEmail {
+impl TryFrom<RenderedTemplate> for RenderedEmail {
     type Error = ();
 
-    fn try_from(value: RenderResponse) -> Result<Self, Self::Error> {
+    fn try_from(value: RenderedTemplate) -> Result<Self, Self::Error> {
         serde_json::from_value(Value::from_iter(value.0)).map_err(|_| ())
     }
 }
