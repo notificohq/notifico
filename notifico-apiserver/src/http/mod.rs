@@ -2,9 +2,12 @@ mod admin;
 mod ingest;
 mod recipient;
 
+use axum::response::IntoResponse;
 use axum::{Extension, Router};
 use notifico_core::http::SecretKey;
 use notifico_core::pipeline::runner::ProcessEventRequest;
+use notifico_core::pipeline::storage::PipelineStorage;
+use notifico_project::ProjectController;
 use notifico_subscription::SubscriptionManager;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -20,6 +23,8 @@ pub(crate) struct HttpExtensions {
     pub sender: Sender<ProcessEventRequest>,
     pub subman: Arc<SubscriptionManager>,
     pub secret_key: Arc<SecretKey>,
+    pub pipeline_storage: Arc<dyn PipelineStorage>,
+    pub projects_controller: Arc<ProjectController>,
 }
 
 #[derive(OpenApi)]

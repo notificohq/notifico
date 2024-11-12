@@ -11,6 +11,10 @@ members = [
     "notifico-apiserver",
     "notifico-subscription",
     "notifico-subscription/migration",
+    "notifico-dbpipeline",
+    "notifico-dbpipeline/migration",
+    "notifico-project",
+    "notifico-project/migration",
 ]
 
 [workspace.dependencies]

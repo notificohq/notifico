@@ -80,6 +80,7 @@ async fn connect_to_broker(
 async fn process_link(mut receiver: Receiver, runner: Arc<PipelineRunner>) -> anyhow::Result<()> {
     loop {
         let delivery = receiver.recv::<String>().await?;
+
         receiver.accept(&delivery).await?;
         let eventrequest = serde_json::from_str(delivery.body())?;
         runner.process_eventrequest(eventrequest).await;
