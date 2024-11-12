@@ -1,17 +1,17 @@
-use crate::http::admin::project::ProjectUpdate;
 use axum::extract::{Path, Query};
 use axum::http::header::CONTENT_RANGE;
 use axum::http::{HeaderMap, StatusCode};
 use axum::{Extension, Json};
 use notifico_core::http::admin::{ListQueryParams, PaginatedResult};
 use notifico_core::pipeline::storage::{PipelineResult, PipelineStorage};
+use notifico_core::pipeline::Pipeline;
 use notifico_core::step::SerializedStep;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::sync::Arc;
 use uuid::Uuid;
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct PipelineItem {
     pub id: Uuid,
     pub project_id: Uuid,
@@ -67,12 +67,31 @@ pub async fn get_pipeline(
 pub async fn update_pipeline(
     Extension(pipeline_storage): Extension<Arc<dyn PipelineStorage>>,
     Path((id,)): Path<(Uuid,)>,
-    Json(update): Json<ProjectUpdate>,
+    Json(update): Json<PipelineItem>,
 ) -> (StatusCode, Json<Value>) {
-    let result = pipeline_storage.update(id, &update.name).await.unwrap();
+    let pipeline = Pipeline {
+        id,
+        project_id: update.project_id,
+        channel: update.channel,
+        steps: update.steps,
+    };
+    pipeline_storage.update_pipeline(pipeline).await.unwrap();
+    pipeline_storage
+        .assign_events_to_pipeline(id, update.event_ids.clone())
+        .await
+        .unwrap();
 
     (
         StatusCode::ACCEPTED,
-        Json(serde_json::to_value(result).unwrap()),
+        Json(serde_json::to_value(()).unwrap()),
     )
+}
+
+pub async fn delete_pipeline(
+    Extension(pipeline_storage): Extension<Arc<dyn PipelineStorage>>,
+    Path((id,)): Path<(Uuid,)>,
+) -> (StatusCode, Json<Value>) {
+    pipeline_storage.delete_pipeline(id).await.unwrap();
+
+    (StatusCode::NO_CONTENT, Json(Value::Null))
 }

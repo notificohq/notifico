@@ -30,6 +30,7 @@ pub trait PipelineStorage: Send + Sync {
         pipeline_id: Uuid,
         event_id: Vec<Uuid>,
     ) -> Result<(), EngineError>;
+    async fn delete_pipeline(&self, id: Uuid) -> Result<(), EngineError>;
 
     async fn list_events(
         &self,

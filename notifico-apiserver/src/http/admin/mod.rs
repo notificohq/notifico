@@ -1,5 +1,5 @@
 use crate::http::HttpExtensions;
-use axum::routing::{get, put};
+use axum::routing::get;
 use axum::{Extension, Router};
 use tower_http::cors::CorsLayer;
 mod event;
@@ -11,14 +11,18 @@ pub(crate) fn get_router(ext: HttpExtensions) -> Router {
     Router::new()
         // Subscriptions
         .route("/v1/subscriptions", get(subscription::list_subscriptions))
-        .route("/v1/subscriptions/:id", get(subscription::get_subscription))
         .route(
             "/v1/subscriptions/:id",
-            put(subscription::update_subscription),
+            get(subscription::get_subscription).put(subscription::update_subscription),
         )
         // Pipelines
         .route("/v1/pipelines", get(pipeline::list_pipelines))
-        .route("/v1/pipelines/:id", get(pipeline::get_pipeline))
+        .route(
+            "/v1/pipelines/:id",
+            get(pipeline::get_pipeline)
+                .put(pipeline::update_pipeline)
+                .delete(pipeline::delete_pipeline),
+        )
         // Events
         .route(
             "/v1/events",

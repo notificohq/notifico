@@ -10,6 +10,7 @@ use sea_orm::{
     QueryFilter, QuerySelect, Set,
 };
 use serde::Deserialize;
+use std::collections::HashSet;
 use std::error::Error;
 
 mod entity;
@@ -96,6 +97,67 @@ impl PipelineStorage for DbPipelineStorage {
         let results = results?;
 
         Ok(results.first().cloned())
+    }
+
+    async fn update_pipeline(&self, pipeline: Pipeline) -> Result<(), EngineError> {
+        let pipeline_am = entity::pipeline::ActiveModel {
+            id: Set(pipeline.id),
+            project_id: Set(pipeline.project_id),
+            channel: Set(pipeline.channel),
+            steps: Set(serde_json::to_value(pipeline.steps).unwrap()),
+        };
+
+        pipeline_am.update(&self.db).await?;
+
+        Ok(())
+    }
+
+    async fn assign_events_to_pipeline(
+        &self,
+        pipeline_id: Uuid,
+        event_id: Vec<Uuid>,
+    ) -> Result<(), EngineError> {
+        let current_events = entity::pipeline_event_j::Entity::find()
+            .filter(entity::pipeline_event_j::Column::PipelineId.eq(pipeline_id))
+            .all(&self.db)
+            .await?;
+
+        let current_ids: HashSet<Uuid> = current_events.into_iter().map(|e| e.event_id).collect();
+        let new_ids: HashSet<Uuid> = event_id.into_iter().collect();
+
+        let to_delete: Vec<Uuid> = current_ids.difference(&new_ids).cloned().collect();
+        let to_add: Vec<Uuid> = new_ids.difference(&current_ids).cloned().collect();
+
+        if !to_delete.is_empty() {
+            entity::pipeline_event_j::Entity::delete_many()
+                .filter(entity::pipeline_event_j::Column::PipelineId.eq(pipeline_id))
+                .filter(entity::pipeline_event_j::Column::EventId.is_in(to_delete))
+                .exec(&self.db)
+                .await?;
+        }
+
+        if !to_add.is_empty() {
+            let to_add_am: Vec<entity::pipeline_event_j::ActiveModel> = to_add
+                .into_iter()
+                .map(|event_id| entity::pipeline_event_j::ActiveModel {
+                    pipeline_id: Set(pipeline_id),
+                    event_id: Set(event_id),
+                })
+                .collect();
+
+            entity::pipeline_event_j::Entity::insert_many(to_add_am)
+                .exec(&self.db)
+                .await?;
+        }
+
+        Ok(())
+    }
+
+    async fn delete_pipeline(&self, id: Uuid) -> Result<(), EngineError> {
+        entity::pipeline::Entity::delete_by_id(id)
+            .exec(&self.db)
+            .await?;
+        Ok(())
     }
 
     async fn list_events(
