@@ -9,6 +9,7 @@ use notifico_core::pipeline::runner::ProcessEventRequest;
 use notifico_core::pipeline::storage::PipelineStorage;
 use notifico_project::ProjectController;
 use notifico_subscription::SubscriptionManager;
+use notifico_template::source::TemplateSource;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::TcpListener;
@@ -25,6 +26,7 @@ pub(crate) struct HttpExtensions {
     pub secret_key: Arc<SecretKey>,
     pub pipeline_storage: Arc<dyn PipelineStorage>,
     pub projects_controller: Arc<ProjectController>,
+    pub templates_controller: Arc<dyn TemplateSource>,
 }
 
 #[derive(OpenApi)]

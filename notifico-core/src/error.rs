@@ -10,9 +10,10 @@ pub enum EngineError {
     ContactNotFound(String),
     InvalidContactFormat,
     RecipientNotSet,
-    TemplateNotSet,
     ProjectNotFound(Uuid),
     TemplateRenderingError,
+    MissingTemplateParameter(String),
+    InvalidRenderedTemplateFormat(Box<dyn Error>),
     InternalError(Box<dyn Error>),
     InvalidStep(serde_json::Error),
 }

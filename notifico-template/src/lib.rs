@@ -1,6 +1,6 @@
-mod db;
+pub mod db;
 pub mod entity;
-mod error;
+pub mod error;
 pub mod source;
 
 use async_trait::async_trait;
@@ -17,7 +17,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tracing::info;
 
-#[derive(Default)]
+#[derive(Default, Clone, Serialize, Deserialize)]
+#[serde(transparent)]
 pub struct PreRenderedTemplate(pub HashMap<String, String>);
 
 pub struct Templater {

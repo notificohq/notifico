@@ -38,6 +38,7 @@ impl PipelineStorage for DbPipelineStorage {
         event_name: &str,
     ) -> Result<Vec<Pipeline>, EngineError> {
         let models = entity::pipeline::Entity::find()
+            .inner_join(entity::event::Entity)
             .filter(entity::pipeline::Column::ProjectId.eq(project))
             .filter(entity::event::Column::Name.eq(event_name))
             .all(&self.db)

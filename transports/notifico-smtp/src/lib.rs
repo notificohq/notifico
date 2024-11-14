@@ -89,18 +89,18 @@ impl EnginePlugin for EmailPlugin {
 
                 let transport = self.get_transport(credential).await;
 
+                let plugin_context: PluginContext =
+                    serde_json::from_value(context.plugin_contexts.clone().into()).unwrap();
+
                 for message in context.messages.iter().cloned() {
-                    let rendered: RenderedEmail = message.try_into().unwrap();
+                    let rendered: RenderedEmail = message.try_into()?;
 
                     let message = {
-                        let content: PluginContext =
-                            serde_json::from_value(context.plugin_contexts.clone().into()).unwrap();
-
                         let mut builder = lettre::Message::builder();
                         builder = builder.from(rendered.from);
                         builder = builder.to(contact.address.clone());
                         builder = builder.subject(rendered.subject);
-                        if let Some(list_unsubscribe) = content.list_unsubscribe {
+                        if let Some(list_unsubscribe) = plugin_context.list_unsubscribe.clone() {
                             builder = builder.header(ListUnsubscribe::from(list_unsubscribe));
                         }
                         builder

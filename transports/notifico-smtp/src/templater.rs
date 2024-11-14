@@ -1,7 +1,7 @@
 use lettre::message::Mailbox;
+use notifico_core::error::EngineError;
 use notifico_core::templater::RenderedTemplate;
 use serde::Deserialize;
-use serde_json::Value;
 
 #[derive(Deserialize, Clone)]
 pub struct RenderedEmail {
@@ -12,9 +12,17 @@ pub struct RenderedEmail {
 }
 
 impl TryFrom<RenderedTemplate> for RenderedEmail {
-    type Error = ();
+    type Error = EngineError;
 
     fn try_from(value: RenderedTemplate) -> Result<Self, Self::Error> {
-        serde_json::from_value(Value::from_iter(value.0)).map_err(|_| ())
+        Ok(Self {
+            from: value
+                .get("from")?
+                .parse::<Mailbox>()
+                .map_err(|e| EngineError::InvalidRenderedTemplateFormat(e.into()))?,
+            subject: value.get("subject")?.to_string(),
+            body_html: value.get("body_html")?.to_string(),
+            body_plaintext: value.get("body_plaintext")?.to_string(),
+        })
     }
 }

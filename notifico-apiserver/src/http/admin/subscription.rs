@@ -32,7 +32,7 @@ impl From<notifico_subscription::entity::subscription::Model> for SubscriptionIt
     }
 }
 
-pub async fn list_subscriptions(
+pub async fn list(
     Query(params): Query<ListQueryParams>,
     Extension(subman): Extension<Arc<SubscriptionManager>>,
 ) -> (HeaderMap, Json<Vec<SubscriptionItem>>) {
@@ -49,7 +49,7 @@ pub async fn list_subscriptions(
     (headers, Json(subscriptions))
 }
 
-pub async fn get_subscription(
+pub async fn get(
     Path((params,)): Path<(Uuid,)>,
     Extension(subman): Extension<Arc<SubscriptionManager>>,
 ) -> Json<Value> {
@@ -66,7 +66,7 @@ pub struct SubscriptionUpdate {
     pub is_subscribed: Option<bool>,
 }
 
-pub async fn update_subscription(
+pub async fn update(
     Path((id,)): Path<(Uuid,)>,
     Extension(subman): Extension<Arc<SubscriptionManager>>,
     Json(update): Json<SubscriptionUpdate>,

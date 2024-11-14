@@ -33,7 +33,7 @@ impl From<PipelineResult> for PipelineItem {
     }
 }
 
-pub async fn list_pipelines(
+pub async fn list(
     Query(params): Query<ListQueryParams>,
     Extension(pipeline_storage): Extension<Arc<dyn PipelineStorage>>,
 ) -> (HeaderMap, Json<Vec<PipelineItem>>) {
@@ -48,7 +48,7 @@ pub async fn list_pipelines(
     (headers, Json(pipelines))
 }
 
-pub async fn get_pipeline(
+pub async fn get(
     Path((id,)): Path<(Uuid,)>,
     Extension(pipeline_storage): Extension<Arc<dyn PipelineStorage>>,
 ) -> (StatusCode, Json<Option<PipelineItem>>) {
@@ -64,7 +64,7 @@ pub async fn get_pipeline(
     (StatusCode::OK, Json(Some(result)))
 }
 
-pub async fn update_pipeline(
+pub async fn update(
     Extension(pipeline_storage): Extension<Arc<dyn PipelineStorage>>,
     Path((id,)): Path<(Uuid,)>,
     Json(update): Json<PipelineItem>,
@@ -87,7 +87,7 @@ pub async fn update_pipeline(
     )
 }
 
-pub async fn delete_pipeline(
+pub async fn delete(
     Extension(pipeline_storage): Extension<Arc<dyn PipelineStorage>>,
     Path((id,)): Path<(Uuid,)>,
 ) -> (StatusCode, Json<Value>) {

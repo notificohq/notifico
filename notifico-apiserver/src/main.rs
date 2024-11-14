@@ -7,6 +7,7 @@ use notifico_core::http::SecretKey;
 use notifico_dbpipeline::DbPipelineStorage;
 use notifico_project::ProjectController;
 use notifico_subscription::SubscriptionManager;
+use notifico_template::db::DbTemplateSource;
 use sea_orm::{ConnectOptions, Database};
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -70,6 +71,9 @@ async fn main() {
     let projects = Arc::new(ProjectController::new(db_connection.clone()));
     projects.setup().await.unwrap();
 
+    let templates = Arc::new(DbTemplateSource::new(db_connection.clone())); // Implement your template source here
+    templates.setup().await.unwrap();
+
     let (request_tx, request_rx) = tokio::sync::mpsc::channel(1);
 
     let ext = HttpExtensions {
@@ -78,6 +82,7 @@ async fn main() {
         subman,
         secret_key: Arc::new(SecretKey(args.secret_key.as_bytes().to_vec())),
         pipeline_storage,
+        templates_controller: templates,
     };
 
     tokio::spawn(http::start(

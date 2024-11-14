@@ -15,3 +15,4 @@ toml = "0.8.19"
 notifico-template-migration = { path = "migration" }
 sea-orm = { workspace = true }
 uuid = { version = "1.11.0", features = ["serde"] }
+anyhow = "1.0.93"

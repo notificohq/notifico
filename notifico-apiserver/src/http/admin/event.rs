@@ -10,7 +10,7 @@ use serde_json::{json, Value};
 use std::sync::Arc;
 use uuid::Uuid;
 
-pub async fn list_events(
+pub async fn list(
     Query(params): Query<ListQueryParams>,
     Extension(pipeline_storage): Extension<Arc<dyn PipelineStorage>>,
 ) -> (HeaderMap, Json<Vec<Event>>) {
@@ -23,7 +23,7 @@ pub async fn list_events(
     (headers, Json(items))
 }
 
-pub async fn get_event(
+pub async fn get(
     Path((id,)): Path<(Uuid,)>,
     Extension(pipeline_storage): Extension<Arc<dyn PipelineStorage>>,
 ) -> (StatusCode, Json<Option<Event>>) {
@@ -41,7 +41,7 @@ pub struct EventCreate {
     name: String,
 }
 
-pub async fn create_event(
+pub async fn create(
     Extension(pipeline_storage): Extension<Arc<dyn PipelineStorage>>,
     Json(create): Json<EventCreate>,
 ) -> (StatusCode, Json<Value>) {
@@ -61,7 +61,7 @@ pub struct EventUpdate {
     name: String,
 }
 
-pub async fn update_event(
+pub async fn update(
     Extension(pipeline_storage): Extension<Arc<dyn PipelineStorage>>,
     Path((id,)): Path<(Uuid,)>,
     Json(update): Json<EventUpdate>,
@@ -77,7 +77,7 @@ pub async fn update_event(
     )
 }
 
-pub async fn delete_event(
+pub async fn delete(
     Extension(pipeline_storage): Extension<Arc<dyn PipelineStorage>>,
     Path((id,)): Path<(Uuid,)>,
 ) -> (StatusCode, Json<Value>) {

@@ -21,7 +21,7 @@ pub async fn list_projects(
     (headers, Json(items))
 }
 
-pub async fn get_project(
+pub async fn get(
     Path((id,)): Path<(Uuid,)>,
     Extension(controller): Extension<Arc<ProjectController>>,
 ) -> (StatusCode, Json<Option<Project>>) {
@@ -38,7 +38,7 @@ pub struct ProjectUpdate {
     name: String,
 }
 
-pub async fn create_project(
+pub async fn create(
     Extension(controller): Extension<Arc<ProjectController>>,
     Json(update): Json<ProjectUpdate>,
 ) -> (StatusCode, Json<Value>) {
@@ -50,7 +50,7 @@ pub async fn create_project(
     )
 }
 
-pub async fn update_project(
+pub async fn update(
     Extension(controller): Extension<Arc<ProjectController>>,
     Path((id,)): Path<(Uuid,)>,
     Json(update): Json<ProjectUpdate>,
@@ -63,7 +63,7 @@ pub async fn update_project(
     )
 }
 
-pub async fn delete_project(
+pub async fn delete(
     Extension(controller): Extension<Arc<ProjectController>>,
     Path((id,)): Path<(Uuid,)>,
 ) -> (StatusCode, Json<Value>) {

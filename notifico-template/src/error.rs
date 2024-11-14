@@ -3,6 +3,7 @@ use sea_orm::DbErr;
 use std::io;
 use std::io::ErrorKind;
 
+#[derive(Debug)]
 pub enum TemplaterError {
     TemplateNotFound,
     Io(io::Error),

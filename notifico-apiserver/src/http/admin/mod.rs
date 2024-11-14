@@ -6,48 +6,50 @@ mod event;
 mod pipeline;
 mod project;
 pub mod subscription;
+mod template;
 
 pub(crate) fn get_router(ext: HttpExtensions) -> Router {
     Router::new()
         // Subscriptions
-        .route("/v1/subscriptions", get(subscription::list_subscriptions))
+        .route("/v1/subscriptions", get(subscription::list))
         .route(
             "/v1/subscriptions/:id",
-            get(subscription::get_subscription).put(subscription::update_subscription),
+            get(subscription::get).put(subscription::update),
         )
         // Pipelines
-        .route("/v1/pipelines", get(pipeline::list_pipelines))
+        .route("/v1/pipelines", get(pipeline::list))
         .route(
             "/v1/pipelines/:id",
-            get(pipeline::get_pipeline)
-                .put(pipeline::update_pipeline)
-                .delete(pipeline::delete_pipeline),
+            get(pipeline::get)
+                .put(pipeline::update)
+                .delete(pipeline::delete),
         )
         // Events
-        .route(
-            "/v1/events",
-            get(event::list_events).post(event::create_event),
-        )
+        .route("/v1/events", get(event::list).post(event::create))
         .route(
             "/v1/events/:id",
-            get(event::get_event)
-                .put(event::update_event)
-                .delete(event::delete_event),
+            get(event::get).put(event::update).delete(event::delete),
         )
         // Projects
         .route(
             "/v1/projects",
-            get(project::list_projects).post(project::create_project),
+            get(project::list_projects).post(project::create),
         )
         .route(
             "/v1/projects/:id",
-            get(project::get_project)
-                .put(project::update_project)
-                .delete(project::delete_project),
+            get(project::get)
+                .put(project::update)
+                .delete(project::delete),
         )
+        .route(
+            "/v1/templates/:channel",
+            get(template::list).post(template::create),
+        )
+        .route("/v1/templates/:channel/:id", get(template::get))
         // Layers
         .layer(Extension(ext.subman))
         .layer(Extension(ext.pipeline_storage))
         .layer(Extension(ext.projects_controller))
+        .layer(Extension(ext.templates_controller))
         .layer(CorsLayer::permissive())
 }
