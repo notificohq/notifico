@@ -93,6 +93,29 @@ impl TemplateSource for DbTemplateSource {
         .await?;
         Ok(item)
     }
+
+    async fn update_template(&self, item: TemplateItem) -> Result<TemplateItem, TemplaterError> {
+        entity::template::ActiveModel {
+            id: Set(item.id),
+            project_id: Set(item.project_id),
+            name: Set(item.name.clone()),
+            channel: Set(item.channel.clone()),
+            template: Set(serde_json::to_value(item.template.clone()).unwrap()),
+        }
+        .update(&self.db)
+        .await?;
+        Ok(item)
+    }
+
+    async fn delete_template(&self, id: Uuid) -> Result<(), TemplaterError> {
+        entity::template::ActiveModel {
+            id: Set(id),
+            ..Default::default()
+        }
+        .delete(&self.db)
+        .await?;
+        Ok(())
+    }
 }
 
 impl From<entity::template::Model> for PreRenderedTemplate {

@@ -17,7 +17,7 @@ pub(crate) fn get_router(ext: HttpExtensions) -> Router {
             get(subscription::get).put(subscription::update),
         )
         // Pipelines
-        .route("/v1/pipelines", get(pipeline::list))
+        .route("/v1/pipelines", get(pipeline::list).post(pipeline::create))
         .route(
             "/v1/pipelines/:id",
             get(pipeline::get)
@@ -45,7 +45,12 @@ pub(crate) fn get_router(ext: HttpExtensions) -> Router {
             "/v1/templates/:channel",
             get(template::list).post(template::create),
         )
-        .route("/v1/templates/:channel/:id", get(template::get))
+        .route(
+            "/v1/templates/:channel/:id",
+            get(template::get)
+                .put(template::update)
+                .delete(template::delete),
+        )
         // Layers
         .layer(Extension(ext.subman))
         .layer(Extension(ext.pipeline_storage))

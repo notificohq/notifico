@@ -45,3 +45,24 @@ pub async fn create(
         Json(serde_json::to_value(result).unwrap()),
     )
 }
+
+pub async fn update(
+    Extension(controller): Extension<Arc<dyn TemplateSource>>,
+    Json(update): Json<TemplateItem>,
+) -> (StatusCode, Json<Value>) {
+    let result = controller.update_template(update).await.unwrap();
+
+    (
+        StatusCode::ACCEPTED,
+        Json(serde_json::to_value(result).unwrap()),
+    )
+}
+
+pub async fn delete(
+    Extension(controller): Extension<Arc<dyn TemplateSource>>,
+    Path((channel, id)): Path<(String, Uuid)>,
+) -> (StatusCode, Json<Value>) {
+    controller.delete_template(id).await.unwrap();
+
+    (StatusCode::NO_CONTENT, Json(Value::Null))
+}

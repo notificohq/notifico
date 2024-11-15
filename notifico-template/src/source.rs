@@ -45,4 +45,8 @@ pub trait TemplateSource: Send + Sync + 'static {
     ) -> Result<PaginatedResult<TemplateItem>, TemplaterError>;
 
     async fn create_template(&self, item: TemplateItem) -> Result<TemplateItem, TemplaterError>;
+
+    async fn update_template(&self, item: TemplateItem) -> Result<TemplateItem, TemplaterError>;
+
+    async fn delete_template(&self, id: Uuid) -> Result<(), TemplaterError>;
 }

@@ -13,6 +13,7 @@ use uuid::Uuid;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct PipelineItem {
+    #[serde(default = "Uuid::nil")]
     pub id: Uuid,
     pub project_id: Uuid,
     pub event_ids: Vec<Uuid>,
@@ -31,6 +32,27 @@ impl From<PipelineResult> for PipelineItem {
             event_ids: value.event_ids,
         }
     }
+}
+
+pub async fn create(
+    Extension(pipeline_storage): Extension<Arc<dyn PipelineStorage>>,
+    Json(item): Json<PipelineItem>,
+) -> (StatusCode, Json<Value>) {
+    let id = Uuid::now_v7();
+    let pipeline = Pipeline {
+        id,
+        project_id: item.project_id,
+        channel: item.channel,
+        steps: item.steps,
+    };
+    let result = pipeline_storage.create_pipeline(pipeline).await.unwrap();
+
+    pipeline_storage
+        .assign_events_to_pipeline(id, item.event_ids.clone())
+        .await
+        .unwrap();
+
+    (StatusCode::CREATED, Json(Value::Null))
 }
 
 pub async fn list(

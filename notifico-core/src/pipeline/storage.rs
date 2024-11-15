@@ -24,6 +24,7 @@ pub trait PipelineStorage: Send + Sync {
         params: ListQueryParams,
     ) -> Result<PaginatedResult<PipelineResult>, EngineError>;
     async fn get_pipeline_by_id(&self, id: Uuid) -> Result<Option<PipelineResult>, EngineError>;
+    async fn create_pipeline(&self, pipeline: Pipeline) -> Result<Pipeline, EngineError>;
     async fn update_pipeline(&self, pipeline: Pipeline) -> Result<(), EngineError>;
     async fn assign_events_to_pipeline(
         &self,

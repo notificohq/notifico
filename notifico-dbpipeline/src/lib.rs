@@ -100,6 +100,19 @@ impl PipelineStorage for DbPipelineStorage {
         Ok(results.first().cloned())
     }
 
+    async fn create_pipeline(&self, pipeline: Pipeline) -> Result<Pipeline, EngineError> {
+        let pipeline_am = entity::pipeline::ActiveModel {
+            id: Set(pipeline.id),
+            project_id: Set(pipeline.project_id),
+            channel: Set(pipeline.channel.clone()),
+            steps: Set(serde_json::to_value(pipeline.steps.clone()).unwrap()),
+        };
+
+        pipeline_am.insert(&self.db).await?;
+
+        Ok(pipeline)
+    }
+
     async fn update_pipeline(&self, pipeline: Pipeline) -> Result<(), EngineError> {
         let pipeline_am = entity::pipeline::ActiveModel {
             id: Set(pipeline.id),
