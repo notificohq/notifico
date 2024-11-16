@@ -24,7 +24,7 @@ pub async fn list(
 }
 
 pub async fn get(
-    Path((channel, id)): Path<(String, Uuid)>,
+    Path((_channel, id)): Path<(String, Uuid)>,
     Extension(controller): Extension<Arc<dyn TemplateSource>>,
 ) -> (StatusCode, Json<Option<TemplateItem>>) {
     match controller.get_template_by_id(id).await {
@@ -60,7 +60,7 @@ pub async fn update(
 
 pub async fn delete(
     Extension(controller): Extension<Arc<dyn TemplateSource>>,
-    Path((channel, id)): Path<(String, Uuid)>,
+    Path((_channel, id)): Path<(String, Uuid)>,
 ) -> (StatusCode, Json<Value>) {
     controller.delete_template(id).await.unwrap();
 

@@ -18,6 +18,7 @@ clap = { version = "4.5.20", features = ["derive", "color", "usage", "env"] }
 dotenvy = "0.15.7"
 fe2o3-amqp = "0.13.1"
 futures = "0.3.31"
+rust-embed = { version = "8.5.0", features = ["mime-guess"] }
 sea-orm = { workspace = true }
 serde = { version = "1.0.210", features = ["derive"] }
 serde_json = "1.0.130"

@@ -2,7 +2,9 @@ mod admin;
 mod ingest;
 mod recipient;
 
-use axum::response::IntoResponse;
+use axum::http::header::CONTENT_TYPE;
+use axum::http::{StatusCode, Uri};
+use axum::response::{Html, IntoResponse, Response};
 use axum::{Extension, Router};
 use notifico_core::http::SecretKey;
 use notifico_core::pipeline::runner::ProcessEventRequest;
@@ -10,6 +12,7 @@ use notifico_core::pipeline::storage::PipelineStorage;
 use notifico_project::ProjectController;
 use notifico_subscription::SubscriptionManager;
 use notifico_template::source::TemplateSource;
+use rust_embed::Embed;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::TcpListener;
@@ -33,6 +36,10 @@ pub(crate) struct HttpExtensions {
 #[openapi(info(description = "Notifico Service API"), paths(ingest::send))]
 struct ApiDoc;
 
+#[derive(Embed)]
+#[folder = "admin/"]
+struct AdminAssets;
+
 pub(crate) async fn start(
     serviceapi_bind: SocketAddr,
     clientapi_bind: SocketAddr,
@@ -46,6 +53,7 @@ pub(crate) async fn start(
     let app =
         app.merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()));
     let app = app.merge(Redoc::with_url("/redoc", ApiDoc::openapi()));
+    let app = app.fallback(static_handler);
 
     let service_listener = TcpListener::bind(serviceapi_bind).await.unwrap();
     tokio::spawn(async { axum::serve(service_listener, app).await.unwrap() });
@@ -56,4 +64,31 @@ pub(crate) async fn start(
 
     let client_listener = TcpListener::bind(clientapi_bind).await.unwrap();
     tokio::spawn(async { axum::serve(client_listener, app).await.unwrap() });
+}
+
+const INDEX_HTML: &str = "index.html";
+
+async fn static_handler(uri: Uri) -> impl IntoResponse {
+    let path = uri.path().trim_start_matches('/');
+
+    if path.is_empty() || path == INDEX_HTML {
+        return index_html().await;
+    }
+
+    let Some(content) = AdminAssets::get(path) else {
+        return not_found().await;
+    };
+
+    ([(CONTENT_TYPE, content.metadata.mimetype())], content.data).into_response()
+}
+
+async fn index_html() -> Response {
+    match AdminAssets::get(INDEX_HTML) {
+        Some(content) => Html(content.data).into_response(),
+        None => not_found().await,
+    }
+}
+
+async fn not_found() -> Response {
+    (StatusCode::NOT_FOUND, "404").into_response()
 }
