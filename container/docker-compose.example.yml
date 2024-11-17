@@ -22,13 +22,13 @@ services:
       NOTIFICO_DB_URL: postgres://postgres:1q2w3e4r@postgres:5432/postgres
       NOTIFICO_CLIENT_API_URL: http://127.0.0.1:9000/
     volumes:
-      - "../pipelines.yml:/var/notifico/pipelines.yml"
+      - "../credentials.toml:/var/notifico/credentials.toml"
   rabbitmq:
     image: rabbitmq:4.0
     ports:
       - "5672:5672"
   postgres:
-    image: postgres:16
+    image: postgres:17
     ports:
       - "5432:5432"
     environment:

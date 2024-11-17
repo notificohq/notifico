@@ -29,9 +29,9 @@ struct Args {
         default_value = "notifico_workers"
     )]
     amqp_addr: String,
-    #[clap(long, env = "NOTIFICO_SERVICE_API_BIND")]
+    #[clap(long, env = "NOTIFICO_SERVICE_API_BIND", default_value = "[::]:8000")]
     service_api_bind: SocketAddr,
-    #[clap(long, env = "NOTIFICO_CLIENT_API_BIND")]
+    #[clap(long, env = "NOTIFICO_CLIENT_API_BIND", default_value = "[::]:9000")]
     client_api_bind: SocketAddr,
     #[clap(long, env = "NOTIFICO_CLIENT_API_URL")]
     client_api_url: Url,

@@ -44,22 +44,10 @@ struct Args {
 
     #[clap(
         long,
-        env = "NOTIFICO_TEMPLATES_PATH",
-        default_value = "/var/notifico/templates/"
-    )]
-    templates_path: PathBuf,
-    #[clap(
-        long,
         env = "NOTIFICO_CREDENTIALS_PATH",
         default_value = "/var/notifico/credentials.toml"
     )]
     credentials_path: PathBuf,
-    #[clap(
-        long,
-        env = "NOTIFICO_PIPELINES_PATH",
-        default_value = "/var/notifico/pipelines.yml"
-    )]
-    pipelines_path: PathBuf,
 }
 
 #[derive(Debug, clap::Args)]
