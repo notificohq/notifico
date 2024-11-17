@@ -46,7 +46,7 @@ struct Args {
     #[clap(
         long,
         env = "NOTIFICO_CREDENTIALS_PATH",
-        default_value = "/var/notifico/credentials.toml"
+        default_value = "/var/lib/notifico/credentials.toml"
     )]
     credentials_path: PathBuf,
 }
