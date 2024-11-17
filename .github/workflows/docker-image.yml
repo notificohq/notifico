@@ -8,6 +8,9 @@ on:
 
 jobs:
   build:
+    strategy:
+      matrix:
+        docker_arch: [ "linux/amd64", "linux/arm64" ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,7 +24,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ matrix.docker_arch }}
           push: true
           tags: |
             notificohq/notifico-worker:latest
@@ -30,7 +33,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ matrix.docker_arch }}
           push: true
           tags: |
             notificohq/notifico-apiserver:latest
