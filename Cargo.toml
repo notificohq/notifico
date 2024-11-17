@@ -6,6 +6,7 @@ members = [
     "transports/notifico-telegram",
     "transports/notifico-whatsapp",
     "transports/notifico-smpp",
+    "transports/notifico-slack",
     "notifico-template",
     "notifico-template/migration",
     "notifico-worker",

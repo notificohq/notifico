@@ -10,6 +10,7 @@ use notifico_core::config::credentials::MemoryCredentialStorage;
 use notifico_core::engine::Engine;
 use notifico_core::pipeline::runner::PipelineRunner;
 use notifico_dbpipeline::DbPipelineStorage;
+use notifico_slack::SlackPlugin;
 use notifico_smpp::SmppPlugin;
 use notifico_smtp::EmailPlugin;
 use notifico_subscription::SubscriptionManager;
@@ -98,6 +99,7 @@ async fn main() {
     engine.add_plugin(Arc::new(EmailPlugin::new(credentials.clone())));
     engine.add_plugin(Arc::new(WaBusinessPlugin::new(credentials.clone())));
     engine.add_plugin(Arc::new(SmppPlugin::new(credentials.clone())));
+    engine.add_plugin(Arc::new(SlackPlugin::new(credentials.clone())));
 
     let subman = Arc::new(SubscriptionManager::new(
         db_connection,

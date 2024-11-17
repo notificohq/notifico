@@ -9,6 +9,8 @@ notifico-telegram = { path = "../transports/notifico-telegram" }
 notifico-smtp = { path = "../transports/notifico-smtp" }
 notifico-whatsapp = { path = "../transports/notifico-whatsapp" }
 notifico-smpp = { path = "../transports/notifico-smpp" }
+notifico-slack = { path = "../transports/notifico-slack" }
+
 notifico-template = { path = "../notifico-template" }
 notifico-subscription = { path = "../notifico-subscription" }
 notifico-dbpipeline = { path = "../notifico-dbpipeline" }

@@ -1,5 +1,7 @@
 # Notifico
 
+[Documentation](https://notifico.tech)
+
 Notifico is a self-hosted, open-source notification server that delivers real-time notifications
 to various clients via email, SMS, messengers and other means of communication.
 

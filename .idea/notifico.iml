@@ -19,6 +19,7 @@
       <sourceFolder url="file://$MODULE_DIR$/notifico-project/migration/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/notifico-project/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/notifico-template/migration/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/transports/notifico-slack/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />
