@@ -13,6 +13,7 @@ use serde::Deserialize;
 use std::collections::HashSet;
 use std::error::Error;
 
+#[allow(unused_imports)]
 mod entity;
 
 pub struct DbPipelineStorage {

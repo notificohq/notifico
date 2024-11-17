@@ -11,7 +11,7 @@ pub enum TemplaterError {
 }
 
 impl From<TemplaterError> for EngineError {
-    fn from(value: TemplaterError) -> Self {
+    fn from(_value: TemplaterError) -> Self {
         EngineError::TemplateRenderingError
     }
 }

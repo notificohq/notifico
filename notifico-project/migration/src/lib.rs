@@ -1,5 +1,6 @@
 pub use sea_orm_migration::prelude::*;
 
+#[allow(unused_imports)]
 mod entity;
 mod m20220101_000001_create_table;
 

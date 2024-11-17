@@ -5,6 +5,7 @@ use serde::Serialize;
 use std::error::Error;
 use uuid::Uuid;
 
+#[allow(unused_imports)]
 mod entity;
 
 #[derive(Clone, Debug, Serialize)]
