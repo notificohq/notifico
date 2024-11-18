@@ -10,12 +10,11 @@ pub struct SlackStatusResponse {
 
 impl SlackStatusResponse {
     fn into_result(self) -> Result<Self, SlackError> {
-        if !self.ok {
-            Err(SlackError::ApiError {
+        match self.ok {
+            true => Ok(self),
+            false => Err(SlackError::ApiError {
                 error: self.error.unwrap_or_default(),
-            })
-        } else {
-            Ok(self)
+            }),
         }
     }
 }

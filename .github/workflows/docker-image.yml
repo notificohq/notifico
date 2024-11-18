@@ -10,7 +10,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Login to Docker Hub
@@ -18,21 +17,39 @@ jobs:
         with:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Add GitHub-backed Rust build cache
+      - name: Rust Build Cache for Docker
+        uses: actions/cache@v4
+        with:
+          path: rust-build-cache
+          key: ${{ runner.os }}-rust-build-cache-${{ hashFiles('**/go.sum') }}
+      - name: inject rust-build-cache into docker
+        uses: reproducible-containers/buildkit-cache-dance@4b2444fec0c0fb9dbf175a96c094720a692ef810 # v2.1.4
+        with:
+          cache-source: rust-build-cache
+
+      # Build images
+      - uses: actions/checkout@v4
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
           tags: |
             notificohq/notifico-worker:latest
           context: .
           file: container/worker.dockerfile
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
           tags: |
             notificohq/notifico-apiserver:latest
           context: .
           file: container/apiserver.dockerfile
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
