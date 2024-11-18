@@ -46,11 +46,7 @@ impl EnginePlugin for WaBusinessPlugin {
 
         match step {
             Step::Send { credential } => {
-                let Some(recipient) = context.recipient.clone() else {
-                    return Err(EngineError::RecipientNotSet);
-                };
-
-                let contact: MobilePhoneContact = recipient.get_primary_contact()?;
+                let contact: MobilePhoneContact = context.get_contact()?;
 
                 // Send
                 let credential: WhatsAppCredentials = self

@@ -81,15 +81,23 @@ impl PipelineRunner {
             let event_context = event_context.clone();
             let event_name = event_name.to_string();
 
+            let channel = pipeline.channel.clone();
+
+            let contact = recipient
+                .clone()
+                .map(|r| r.get_primary_contact(&channel))
+                .unwrap_or_default();
+
             join_handles.spawn(async move {
                 let context = PipelineContext {
                     project_id,
-                    recipient,
+                    recipient_info: recipient,
                     event_name,
                     event_context,
                     plugin_contexts: Default::default(),
                     messages: Default::default(),
-                    channel: pipeline.channel.clone(),
+                    channel,
+                    current_contact: contact,
                 };
 
                 // Execute each step in the pipeline

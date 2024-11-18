@@ -83,7 +83,9 @@ async fn main() {
         .extract()
         .unwrap();
 
-    let db_conn_options = ConnectOptions::new(args.db_url.to_string());
+    let mut db_conn_options = ConnectOptions::new(args.db_url.to_string());
+    db_conn_options.sqlx_logging_level(log::LevelFilter::Debug);
+
     let db_connection = Database::connect(db_conn_options).await.unwrap();
 
     let credentials = Arc::new(MemoryCredentialStorage::from_config(credential_config).unwrap());

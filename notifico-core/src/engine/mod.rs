@@ -1,5 +1,5 @@
 use crate::error::EngineError;
-use crate::recipient::Recipient;
+use crate::recipient::{Contact, Recipient, TypedContact};
 use crate::step::SerializedStep;
 use crate::templater::RenderedTemplate;
 use serde::{Deserialize, Serialize};
@@ -22,12 +22,27 @@ pub struct EventContext(pub Map<String, Value>);
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct PipelineContext {
     pub project_id: Uuid,
-    pub recipient: Option<Recipient>,
+    pub recipient_info: Option<Recipient>,
+    pub current_contact: Option<Contact>,
     pub event_name: String,
     pub event_context: EventContext,
     pub plugin_contexts: Map<String, Value>,
     pub messages: Vec<RenderedTemplate>,
     pub channel: String,
+}
+
+impl PipelineContext {
+    pub fn get_contact<T: TypedContact>(&self) -> Result<T, EngineError> {
+        let Some(contact) = &self.current_contact else {
+            return Err(EngineError::ContactNotSet);
+        };
+
+        if contact.r#type() != T::CONTACT_TYPE {
+            return Err(EngineError::ContactTypeMismatch(T::CONTACT_TYPE.to_owned()));
+        }
+
+        contact.clone().into_contact()
+    }
 }
 
 /// Engine is used to run steps in the pipeline.

@@ -11,7 +11,7 @@ use notifico_template::db::DbTemplateSource;
 use sea_orm::{ConnectOptions, Database};
 use std::net::SocketAddr;
 use std::sync::Arc;
-use tracing::info;
+use tracing::{info, log};
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 use url::Url;
 
@@ -54,7 +54,9 @@ async fn main() {
 
     info!("Config: {:#?}", args);
 
-    let db_conn_options = ConnectOptions::new(args.db_url.to_string());
+    let mut db_conn_options = ConnectOptions::new(args.db_url.to_string());
+    db_conn_options.sqlx_logging_level(log::LevelFilter::Debug);
+
     let db_connection = Database::connect(db_conn_options).await.unwrap();
 
     // Initializing plugins
@@ -85,12 +87,10 @@ async fn main() {
         templates_controller: templates,
     };
 
-    tokio::spawn(http::start(
-        args.service_api_bind,
-        args.client_api_bind,
-        ext,
-    ));
-    tokio::spawn(amqp::run(args.amqp, args.amqp_addr, request_rx));
+    // Spawns HTTP servers and quits
+    http::start(args.service_api_bind, args.client_api_bind, ext).await;
+    let amqp_client = tokio::spawn(amqp::run(args.amqp, args.amqp_addr, request_rx));
+    amqp_client.await.unwrap();
 
     tokio::signal::ctrl_c().await.unwrap();
 }

@@ -13,13 +13,11 @@ pub struct Recipient {
 }
 
 impl Recipient {
-    pub fn get_primary_contact<T: TypedContact>(&self) -> Result<T, EngineError> {
-        for contact in &self.contacts {
-            if contact.r#type() == T::CONTACT_TYPE {
-                return contact.clone().into_contact();
-            }
-        }
-        Err(EngineError::ContactNotFound(T::CONTACT_TYPE.to_string()))
+    pub fn get_primary_contact(&self, channel: &str) -> Option<Contact> {
+        self.contacts
+            .iter()
+            .find(|contact| contact.r#type() == channel)
+            .cloned()
     }
 }
 
@@ -41,7 +39,7 @@ impl Contact {
     where
         T: TypedContact + for<'de> Deserialize<'de>,
     {
-        serde_json::from_value(self.0).map_err(|_| EngineError::InvalidContactFormat)
+        serde_json::from_value(self.0).map_err(EngineError::InvalidContactFormat)
     }
 }
 

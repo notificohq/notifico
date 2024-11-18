@@ -30,6 +30,7 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter", "fmt"] }
 url = "2.5.2"
 uuid = { version = "1.11.0", features = ["serde", "v7"] }
+log = "0.4.22"
 
 [features]
 default = []

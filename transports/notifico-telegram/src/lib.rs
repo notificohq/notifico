@@ -50,16 +50,12 @@ impl EnginePlugin for TelegramPlugin {
 
         match step {
             Step::Send { credential } => {
-                let Some(recipient) = context.recipient.clone() else {
-                    return Err(EngineError::RecipientNotSet);
-                };
-
                 let credential: TelegramBotCredentials = self
                     .credentials
                     .get_typed_credential(context.project_id, &credential)
                     .await?;
                 let bot = Bot::new(credential.token);
-                let contact: TelegramContact = recipient.get_primary_contact()?;
+                let contact: TelegramContact = context.get_contact()?;
 
                 for message in context.messages.iter().cloned() {
                     let content: TelegramContent = message.try_into().unwrap();

@@ -150,7 +150,7 @@ impl EnginePlugin for SubscriptionManager {
         context: &mut PipelineContext,
         step: &SerializedStep,
     ) -> Result<StepOutput, EngineError> {
-        let Some(recipient) = &context.recipient else {
+        let Some(recipient) = &context.recipient_info else {
             return Err(EngineError::RecipientNotSet);
         };
 
@@ -173,10 +173,6 @@ impl EnginePlugin for SubscriptionManager {
                 }
             }
             Step::ListUnsubscribe { .. } => {
-                let Some(recipient) = context.recipient.clone() else {
-                    return Err(EngineError::RecipientNotSet);
-                };
-
                 context.plugin_contexts.insert(
                     EMAIL_LIST_UNSUBSCRIBE.into(),
                     Value::String(format!(

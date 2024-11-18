@@ -76,11 +76,7 @@ impl EnginePlugin for EmailPlugin {
 
         match step {
             Step::Send { credential } => {
-                let Some(recipient) = context.recipient.clone() else {
-                    return Err(EngineError::RecipientNotSet);
-                };
-
-                let contact: EmailContact = recipient.get_primary_contact()?;
+                let contact: EmailContact = context.get_contact()?;
 
                 let credential: SmtpServerCredentials = self
                     .credentials

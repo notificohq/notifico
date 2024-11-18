@@ -57,10 +57,6 @@ impl EnginePlugin for SmppPlugin {
 
         match step {
             Step::Send { credential } => {
-                let Some(recipient) = context.recipient.clone() else {
-                    return Err(EngineError::RecipientNotSet);
-                };
-
                 let credential: SmppServerCredentials = self
                     .credentials
                     .get_typed_credential(context.project_id, &credential)
@@ -105,7 +101,7 @@ impl EnginePlugin for SmppPlugin {
                     }
                 }
 
-                let contact: MobilePhoneContact = recipient.get_primary_contact()?;
+                let contact: MobilePhoneContact = context.get_contact()?;
 
                 for message in context.messages.iter().cloned() {
                     let rendered: SmsContent = message.try_into().unwrap();

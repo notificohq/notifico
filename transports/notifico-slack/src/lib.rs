@@ -1,3 +1,4 @@
+mod slackapi;
 mod step;
 
 use crate::step::{Step, STEPS};
@@ -9,7 +10,6 @@ use notifico_core::recipient::TypedContact;
 use notifico_core::step::SerializedStep;
 use notifico_core::templater::RenderedTemplate;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use std::borrow::Cow;
 use std::sync::Arc;
 
@@ -23,14 +23,14 @@ impl TypedCredential for SlackCredentials {
 }
 
 pub struct SlackPlugin {
-    client: reqwest::Client,
+    client: slackapi::SlackApi,
     credentials: Arc<dyn CredentialStorage>,
 }
 
 impl SlackPlugin {
     pub fn new(credentials: Arc<dyn CredentialStorage>) -> Self {
         SlackPlugin {
-            client: reqwest::Client::new(),
+            client: slackapi::SlackApi::new(),
             credentials,
         }
     }
@@ -47,32 +47,24 @@ impl EnginePlugin for SlackPlugin {
 
         match step {
             Step::Send { credential } => {
-                let Some(recipient) = context.recipient.clone() else {
-                    return Err(EngineError::RecipientNotSet);
-                };
-
                 let credential: SlackCredentials = self
                     .credentials
                     .get_typed_credential(context.project_id, &credential)
                     .await?;
 
-                let contact: SlackContact = recipient.get_primary_contact()?;
+                let contact: SlackContact = context.get_contact()?;
 
                 for message in context.messages.iter().cloned() {
                     let content: SlackMessage = message.try_into()?;
-
-                    let payload = json!({
-                        "channel": contact.channel_id,
-                        "text": content.text,
-                    });
+                    let slack_message = slackapi::SlackMessage::Text {
+                        channel: contact.channel_id.clone(),
+                        text: content.text,
+                    };
 
                     self.client
-                        .post("https://slack.com/api/chat.postMessage")
-                        .header("Authorization", format!("Bearer {}", credential.token))
-                        .json(&payload)
-                        .send()
+                        .chat_post_message(&credential.token, slack_message)
                         .await
-                        .unwrap();
+                        .map_err(|e| EngineError::PartialSend(Box::new(e)))?;
                 }
                 Ok(StepOutput::Continue)
             }

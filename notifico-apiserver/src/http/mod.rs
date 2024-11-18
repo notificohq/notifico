@@ -45,6 +45,10 @@ pub(crate) async fn start(
     clientapi_bind: SocketAddr,
     ext: HttpExtensions,
 ) {
+    // Bind everything now to catch any errors before spinning up the coroutines
+    let service_listener = TcpListener::bind(serviceapi_bind).await.unwrap();
+    let client_listener = TcpListener::bind(clientapi_bind).await.unwrap();
+
     // Service API
     let app = Router::new().nest("/api", ingest::get_router(ext.clone()));
     let app = app.nest("/api", admin::get_router(ext.clone()));
@@ -55,14 +59,12 @@ pub(crate) async fn start(
     let app = app.merge(Redoc::with_url("/redoc", ApiDoc::openapi()));
     let app = app.fallback(static_handler);
 
-    let service_listener = TcpListener::bind(serviceapi_bind).await.unwrap();
     tokio::spawn(async { axum::serve(service_listener, app).await.unwrap() });
 
     // Client API
     let app = Router::new().nest("/api", recipient::get_router(ext.clone()));
     let app = app.layer(Extension(ext.secret_key.clone()));
 
-    let client_listener = TcpListener::bind(clientapi_bind).await.unwrap();
     tokio::spawn(async { axum::serve(client_listener, app).await.unwrap() });
 }
 
