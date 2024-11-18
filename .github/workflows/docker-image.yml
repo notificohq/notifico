@@ -18,17 +18,6 @@ jobs:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # Add GitHub-backed Rust build cache
-      - name: Rust Build Cache for Docker
-        uses: actions/cache@v4
-        with:
-          path: rust-build-cache
-          key: ${{ runner.os }}-rust-build-cache-${{ hashFiles('**/go.sum') }}
-      - name: inject rust-build-cache into docker
-        uses: reproducible-containers/buildkit-cache-dance@4b2444fec0c0fb9dbf175a96c094720a692ef810 # v2.1.4
-        with:
-          cache-source: rust-build-cache
-
       # Build images
       - uses: actions/checkout@v4
       - name: Build and push

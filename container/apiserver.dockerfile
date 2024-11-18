@@ -1,16 +1,16 @@
 FROM rust:1.82-bookworm AS builder
 
-WORKDIR /project
+WORKDIR /app
 
-COPY .. .
+COPY .. /app
 
-RUN RUN --mount=type=cache,target=/project/target cargo build --release --package notifico-apiserver
+RUN cargo build --release --package notifico-apiserver
 
 FROM gcr.io/distroless/cc-debian12
 
 LABEL org.opencontainers.image.authors="alex@shishenko.com"
 
-COPY --from=builder /project/target/release/notifico-apiserver /
+COPY --from=builder /app/target/release/notifico-apiserver /
 
 # Service API
 EXPOSE 8000

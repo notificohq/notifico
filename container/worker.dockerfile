@@ -1,17 +1,15 @@
 FROM rust:1.82-bookworm AS builder
 
-WORKDIR /project
+WORKDIR /app
 
-COPY .. .
+COPY .. /app
 
-RUN --mount=type=cache,target=/project/target cargo build --release --package notifico-worker
+RUN cargo build --release --package notifico-worker
 
 FROM gcr.io/distroless/cc-debian12
 
 LABEL org.opencontainers.image.authors="alex@shishenko.com"
 
-WORKDIR /
-
-COPY --from=builder /project/target/release/notifico-worker /
+COPY --from=builder /app/target/release/notifico-worker /
 
 ENTRYPOINT ["/notifico-worker"]
