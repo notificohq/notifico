@@ -23,6 +23,7 @@ to various clients via email, SMS, messengers and other means of communication.
 - [ ] Tracking pixel support
 - [ ] Link redirector with statistics
 - [ ] Grafana Webhook support
+- [ ] Auto-retry for sending failed messages
 
 ## 🚆 Transports:
 
