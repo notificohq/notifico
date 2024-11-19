@@ -3,12 +3,16 @@ name: Docker Image CI
 on:
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    tags: [ "*" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        image:
+          - "notifico-worker"
+          - "notifico-apiserver"
     steps:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -26,19 +30,8 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            notificohq/notifico-worker:latest
+            notificohq/${{ matrix.image }}:latest
           context: .
-          file: container/worker.dockerfile
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-      - name: Build and push
-        uses: docker/build-push-action@v6
-        with:
-          platforms: linux/amd64
-          push: true
-          tags: |
-            notificohq/notifico-apiserver:latest
-          context: .
-          file: container/apiserver.dockerfile
+          file: container/${{ matrix.image }}.dockerfile
           cache-from: type=gha
           cache-to: type=gha,mode=max
