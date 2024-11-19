@@ -104,7 +104,7 @@ impl EnginePlugin for SmppPlugin {
                 let contact: MobilePhoneContact = context.get_contact()?;
 
                 for message in context.messages.iter().cloned() {
-                    let rendered: SmsContent = message.try_into().unwrap();
+                    let rendered: SmsContent = message.content.try_into().unwrap();
 
                     let payload: Vec<u8> = rendered
                         .body

@@ -1,6 +1,7 @@
 use crate::step::STEPS;
 use async_trait::async_trait;
 use contact::TelegramContact;
+use notifico_core::recorder::Recorder;
 use notifico_core::step::SerializedStep;
 use notifico_core::{
     credentials::{CredentialStorage, TypedCredential},
@@ -21,7 +22,7 @@ mod contact;
 mod step;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct TelegramBotCredentials {
+struct TelegramBotCredentials {
     token: String,
 }
 
@@ -31,11 +32,15 @@ impl TypedCredential for TelegramBotCredentials {
 
 pub struct TelegramPlugin {
     credentials: Arc<dyn CredentialStorage>,
+    recorder: Arc<dyn Recorder>,
 }
 
 impl TelegramPlugin {
-    pub fn new(credentials: Arc<dyn CredentialStorage>) -> Self {
-        Self { credentials }
+    pub fn new(credentials: Arc<dyn CredentialStorage>, recorder: Arc<dyn Recorder>) -> Self {
+        Self {
+            credentials,
+            recorder,
+        }
     }
 }
 
@@ -58,12 +63,26 @@ impl EnginePlugin for TelegramPlugin {
                 let contact: TelegramContact = context.get_contact()?;
 
                 for message in context.messages.iter().cloned() {
-                    let content: TelegramContent = message.try_into().unwrap();
+                    let content: TelegramContent = message.content.try_into().unwrap();
 
                     // Send
-                    bot.send_message(contact.clone().into_recipient(), content.body)
-                        .await
-                        .unwrap();
+                    let result = bot
+                        .send_message(contact.clone().into_recipient(), content.body)
+                        .await;
+
+                    match result {
+                        Ok(_) => self.recorder.record_message_sent(
+                            context.event_id,
+                            context.notification_id,
+                            message.id,
+                        ),
+                        Err(e) => self.recorder.record_message_failed(
+                            context.event_id,
+                            context.notification_id,
+                            message.id,
+                            &e.to_string(),
+                        ),
+                    }
                 }
             }
         }
@@ -77,7 +96,7 @@ impl EnginePlugin for TelegramPlugin {
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-pub struct TelegramContent {
+struct TelegramContent {
     pub body: String,
 }
 

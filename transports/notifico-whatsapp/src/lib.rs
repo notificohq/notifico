@@ -2,6 +2,7 @@ use crate::cloudapi::{MessageType, MessagingProduct};
 use crate::credentials::WhatsAppCredentials;
 use crate::step::{Step, STEPS};
 use async_trait::async_trait;
+use notifico_core::recorder::Recorder;
 use notifico_core::step::SerializedStep;
 use notifico_core::{
     credentials::CredentialStorage,
@@ -15,7 +16,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::borrow::Cow;
 use std::sync::Arc;
-use tracing::debug;
 
 mod cloudapi;
 mod credentials;
@@ -23,13 +23,15 @@ mod step;
 
 pub struct WaBusinessPlugin {
     credentials: Arc<dyn CredentialStorage>,
+    recorder: Arc<dyn Recorder>,
     client: reqwest::Client,
 }
 
 impl WaBusinessPlugin {
-    pub fn new(credentials: Arc<dyn CredentialStorage>) -> Self {
+    pub fn new(credentials: Arc<dyn CredentialStorage>, recorder: Arc<dyn Recorder>) -> Self {
         Self {
             credentials,
+            recorder,
             client: reqwest::Client::new(),
         }
     }
@@ -60,7 +62,7 @@ impl EnginePlugin for WaBusinessPlugin {
                 );
 
                 for message in context.messages.iter().cloned() {
-                    let message: WhatsAppContent = message.try_into().unwrap();
+                    let wa_message: WhatsAppContent = message.content.try_into().unwrap();
 
                     let wamessage = cloudapi::Message {
                         messaging_product: MessagingProduct::Whatsapp,
@@ -68,7 +70,7 @@ impl EnginePlugin for WaBusinessPlugin {
                         language: "en_US".into(),
                         message: MessageType::Text {
                             preview_url: false,
-                            body: message.body,
+                            body: wa_message.body,
                         },
                     };
 
@@ -78,9 +80,20 @@ impl EnginePlugin for WaBusinessPlugin {
                         .header("Authorization", format!("Bearer {}", credential.token))
                         .json(&wamessage)
                         .send()
-                        .await
-                        .unwrap();
-                    debug!("Response: {:?}", result);
+                        .await;
+                    match result {
+                        Ok(_) => self.recorder.record_message_sent(
+                            context.event_id,
+                            context.notification_id,
+                            message.id,
+                        ),
+                        Err(e) => self.recorder.record_message_failed(
+                            context.event_id,
+                            context.notification_id,
+                            message.id,
+                            &e.to_string(),
+                        ),
+                    }
                 }
             }
         }

@@ -16,3 +16,4 @@ notifico-template-migration = { path = "migration" }
 sea-orm = { workspace = true }
 uuid = { version = "1.11.0", features = ["serde"] }
 anyhow = "1.0.93"
+thiserror = "2.0.3"

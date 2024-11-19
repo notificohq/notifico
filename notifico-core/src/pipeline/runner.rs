@@ -41,9 +41,15 @@ impl PipelineRunner {
     }
 
     pub async fn process_eventrequest(&self, msg: ProcessEventRequest) {
-        self.process_event(msg.project_id, &msg.event, msg.context, msg.recipient)
-            .await
-            .unwrap()
+        self.process_event(
+            msg.id,
+            msg.project_id,
+            &msg.event,
+            msg.context,
+            msg.recipient,
+        )
+        .await
+        .unwrap()
     }
 
     /// Processes an event by executing the associated pipelines.
@@ -56,6 +62,7 @@ impl PipelineRunner {
     /// * `recipient_sel` - An optional selector for the recipient of the event.
     pub async fn process_event(
         &self,
+        event_id: Uuid,
         project_id: Uuid,
         event_name: &str,
         event_context: EventContext,
@@ -91,13 +98,15 @@ impl PipelineRunner {
             join_handles.spawn(async move {
                 let context = PipelineContext {
                     project_id,
-                    recipient_info: recipient,
+                    recipient,
                     event_name,
                     event_context,
                     plugin_contexts: Default::default(),
                     messages: Default::default(),
                     channel,
-                    current_contact: contact,
+                    contact,
+                    notification_id: Uuid::now_v7(),
+                    event_id,
                 };
 
                 // Execute each step in the pipeline

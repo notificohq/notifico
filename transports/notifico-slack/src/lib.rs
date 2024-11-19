@@ -7,6 +7,7 @@ use notifico_core::credentials::{CredentialStorage, TypedCredential};
 use notifico_core::engine::{EnginePlugin, PipelineContext, StepOutput};
 use notifico_core::error::EngineError;
 use notifico_core::recipient::TypedContact;
+use notifico_core::recorder::Recorder;
 use notifico_core::step::SerializedStep;
 use notifico_core::templater::RenderedTemplate;
 use serde::{Deserialize, Serialize};
@@ -25,13 +26,15 @@ impl TypedCredential for SlackCredentials {
 pub struct SlackPlugin {
     client: slackapi::SlackApi,
     credentials: Arc<dyn CredentialStorage>,
+    recorder: Arc<dyn Recorder>,
 }
 
 impl SlackPlugin {
-    pub fn new(credentials: Arc<dyn CredentialStorage>) -> Self {
+    pub fn new(credentials: Arc<dyn CredentialStorage>, recorder: Arc<dyn Recorder>) -> Self {
         SlackPlugin {
             client: slackapi::SlackApi::new(),
             credentials,
+            recorder,
         }
     }
 }
@@ -55,16 +58,30 @@ impl EnginePlugin for SlackPlugin {
                 let contact: SlackContact = context.get_contact()?;
 
                 for message in context.messages.iter().cloned() {
-                    let content: SlackMessage = message.try_into()?;
+                    let content: SlackMessage = message.content.try_into()?;
                     let slack_message = slackapi::SlackMessage::Text {
                         channel: contact.channel_id.clone(),
                         text: content.text,
                     };
 
-                    self.client
+                    let result = self
+                        .client
                         .chat_post_message(&credential.token, slack_message)
-                        .await
-                        .map_err(|e| EngineError::PartialSend(Box::new(e)))?;
+                        .await;
+
+                    match result {
+                        Ok(_) => self.recorder.record_message_sent(
+                            context.event_id,
+                            context.notification_id,
+                            message.id,
+                        ),
+                        Err(e) => self.recorder.record_message_failed(
+                            context.event_id,
+                            context.notification_id,
+                            message.id,
+                            &e.to_string(),
+                        ),
+                    }
                 }
                 Ok(StepOutput::Continue)
             }

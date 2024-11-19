@@ -2,12 +2,18 @@ use notifico_core::error::EngineError;
 use sea_orm::DbErr;
 use std::io;
 use std::io::ErrorKind;
+use thiserror::Error;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum TemplaterError {
+    #[error("Template not found")]
     TemplateNotFound,
+    #[error("I/O error: {0}")]
     Io(io::Error),
+    #[error("SeaORM error: {0}")]
     Db(DbErr),
+    #[error("Jinja error: {0}")]
+    JinjaError(#[from] minijinja::Error),
 }
 
 impl From<TemplaterError> for EngineError {

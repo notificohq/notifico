@@ -15,6 +15,7 @@ use lettre::{
     AsyncSmtpTransport, AsyncTransport, Tokio1Executor,
 };
 use moka::future::Cache;
+use notifico_core::recorder::Recorder;
 use notifico_core::step::SerializedStep;
 use notifico_core::{
     credentials::CredentialStorage,
@@ -38,13 +39,15 @@ impl TypedContact for EmailContact {
 
 pub struct EmailPlugin {
     credentials: Arc<dyn CredentialStorage>,
+    recorder: Arc<dyn Recorder>,
     pools: Cache<String, AsyncSmtpTransport<Tokio1Executor>>,
 }
 
 impl EmailPlugin {
-    pub fn new(credentials: Arc<dyn CredentialStorage>) -> Self {
+    pub fn new(credentials: Arc<dyn CredentialStorage>, recorder: Arc<dyn Recorder>) -> Self {
         Self {
             credentials,
+            recorder,
             pools: Cache::new(100),
         }
     }
@@ -89,9 +92,9 @@ impl EnginePlugin for EmailPlugin {
                     serde_json::from_value(context.plugin_contexts.clone().into()).unwrap();
 
                 for message in context.messages.iter().cloned() {
-                    let rendered: RenderedEmail = message.try_into()?;
+                    let rendered: RenderedEmail = message.content.try_into()?;
 
-                    let message = {
+                    let email_message = {
                         let mut builder = lettre::Message::builder();
                         builder = builder.from(rendered.from);
                         builder = builder.to(contact.address.clone());
@@ -107,7 +110,20 @@ impl EnginePlugin for EmailPlugin {
                             .unwrap()
                     };
 
-                    transport.send(message).await.unwrap();
+                    let result = transport.send(email_message).await;
+                    match result {
+                        Ok(_) => self.recorder.record_message_sent(
+                            context.event_id,
+                            context.notification_id,
+                            message.id,
+                        ),
+                        Err(e) => self.recorder.record_message_failed(
+                            context.event_id,
+                            context.notification_id,
+                            message.id,
+                            &e.to_string(),
+                        ),
+                    }
                 }
             }
         }

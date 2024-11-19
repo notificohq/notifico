@@ -11,8 +11,6 @@ to various clients via email, SMS, messengers and other means of communication.
 - Optimized for HA configurations. Uses AMQP 1.0 for distributing tasks between workers.
 - List-Unsubscribe support
 
-## Usage
-
 ## 🎯 Roadmap:
 
 - [x] Admin panel
@@ -24,6 +22,7 @@ to various clients via email, SMS, messengers and other means of communication.
 - [ ] debounce.io and similar services support
 - [ ] Tracking pixel support
 - [ ] Link redirector with statistics
+- [ ] Grafana Webhook support
 
 ## 🚆 Transports:
 
@@ -33,5 +32,6 @@ to various clients via email, SMS, messengers and other means of communication.
 - [x] Telegram
 - [x] WhatsApp Business
 - [ ] Microsoft Teams
+- [ ] Discord
 - [ ] Mattermost
 - [ ] Twilio

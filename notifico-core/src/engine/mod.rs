@@ -19,21 +19,30 @@ pub use plugin::{EnginePlugin, StepOutput};
 #[serde(transparent)]
 pub struct EventContext(pub Map<String, Value>);
 
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+pub struct Message {
+    pub id: Uuid,
+    pub content: RenderedTemplate,
+}
+
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct PipelineContext {
     pub project_id: Uuid,
-    pub recipient_info: Option<Recipient>,
-    pub current_contact: Option<Contact>,
+    pub event_id: Uuid,
+    pub notification_id: Uuid,
+
+    pub recipient: Option<Recipient>,
+    pub contact: Option<Contact>,
     pub event_name: String,
     pub event_context: EventContext,
     pub plugin_contexts: Map<String, Value>,
-    pub messages: Vec<RenderedTemplate>,
+    pub messages: Vec<Message>,
     pub channel: String,
 }
 
 impl PipelineContext {
     pub fn get_contact<T: TypedContact>(&self) -> Result<T, EngineError> {
-        let Some(contact) = &self.current_contact else {
+        let Some(contact) = &self.contact else {
             return Err(EngineError::ContactNotSet);
         };
 

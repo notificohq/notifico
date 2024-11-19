@@ -150,7 +150,7 @@ impl EnginePlugin for SubscriptionManager {
         context: &mut PipelineContext,
         step: &SerializedStep,
     ) -> Result<StepOutput, EngineError> {
-        let Some(recipient) = &context.recipient_info else {
+        let Some(recipient) = &context.recipient else {
             return Err(EngineError::RecipientNotSet);
         };
 

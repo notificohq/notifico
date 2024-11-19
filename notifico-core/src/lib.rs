@@ -5,5 +5,6 @@ pub mod error;
 pub mod http;
 pub mod pipeline;
 pub mod recipient;
+pub mod recorder;
 pub mod step;
 pub mod templater;
