@@ -5,7 +5,6 @@ use axum::{Extension, Json};
 use notifico_core::http::admin::{ListQueryParams, PaginatedResult};
 use notifico_core::pipeline::storage::{PipelineResult, PipelineStorage};
 use notifico_core::pipeline::Pipeline;
-use notifico_core::step::SerializedStep;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::sync::Arc;
@@ -17,7 +16,7 @@ pub struct PipelineItem {
     pub id: Uuid,
     pub project_id: Uuid,
     pub event_ids: Vec<Uuid>,
-    pub steps: Vec<SerializedStep>,
+    pub steps: String,
     pub channel: String,
 }
 
@@ -26,7 +25,7 @@ impl From<PipelineResult> for PipelineItem {
         Self {
             id: value.pipeline.id,
             project_id: value.pipeline.project_id,
-            steps: value.pipeline.steps.clone(),
+            steps: serde_json::to_string(&value.pipeline.steps).unwrap(),
             channel: value.pipeline.channel,
 
             event_ids: value.event_ids,
@@ -37,22 +36,30 @@ impl From<PipelineResult> for PipelineItem {
 pub async fn create(
     Extension(pipeline_storage): Extension<Arc<dyn PipelineStorage>>,
     Json(item): Json<PipelineItem>,
-) -> (StatusCode, Json<Value>) {
+) -> (StatusCode, Json<PipelineItem>) {
     let id = Uuid::now_v7();
     let pipeline = Pipeline {
         id,
         project_id: item.project_id,
         channel: item.channel,
-        steps: item.steps,
+        steps: serde_json::from_str(&item.steps).unwrap(),
     };
-    let result = pipeline_storage.create_pipeline(pipeline).await.unwrap();
+    let _pipeline = pipeline_storage
+        .create_pipeline(pipeline.clone())
+        .await
+        .unwrap();
+
+    let pipelineresult = PipelineResult {
+        pipeline,
+        event_ids: item.event_ids.clone(),
+    };
 
     pipeline_storage
         .assign_events_to_pipeline(id, item.event_ids.clone())
         .await
         .unwrap();
 
-    (StatusCode::CREATED, Json(Value::Null))
+    (StatusCode::CREATED, Json(pipelineresult.into()))
 }
 
 pub async fn list(
@@ -95,7 +102,7 @@ pub async fn update(
         id,
         project_id: update.project_id,
         channel: update.channel,
-        steps: update.steps,
+        steps: serde_json::from_str(&update.steps).unwrap(),
     };
     pipeline_storage.update_pipeline(pipeline).await.unwrap();
     pipeline_storage
