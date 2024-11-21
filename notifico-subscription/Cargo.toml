@@ -7,13 +7,13 @@ edition = "2021"
 notifico-core = { path = "../notifico-core" }
 notifico-subcription-migration = { path = "migration" }
 
-url = "2.5.2"
-uuid = { version = "1.10.0", features = ["v7"] }
-serde_json = "1.0.128"
+url = "2.5.3"
+uuid = { version = "1.11.0", features = ["v7"] }
+serde_json = "1.0.133"
 sea-orm = { workspace = true }
 tracing = "0.1.40"
-serde = { version = "1.0.210", features = ["derive"] }
+serde = { version = "1.0.215", features = ["derive"] }
 axum = { workspace = true }
 jsonwebtoken = "9.3.0"
-anyhow = "1.0.91"
+anyhow = "1.0.93"
 

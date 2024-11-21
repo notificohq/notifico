@@ -15,7 +15,7 @@ notifico-template = { path = "../notifico-template" }
 notifico-subscription = { path = "../notifico-subscription" }
 notifico-dbpipeline = { path = "../notifico-dbpipeline" }
 
-anyhow = "1.0.91"
+anyhow = "1.0.93"
 async-trait = "0.1.83"
 clap = { workspace = true }
 dotenvy = "0.15.7"
@@ -23,12 +23,12 @@ fe2o3-amqp = { version = "0.13.1", features = ["acceptor"] }
 figment = { version = "0.10.19", features = ["env", "toml"] }
 futures = "0.3.31"
 sea-orm = { workspace = true }
-serde = { version = "1.0.210", features = ["derive"] }
-serde_json = "1.0.130"
+serde = { version = "1.0.215", features = ["derive"] }
+serde_json = "1.0.133"
 tokio = { version = "1.41", features = ["macros", "rt", "sync", "rt-multi-thread"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter", "fmt"] }
-url = "2.5.2"
+url = "2.5.3"
 uuid = { version = "1.11.0", features = ["serde", "v7"] }
 log = "0.4.22"
 
