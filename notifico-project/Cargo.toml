@@ -8,5 +8,5 @@ notifico-project-migration = { path = "migration" }
 notifico-core = { path = "../notifico-core" }
 
 sea-orm = { workspace = true }
-uuid = { version = "1.11.0", features = ["v7"] }
+uuid = { workspace = true }
 serde = { version = "1.0.215", features = ["derive"] }

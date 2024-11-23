@@ -8,7 +8,7 @@ async-trait = "0.1.83"
 serde = { version = "1.0.215", features = ["derive"] }
 serde_json = "1.0.133"
 tracing = "0.1.40"
-uuid = { version = "1.11.0", features = ["serde"] }
+uuid = { workspace = true }
 teloxide = "0.13.0"
 
 notifico-core = { path = "../../notifico-core" }

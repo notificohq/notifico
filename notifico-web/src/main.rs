@@ -1,10 +1,11 @@
-mod amqp;
 mod http;
 
 use crate::http::HttpExtensions;
 use clap::Parser;
-use notifico_core::http::SecretKey;
+use notifico_dbpipeline::DbPipelineStorage;
+use notifico_project::ProjectController;
 use notifico_subscription::SubscriptionManager;
+use notifico_template::db::DbTemplateSource;
 use sea_orm::{ConnectOptions, Database};
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -18,18 +19,8 @@ struct Args {
     db_url: Url,
     #[clap(long, env = "NOTIFICO_SECRET_KEY")]
     secret_key: String,
-    #[clap(long, env = "NOTIFICO_AMQP_URL")]
-    amqp: Url,
-    #[clap(
-        long,
-        env = "NOTIFICO_AMQP_WORKERS_ADDR",
-        default_value = "notifico_workers"
-    )]
-    amqp_addr: String,
-    #[clap(long, env = "NOTIFICO_SERVICE_API_BIND", default_value = "[::]:8000")]
-    service_api_bind: SocketAddr,
-    #[clap(long, env = "NOTIFICO_CLIENT_API_BIND", default_value = "[::]:9000")]
-    client_api_bind: SocketAddr,
+    #[clap(long, env = "NOTIFICO_WEB_BIND", default_value = "[::]:8000")]
+    bind: SocketAddr,
     #[clap(long, env = "NOTIFICO_CLIENT_API_URL")]
     client_api_url: Url,
 }
@@ -64,18 +55,24 @@ async fn main() {
     ));
     subman.setup().await.unwrap();
 
-    let (request_tx, request_rx) = tokio::sync::mpsc::channel(1);
+    let pipeline_storage = Arc::new(DbPipelineStorage::new(db_connection.clone()));
+    pipeline_storage.setup().await.unwrap();
+
+    let projects = Arc::new(ProjectController::new(db_connection.clone()));
+    projects.setup().await.unwrap();
+
+    let templates = Arc::new(DbTemplateSource::new(db_connection.clone())); // Implement your template source here
+    templates.setup().await.unwrap();
 
     let ext = HttpExtensions {
-        sender: request_tx,
+        projects_controller: projects,
         subman,
-        secret_key: Arc::new(SecretKey(args.secret_key.as_bytes().to_vec())),
+        pipeline_storage,
+        templates_controller: templates,
     };
 
     // Spawns HTTP servers and quits
-    http::start(args.service_api_bind, args.client_api_bind, ext).await;
-    let amqp_client = tokio::spawn(amqp::run(args.amqp, args.amqp_addr, request_rx));
-    amqp_client.await.unwrap();
+    http::start(args.bind, ext).await;
 
     tokio::signal::ctrl_c().await.unwrap();
 }
