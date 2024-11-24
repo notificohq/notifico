@@ -21,8 +21,8 @@ struct Args {
     secret_key: String,
     #[clap(long, env = "NOTIFICO_WEB_BIND", default_value = "[::]:8000")]
     bind: SocketAddr,
-    #[clap(long, env = "NOTIFICO_CLIENT_API_URL")]
-    client_api_url: Url,
+    #[clap(long, env = "NOTIFICO_USERAPI_URL")]
+    userapi_url: Url,
 }
 
 #[tokio::main]
@@ -51,7 +51,7 @@ async fn main() {
     let subman = Arc::new(SubscriptionManager::new(
         db_connection.clone(),
         args.secret_key.as_bytes().to_vec(),
-        args.client_api_url,
+        args.userapi_url,
     ));
     subman.setup().await.unwrap();
 

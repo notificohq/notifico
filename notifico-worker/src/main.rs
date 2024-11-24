@@ -33,8 +33,8 @@ struct Args {
     db_url: Url,
     #[clap(long, env = "NOTIFICO_SECRET_KEY")]
     secret_key: String,
-    #[clap(long, env = "NOTIFICO_CLIENT_API_URL")]
-    client_api_url: Url,
+    #[clap(long, env = "NOTIFICO_USERAPI_URL")]
+    userapi_url: Url,
     #[clap(flatten)]
     amqp: Amqp,
     #[clap(
@@ -121,7 +121,7 @@ async fn main() {
     let subman = Arc::new(SubscriptionManager::new(
         db_connection,
         args.secret_key.as_bytes().to_vec(),
-        args.client_api_url,
+        args.userapi_url,
     ));
     engine.add_plugin(subman.clone());
 
