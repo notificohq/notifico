@@ -15,7 +15,7 @@ use url::Url;
 
 #[derive(Parser, Debug)]
 struct Args {
-    #[clap(long, env = "NOTIFICO_DB_URL")]
+    #[clap(long, env = "NOTIFICO_DB")]
     db_url: Url,
     #[clap(long, env = "NOTIFICO_SECRET_KEY")]
     secret_key: String,

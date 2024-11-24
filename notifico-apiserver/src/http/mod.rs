@@ -1,4 +1,5 @@
 mod ingest;
+mod list_unsubscribe;
 mod recipient;
 
 use axum::{Extension, Router};

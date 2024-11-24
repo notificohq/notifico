@@ -1,6 +1,5 @@
 mod context;
 pub mod entity;
-pub mod http;
 mod step;
 
 use crate::context::EMAIL_LIST_UNSUBSCRIBE;
@@ -204,10 +203,10 @@ pub fn create_self_unsubscribe_url(
     event: &str,
     recipient_id: Uuid,
 ) -> Url {
-    let claims = Claims {
-        proj: project_id,
-        sub: recipient_id,
-        scopes: [String::from("list_unsubscribe")].into_iter().collect(),
+    let claims = Claims::ListUnsubscribe {
+        project_id,
+        recipient_id,
+        event: event.to_string(),
         exp: SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()

@@ -13,6 +13,7 @@ jobs:
         image:
           - "notifico-worker"
           - "notifico-apiserver"
+          - "notifico-web"
     permissions:
       packages: write
     steps:

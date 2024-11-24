@@ -14,7 +14,7 @@ use url::Url;
 
 #[derive(Parser, Debug)]
 struct Args {
-    #[clap(long, env = "NOTIFICO_DB_URL")]
+    #[clap(long, env = "NOTIFICO_DB")]
     db_url: Url,
     #[clap(long, env = "NOTIFICO_SECRET_KEY")]
     secret_key: String,
@@ -26,8 +26,8 @@ struct Args {
         default_value = "notifico_workers"
     )]
     amqp_addr: String,
-    #[clap(long, env = "NOTIFICO_SERVICE_API_BIND", default_value = "[::]:8000")]
-    service_api_bind: SocketAddr,
+    #[clap(long, env = "NOTIFICO_API_BIND", default_value = "[::]:8000")]
+    bind: SocketAddr,
     #[clap(long, env = "NOTIFICO_CLIENT_API_BIND", default_value = "[::]:9000")]
     client_api_bind: SocketAddr,
     #[clap(long, env = "NOTIFICO_CLIENT_API_URL")]
@@ -73,7 +73,7 @@ async fn main() {
     };
 
     // Spawns HTTP servers and quits
-    http::start(args.service_api_bind, args.client_api_bind, ext).await;
+    http::start(args.bind, args.client_api_bind, ext).await;
     let amqp_client = tokio::spawn(amqp::run(args.amqp, args.amqp_addr, request_rx));
     amqp_client.await.unwrap();
 
