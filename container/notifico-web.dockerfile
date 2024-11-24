@@ -15,4 +15,6 @@ COPY --from=builder /app/target/release/notifico-web /
 EXPOSE 8000
 ENV NOTIFICO_WEB_BIND=[::]:8000
 
+VOLUME /var/lib/notifico
+
 ENTRYPOINT ["/notifico-web"]

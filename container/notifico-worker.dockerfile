@@ -12,4 +12,6 @@ LABEL org.opencontainers.image.authors="alex@shishenko.com"
 
 COPY --from=builder /app/target/release/notifico-worker /
 
+VOLUME /var/lib/notifico
+
 ENTRYPOINT ["/notifico-worker"]

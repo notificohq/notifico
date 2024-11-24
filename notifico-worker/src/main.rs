@@ -1,11 +1,7 @@
 mod amqp;
 
 use clap::Parser;
-use figment::providers::Toml;
-use figment::{
-    providers::{Env, Format},
-    Figment,
-};
+use figment::{providers::Format, providers::Toml, Figment};
 use notifico_core::config::credentials::MemoryCredentialStorage;
 use notifico_core::db::create_sqlite_if_not_exists;
 use notifico_core::engine::Engine;
@@ -79,12 +75,6 @@ async fn main() {
 
     info!("Config: {:#?}", args);
 
-    let credential_config: serde_json::Value = Figment::new()
-        .merge(Toml::file(args.credentials_path.clone()))
-        .merge(Env::prefixed("NOTIFICO_CREDENTIAL_"))
-        .extract()
-        .unwrap();
-
     create_sqlite_if_not_exists(&args.db_url);
 
     let mut db_conn_options = ConnectOptions::new(args.db_url.to_string());
@@ -92,7 +82,16 @@ async fn main() {
 
     let db_connection = Database::connect(db_conn_options).await.unwrap();
 
-    let credentials = Arc::new(MemoryCredentialStorage::from_config(credential_config).unwrap());
+    let credentials = {
+        let credential_config: serde_json::Value = {
+            let mut config = Figment::new().merge(Toml::file(args.credentials_path));
+            if let Ok(env_credentials) = std::env::var("NOTIFICO_CREDENTIALS") {
+                config = config.merge(Toml::string(&env_credentials));
+            }
+            config.extract().unwrap()
+        };
+        Arc::new(MemoryCredentialStorage::from_config(credential_config).unwrap())
+    };
     let pipelines = Arc::new(DbPipelineStorage::new(db_connection.clone()));
 
     // Create Engine with plugins

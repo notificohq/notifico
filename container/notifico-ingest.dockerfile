@@ -16,4 +16,6 @@ COPY --from=builder /app/target/release/notifico-ingest /
 EXPOSE 8000
 ENV NOTIFICO_HTTP_INGEST_BIND=[::]:8000
 
+VOLUME /var/lib/notifico
+
 ENTRYPOINT ["/notifico-ingest"]
