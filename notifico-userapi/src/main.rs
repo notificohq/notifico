@@ -1,4 +1,3 @@
-mod amqp;
 mod http;
 
 use crate::http::HttpExtensions;
@@ -18,18 +17,8 @@ struct Args {
     db_url: Url,
     #[clap(long, env = "NOTIFICO_SECRET_KEY")]
     secret_key: String,
-    #[clap(long, env = "NOTIFICO_AMQP_URL")]
-    amqp: Url,
-    #[clap(
-        long,
-        env = "NOTIFICO_AMQP_WORKERS_ADDR",
-        default_value = "notifico_workers"
-    )]
-    amqp_addr: String,
-    #[clap(long, env = "NOTIFICO_API_BIND", default_value = "[::]:8000")]
+    #[clap(long, env = "NOTIFICO_USERAPI_BIND", default_value = "[::]:8000")]
     bind: SocketAddr,
-    #[clap(long, env = "NOTIFICO_CLIENT_API_BIND", default_value = "[::]:9000")]
-    client_api_bind: SocketAddr,
     #[clap(long, env = "NOTIFICO_CLIENT_API_URL")]
     client_api_url: Url,
 }
@@ -64,18 +53,13 @@ async fn main() {
     ));
     subman.setup().await.unwrap();
 
-    let (request_tx, request_rx) = tokio::sync::mpsc::channel(1);
-
     let ext = HttpExtensions {
-        sender: request_tx,
         subman,
         secret_key: Arc::new(SecretKey(args.secret_key.as_bytes().to_vec())),
     };
 
     // Spawns HTTP servers and quits
-    http::start(args.bind, args.client_api_bind, ext).await;
-    let amqp_client = tokio::spawn(amqp::run(args.amqp, args.amqp_addr, request_rx));
-    amqp_client.await.unwrap();
+    http::start(args.bind, ext).await;
 
     tokio::signal::ctrl_c().await.unwrap();
 }

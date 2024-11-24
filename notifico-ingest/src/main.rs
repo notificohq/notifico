@@ -18,7 +18,7 @@ struct Args {
         default_value = "notifico_workers"
     )]
     amqp_addr: String,
-    #[clap(long, env = "NOTIFICO_INGEST_API_BIND", default_value = "[::]:8000")]
+    #[clap(long, env = "NOTIFICO_HTTP_INGEST_BIND", default_value = "[::]:8000")]
     bind: SocketAddr,
 }
 

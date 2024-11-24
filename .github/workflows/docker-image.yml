@@ -11,9 +11,10 @@ jobs:
     strategy:
       matrix:
         image:
-          - "notifico-worker"
-          - "notifico-apiserver"
+          - "notifico-ingest"
+          - "notifico-userapi"
           - "notifico-web"
+          - "notifico-worker"
     permissions:
       packages: write
     steps:

@@ -9,7 +9,6 @@
       <sourceFolder url="file://$MODULE_DIR$/transports/notifico-smtp/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/transports/notifico-telegram/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/transports/notifico-whatsapp/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/notifico-apiserver/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/notifico-worker/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/notifico-subscription/migration/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/notifico-subscription/src" isTestSource="false" />
@@ -22,6 +21,7 @@
       <sourceFolder url="file://$MODULE_DIR$/transports/notifico-slack/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/notifico-ctlapi/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/notifico-ingest/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/notifico-userapi/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/notifico-web/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.idea/dataSources" />
       <excludeFolder url="file://$MODULE_DIR$/example/rabbitmq/mnesia" />

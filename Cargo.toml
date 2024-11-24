@@ -10,7 +10,7 @@ members = [
     "notifico-template",
     "notifico-template/migration",
     "notifico-worker",
-    "notifico-apiserver",
+    "notifico-userapi",
     "notifico-subscription",
     "notifico-subscription/migration",
     "notifico-dbpipeline",
