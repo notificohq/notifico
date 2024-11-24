@@ -2,6 +2,7 @@ mod http;
 
 use crate::http::HttpExtensions;
 use clap::Parser;
+use notifico_core::db::create_sqlite_if_not_exists;
 use notifico_dbpipeline::DbPipelineStorage;
 use notifico_project::ProjectController;
 use notifico_subscription::SubscriptionManager;
@@ -41,6 +42,8 @@ async fn main() {
         .init();
 
     info!("Config: {:#?}", args);
+
+    create_sqlite_if_not_exists(&args.db_url);
 
     let mut db_conn_options = ConnectOptions::new(args.db_url.to_string());
     db_conn_options.sqlx_logging_level(log::LevelFilter::Debug);

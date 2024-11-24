@@ -7,6 +7,7 @@ use figment::{
     Figment,
 };
 use notifico_core::config::credentials::MemoryCredentialStorage;
+use notifico_core::db::create_sqlite_if_not_exists;
 use notifico_core::engine::Engine;
 use notifico_core::pipeline::runner::PipelineRunner;
 use notifico_core::recorder::BaseRecorder;
@@ -83,6 +84,8 @@ async fn main() {
         .merge(Env::prefixed("NOTIFICO_CREDENTIAL_"))
         .extract()
         .unwrap();
+
+    create_sqlite_if_not_exists(&args.db_url);
 
     let mut db_conn_options = ConnectOptions::new(args.db_url.to_string());
     db_conn_options.sqlx_logging_level(log::LevelFilter::Debug);
