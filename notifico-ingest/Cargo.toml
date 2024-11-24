@@ -1,28 +1,26 @@
 [package]
-name = "notifico-web"
+name = "notifico-ingest"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 notifico-core = { path = "../notifico-core" }
-notifico-subscription = { path = "../notifico-subscription" }
-notifico-dbpipeline = { path = "../notifico-dbpipeline" }
-notifico-project = { path = "../notifico-project" }
-notifico-template = { path = "../notifico-template" }
 
 anyhow = "1.0.93"
 async-trait = "0.1.83"
 axum = { workspace = true }
+backoff = { version = "0.4.0", features = ["tokio"] }
 clap = { workspace = true }
 dotenvy = "0.15.7"
-log = "0.4.22"
-rust-embed = { version = "8.5.0", features = ["mime-guess"] }
-sea-orm = { workspace = true }
+fe2o3-amqp = "0.13.1"
+flume = "0.11.1"
 serde = { version = "1.0.215", features = ["derive"] }
 serde_json = "1.0.133"
 tokio = { version = "1.41", features = ["macros", "rt", "sync", "rt-multi-thread", "signal"] }
-tower-http = { version = "0.6.2", features = ["cors"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter", "fmt"] }
 url = { version = "2.5.3", features = ["serde"] }
+utoipa = { version = "5.2.0", features = ["axum_extras"] }
+utoipa-redoc = { version = "5.0.0", features = ["axum"] }
+utoipa-swagger-ui = { version = "8", features = ["axum"] }
 uuid = { workspace = true }
