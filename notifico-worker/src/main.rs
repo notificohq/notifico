@@ -32,8 +32,8 @@ struct Args {
     secret_key: String,
     #[clap(long, env = "NOTIFICO_USERAPI_URL")]
     userapi_url: Url,
-    #[clap(flatten)]
-    amqp: Amqp,
+    #[clap(long, env = "NOTIFICO_AMQP_URL")]
+    amqp_url: Url,
     #[clap(
         long,
         env = "NOTIFICO_AMQP_WORKERS_ADDR",
@@ -47,15 +47,6 @@ struct Args {
         default_value = "/var/lib/notifico/credentials.toml"
     )]
     credentials_path: PathBuf,
-}
-
-#[derive(Debug, clap::Args)]
-#[group(required = true, multiple = false)]
-pub struct Amqp {
-    #[clap(long, env = "NOTIFICO_AMQP_URL")]
-    amqp_url: Option<Url>,
-    #[clap(long, env = "NOTIFICO_AMQP_BIND")]
-    amqp_bind: Option<SocketAddr>,
 }
 
 #[tokio::main]
@@ -133,7 +124,7 @@ async fn main() {
     // Create PipelineRunner, the core component of the Notifico system
     let runner = Arc::new(PipelineRunner::new(pipelines.clone(), engine));
 
-    tokio::spawn(amqp::start(runner.clone(), args.amqp, args.amqp_addr));
+    tokio::spawn(amqp::start(runner.clone(), args.amqp_url, args.amqp_addr));
 
     tokio::signal::ctrl_c().await.unwrap();
 }

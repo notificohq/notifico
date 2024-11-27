@@ -1,64 +1,25 @@
-use crate::Amqp;
-use fe2o3_amqp::acceptor::{ConnectionAcceptor, LinkAcceptor, LinkEndpoint, SessionAcceptor};
 use fe2o3_amqp::{Connection, Receiver, Session};
 use notifico_core::pipeline::runner::PipelineRunner;
 use std::sync::Arc;
-use tokio::net::TcpListener;
 use tracing::info;
 use url::Url;
 use uuid::Uuid;
 
-pub async fn start(runner: Arc<PipelineRunner>, config: Amqp, worker_addr: String) {
+pub async fn start(runner: Arc<PipelineRunner>, amqp_url: Url, worker_addr: String) {
     let worker_uuid = Uuid::new_v4();
 
     let container_id = format!("notifico-worker-{}", worker_uuid);
-
-    match (config.amqp_url, config.amqp_bind) {
-        (None, Some(bind)) => {
-            let tcp_listener = TcpListener::bind(bind).await.unwrap();
-            let connection_acceptor = ConnectionAcceptor::new(container_id);
-
-            info!(
-                "Listening for AMQP connections on: {}",
-                tcp_listener.local_addr().unwrap()
-            );
-
-            while let Ok((stream, addr)) = tcp_listener.accept().await {
-                info!("Accepted p2p AMQP connection from: {}", addr);
-                let runner = runner.clone();
-
-                let mut connection = connection_acceptor.accept(stream).await.unwrap();
-                let _handle = tokio::spawn(async move {
-                    let session_acceptor = SessionAcceptor::new();
-                    while let Ok(mut session) = session_acceptor.accept(&mut connection).await {
-                        let runner = runner.clone();
-
-                        let _handle = tokio::spawn(async move {
-                            let link_acceptor = LinkAcceptor::new();
-                            match link_acceptor.accept(&mut session).await.unwrap() {
-                                LinkEndpoint::Sender(_) => {}
-                                LinkEndpoint::Receiver(receiver) => {
-                                    let res = process_link(receiver, runner.clone()).await;
-                                    if let Err(e) = res {
-                                        info!("Error processing AMQP connection: {}", e);
-                                    }
-                                }
-                            }
-                        });
-                    }
-                });
-            }
-        }
-        (Some(url), None) => loop {
-            let res =
-                connect_to_broker(url.clone(), &worker_addr, &container_id, runner.clone()).await;
-            if let Err(e) = res {
-                info!("Error processing AMQP broker: {}", e);
-                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-            }
-        },
-        _ => {
-            panic!("Invalid AMQP configuration");
+    loop {
+        let res = connect_to_broker(
+            amqp_url.clone(),
+            &worker_addr,
+            &container_id,
+            runner.clone(),
+        )
+        .await;
+        if let Err(e) = res {
+            info!("Error processing AMQP broker: {}", e);
+            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
         }
     }
 }
