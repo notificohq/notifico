@@ -12,7 +12,6 @@ use tracing::instrument;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-mod core;
 mod plugin;
 
 pub use plugin::{EnginePlugin, StepOutput};
