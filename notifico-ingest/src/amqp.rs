@@ -14,10 +14,11 @@ pub async fn run(amqp_url: Url, worker_addr: String, event_rx: Receiver<ProcessE
         })
         .await;
 
-        info!("Connected to AMQP broker: {amqp_url}.");
-
         let mut connection = match connection {
-            Ok(conn) => conn,
+            Ok(conn) => {
+                info!("Connected to AMQP broker: {amqp_url}.");
+                conn
+            }
             Err(err) => {
                 error!("Failed to connect to AMQP broker: {err:?}");
                 continue;

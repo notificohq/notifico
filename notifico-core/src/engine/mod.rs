@@ -12,7 +12,9 @@ use tracing::instrument;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
+mod core;
 mod plugin;
+
 pub use plugin::{EnginePlugin, StepOutput};
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, ToSchema)]
@@ -27,6 +29,8 @@ pub struct Message {
 
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct PipelineContext {
+    pub step_number: usize,
+
     pub project_id: Uuid,
     pub event_id: Uuid,
     pub notification_id: Uuid,

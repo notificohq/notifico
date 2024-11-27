@@ -13,12 +13,12 @@ use uuid::Uuid;
 #[derive(Serialize, Deserialize, ToSchema, Debug)]
 pub struct ProcessEventRequest {
     #[serde(default = "Uuid::now_v7")]
-    pub(crate) id: Uuid,
+    pub id: Uuid,
     #[serde(default = "Uuid::nil")]
-    pub(crate) project_id: Uuid,
-    pub(crate) event: String,
-    pub(crate) recipient: Option<RecipientSelector>,
-    pub(crate) context: EventContext,
+    pub project_id: Uuid,
+    pub event: String,
+    pub recipient: Option<RecipientSelector>,
+    pub context: EventContext,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
@@ -97,6 +97,8 @@ impl PipelineRunner {
 
             join_handles.spawn(async move {
                 let context = PipelineContext {
+                    step_number: 0,
+
                     project_id,
                     recipient,
                     event_name,
@@ -124,10 +126,14 @@ impl PipelineRunner {
         pipeline: Pipeline,
         mut context: PipelineContext,
     ) {
-        for step in pipeline.steps.iter() {
+        for (step_number, step) in pipeline.steps.iter().enumerate() {
+            if step_number < context.step_number {
+                continue;
+            }
+
             let result = engine.execute_step(&mut context, step).await;
             match result {
-                Ok(StepOutput::Continue) => continue,
+                Ok(StepOutput::Continue) => context.step_number += 1,
                 Ok(StepOutput::Interrupt) => break,
                 Err(err) => {
                     error!("Error executing step: {:?}", err);
