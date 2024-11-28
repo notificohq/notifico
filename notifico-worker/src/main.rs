@@ -17,7 +17,6 @@ use notifico_template::db::DbTemplateSource;
 use notifico_template::Templater;
 use notifico_whatsapp::WaBusinessPlugin;
 use sea_orm::{ConnectOptions, Database};
-use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tracing::info;
@@ -91,7 +90,7 @@ async fn main() {
     let recorder = Arc::new(BaseRecorder::new());
 
     let templater_source = Arc::new(DbTemplateSource::new(db_connection.clone()));
-    engine.add_plugin(Arc::new(Templater::new(templater_source)));
+    engine.add_plugin(Arc::new(Templater::new(templater_source.clone())));
 
     engine.add_plugin(Arc::new(TelegramPlugin::new(
         credentials.clone(),
@@ -119,6 +118,8 @@ async fn main() {
     engine.add_plugin(subman.clone());
 
     // Setup stateful plugins
+    pipelines.setup().await.unwrap();
+    templater_source.setup().await.unwrap();
     subman.setup().await.unwrap();
 
     // Create PipelineRunner, the core component of the Notifico system
