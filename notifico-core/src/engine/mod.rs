@@ -26,7 +26,7 @@ pub struct Message {
     pub content: RenderedTemplate,
 }
 
-#[derive(Default, Debug, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct PipelineContext {
     pub step_number: usize,
 

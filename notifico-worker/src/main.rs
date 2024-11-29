@@ -5,7 +5,8 @@ use figment::{providers::Format, providers::Toml, Figment};
 use notifico_core::config::credentials::MemoryCredentialStorage;
 use notifico_core::db::create_sqlite_if_not_exists;
 use notifico_core::engine::Engine;
-use notifico_core::pipeline::runner::PipelineRunner;
+use notifico_core::pipeline::event::EventHandler;
+use notifico_core::pipeline::executor::PipelineExecutor;
 use notifico_core::recorder::BaseRecorder;
 use notifico_dbpipeline::DbPipelineStorage;
 use notifico_slack::SlackPlugin;
@@ -122,10 +123,14 @@ async fn main() {
     templater_source.setup().await.unwrap();
     subman.setup().await.unwrap();
 
-    // Create PipelineRunner, the core component of the Notifico system
-    let runner = Arc::new(PipelineRunner::new(pipelines.clone(), engine));
+    let executor = Arc::new(PipelineExecutor::new(engine));
+    let event_handler = Arc::new(EventHandler::new(pipelines.clone(), executor));
 
-    tokio::spawn(amqp::start(runner.clone(), args.amqp_url, args.amqp_addr));
+    tokio::spawn(amqp::start(
+        event_handler.clone(),
+        args.amqp_url,
+        args.amqp_addr,
+    ));
 
     tokio::signal::ctrl_c().await.unwrap();
 }

@@ -2,7 +2,7 @@ use backoff::future::retry;
 use backoff::ExponentialBackoff;
 use fe2o3_amqp::{Connection, Sender, Session};
 use flume::Receiver;
-use notifico_core::pipeline::runner::ProcessEventRequest;
+use notifico_core::pipeline::event::ProcessEventRequest;
 use tracing::{error, info};
 use url::Url;
 

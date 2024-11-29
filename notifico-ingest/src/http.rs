@@ -4,7 +4,7 @@ use axum::routing::post;
 use axum::{Extension, Json, Router};
 use flume::Sender;
 use notifico_core::engine::EventContext;
-use notifico_core::pipeline::runner::ProcessEventRequest;
+use notifico_core::pipeline::event::ProcessEventRequest;
 use serde::Deserialize;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
