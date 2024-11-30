@@ -1,46 +1,97 @@
-use fe2o3_amqp::{Connection, Receiver, Session};
+use async_trait::async_trait;
+use fe2o3_amqp::connection::ConnectionHandle;
+use fe2o3_amqp::session::SessionHandle;
+use fe2o3_amqp::{Connection, Receiver, Sender, Session};
 use notifico_core::pipeline::event::EventHandler;
+use notifico_core::queue::{ReceiverChannel, SenderChannel};
+use std::collections::BTreeMap;
+use std::error::Error;
 use std::sync::Arc;
+use tokio::sync::Mutex;
 use tracing::info;
 use url::Url;
 use uuid::Uuid;
 
-pub async fn start(runner: Arc<EventHandler>, amqp_url: Url, worker_addr: String) {
-    let worker_uuid = Uuid::new_v4();
+pub struct AmqpClient {
+    connection: ConnectionHandle<()>,
+    session: SessionHandle<()>,
+}
 
-    let container_id = format!("notifico-worker-{}", worker_uuid);
-    loop {
-        let res = connect_to_broker(
-            amqp_url.clone(),
-            &worker_addr,
-            &container_id,
-            runner.clone(),
-        )
-        .await;
-        if let Err(e) = res {
-            info!("Error processing AMQP broker: {}", e);
-            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-        }
+impl AmqpClient {
+    pub async fn connect(url: Url, container_id: String) -> anyhow::Result<Self> {
+        info!("Connecting to AMQP broker: {}", url);
+        let mut connection = Connection::open(container_id, url.clone()).await?;
+        info!("Connected to AMQP broker: {}", url);
+        let session = Session::begin(&mut connection).await?;
+        Ok(Self {
+            connection,
+            session,
+        })
+    }
+
+    pub async fn create_sender(
+        &mut self,
+        address: &str,
+        link_name: &str,
+    ) -> anyhow::Result<AmqpSender> {
+        Ok(AmqpSender {
+            sender: Arc::new(Mutex::new(
+                Sender::attach(&mut self.session, link_name, address).await?,
+            )),
+        })
+    }
+
+    pub async fn create_receiver(
+        &mut self,
+        address: &str,
+        link_name: &str,
+    ) -> anyhow::Result<AmqpReceiver> {
+        Ok(AmqpReceiver {
+            receiver: Arc::new(Mutex::new(
+                Receiver::attach(&mut self.session, link_name, address).await?,
+            )),
+        })
+    }
+
+    pub async fn channel(
+        &mut self,
+        address: &str,
+        link_name: &str,
+    ) -> anyhow::Result<(AmqpSender, AmqpReceiver)> {
+        Ok((
+            self.create_sender(address, &format!("{link_name}-sender"))
+                .await?,
+            self.create_receiver(address, &format!("{link_name}-receiver"))
+                .await?,
+        ))
     }
 }
 
-async fn connect_to_broker(
-    url: Url,
-    address: &str,
-    container_id: &str,
-    runner: Arc<EventHandler>,
-) -> anyhow::Result<()> {
-    info!("Connecting to AMQP broker: {}", url);
-    let mut connection = Connection::open(container_id, url.clone()).await?;
-    info!("Connected to AMQP broker: {}", url);
-    let mut session = Session::begin(&mut connection).await?;
-    let mut receiver = Receiver::attach(&mut session, "rust-receiver-link-1", address).await?;
+#[derive(Clone)]
+pub struct AmqpSender {
+    sender: Arc<Mutex<Sender>>,
+}
 
-    loop {
-        let delivery = receiver.recv::<String>().await?;
+#[async_trait]
+impl SenderChannel for AmqpSender {
+    async fn send(&self, message: String) -> Result<(), Box<dyn Error>> {
+        let mut sender_lk = self.sender.lock().await;
+        sender_lk.send(message).await?;
+        Ok(())
+    }
+}
 
-        receiver.accept(&delivery).await?;
-        let eventrequest = serde_json::from_str(delivery.body())?;
-        runner.process_eventrequest(eventrequest).await;
+#[derive(Clone)]
+pub struct AmqpReceiver {
+    receiver: Arc<Mutex<Receiver>>,
+}
+
+#[async_trait]
+impl ReceiverChannel for AmqpReceiver {
+    async fn receive(&self) -> Result<String, Box<dyn Error>> {
+        let mut receiver_lk = self.receiver.lock().await;
+        let message = receiver_lk.recv::<String>().await?;
+        receiver_lk.accept(&message).await?;
+        Ok(message.body().clone())
     }
 }

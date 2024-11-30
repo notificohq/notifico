@@ -1,12 +1,15 @@
 mod amqp;
 
+use crate::amqp::AmqpClient;
 use clap::Parser;
 use figment::{providers::Format, providers::Toml, Figment};
+use log::debug;
 use notifico_core::config::credentials::MemoryCredentialStorage;
 use notifico_core::db::create_sqlite_if_not_exists;
 use notifico_core::engine::Engine;
 use notifico_core::pipeline::event::EventHandler;
 use notifico_core::pipeline::executor::PipelineExecutor;
+use notifico_core::queue::ReceiverChannel;
 use notifico_core::recorder::BaseRecorder;
 use notifico_dbpipeline::DbPipelineStorage;
 use notifico_slack::SlackPlugin;
@@ -123,14 +126,34 @@ async fn main() {
     templater_source.setup().await.unwrap();
     subman.setup().await.unwrap();
 
+    let mut amqp_client = AmqpClient::connect(args.amqp_url, "wrk".to_string())
+        .await
+        .unwrap();
+
+    let (pipelines_tx, pipelines_rx) = amqp_client
+        .channel("pipelines", "pipeline-link")
+        .await
+        .unwrap();
+    let events_rx = amqp_client
+        .create_receiver("notifico_workers", "event-link")
+        .await
+        .unwrap();
+
     let executor = Arc::new(PipelineExecutor::new(engine));
-    let event_handler = Arc::new(EventHandler::new(pipelines.clone(), executor));
+    let event_handler = EventHandler::new(pipelines.clone(), Arc::new(pipelines_tx));
 
-    tokio::spawn(amqp::start(
-        event_handler.clone(),
-        args.amqp_url,
-        args.amqp_addr,
-    ));
-
-    tokio::signal::ctrl_c().await.unwrap();
+    loop {
+        tokio::select! {
+            Ok(task) = pipelines_rx.receive() => {
+                debug!("Received pipeline: {:?}", task);
+                let executor = executor.clone();
+                let _handle = tokio::spawn(async move {executor.execute_pipeline(serde_json::from_str(&task).unwrap()).await});
+            }
+            Ok(event) = events_rx.receive() => {
+                debug!("Received event: {:?}", event);
+                event_handler.process_eventrequest(serde_json::from_str(&event).unwrap()).await.unwrap();
+            }
+            _ = tokio::signal::ctrl_c() => break,
+        }
+    }
 }

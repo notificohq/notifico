@@ -1,11 +1,11 @@
 use crate::engine::{EventContext, PipelineContext};
 use crate::error::EngineError;
-use crate::pipeline::executor::{PipelineExecutor, PipelineTask};
+use crate::pipeline::executor::PipelineTask;
 use crate::pipeline::storage::PipelineStorage;
+use crate::queue::SenderChannel;
 use crate::recipient::Recipient;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use tokio::task::JoinSet;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -28,17 +28,17 @@ pub enum RecipientSelector {
 
 pub struct EventHandler {
     pipeline_storage: Arc<dyn PipelineStorage>,
-    pipeline_executor: Arc<PipelineExecutor>,
+    task_tx: Arc<dyn SenderChannel>,
 }
 
 impl EventHandler {
     pub fn new(
         pipeline_storage: Arc<dyn PipelineStorage>,
-        pipeline_executor: Arc<PipelineExecutor>,
+        task_tx: Arc<dyn SenderChannel>,
     ) -> Self {
         Self {
             pipeline_storage,
-            pipeline_executor,
+            task_tx,
         }
     }
 
@@ -56,45 +56,37 @@ impl EventHandler {
         };
 
         // Execute each pipeline in a separate task in parallel
-        let mut join_handles = JoinSet::new();
         for pipeline in pipelines {
             let recipient = recipient.clone();
             let event_context = msg.context.clone();
             let event_name = msg.event.to_string();
 
             let channel = pipeline.channel.clone();
-            let executor = self.pipeline_executor.clone();
 
             let contact = recipient
                 .clone()
                 .map(|r| r.get_primary_contact(&channel))
                 .unwrap_or_default();
 
-            join_handles.spawn(async move {
-                let context = PipelineContext {
-                    step_number: 0,
+            let context = PipelineContext {
+                step_number: 0,
 
-                    project_id: msg.project_id,
-                    recipient,
-                    event_name,
-                    event_context,
-                    plugin_contexts: Default::default(),
-                    messages: Default::default(),
-                    channel,
-                    contact,
-                    notification_id: Uuid::now_v7(),
-                    event_id: msg.id,
-                };
+                project_id: msg.project_id,
+                recipient,
+                event_name,
+                event_context,
+                plugin_contexts: Default::default(),
+                messages: Default::default(),
+                channel,
+                contact,
+                notification_id: Uuid::now_v7(),
+                event_id: msg.id,
+            };
 
-                let task = PipelineTask { pipeline, context };
+            let task = serde_json::to_string(&PipelineTask { pipeline, context }).unwrap();
 
-                // Execute each step in the pipeline
-                executor.execute_pipeline(task).await;
-            });
+            self.task_tx.send(task).await.unwrap();
         }
-
-        // Wait for all pipelines to complete
-        join_handles.join_all().await;
         Ok(())
     }
 }
