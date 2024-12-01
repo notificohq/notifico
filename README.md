@@ -30,7 +30,7 @@ notifications effectively.
 - [ ] debounce.io and similar services support
 - [ ] Tracking pixel support
 - [ ] Link redirector with statistics
-- [ ] Grafana Webhook support
+- [x] Webhook support
 - [ ] Auto-retry for sending failed messages
 - [ ] Template and Pipeline versioning
 
