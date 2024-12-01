@@ -41,6 +41,7 @@ notifications effectively.
 - [x] Slack
 - [x] Telegram
 - [x] WhatsApp Business
+- [x] Pushover
 - [ ] Microsoft Teams
 - [ ] Discord
 - [ ] Mattermost
