@@ -1,0 +1,14 @@
+[package]
+name = "notifico-pushover"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+notifico-core = { path = "../../notifico-core" }
+reqwest = { workspace = true }
+async-trait = "0.1.83"
+serde = "1.0.215"
+serde_json = "1.0.133"
+serde_urlencoded = "0.7.1"
+thiserror = "2.0.3"
+url = "2.5.4"

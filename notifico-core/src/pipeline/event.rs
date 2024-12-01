@@ -74,7 +74,7 @@ impl EventHandler {
                 event_id: msg.id,
             };
 
-            if context.recipient.is_none() {
+            if msg.recipients.is_empty() {
                 let task = serde_json::to_string(&PipelineTask { context }).unwrap();
                 self.task_tx.send(task).await.unwrap();
                 return Ok(());

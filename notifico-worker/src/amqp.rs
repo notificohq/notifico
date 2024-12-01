@@ -2,17 +2,15 @@ use async_trait::async_trait;
 use fe2o3_amqp::connection::ConnectionHandle;
 use fe2o3_amqp::session::SessionHandle;
 use fe2o3_amqp::{Connection, Receiver, Sender, Session};
-use notifico_core::pipeline::event::EventHandler;
 use notifico_core::queue::{ReceiverChannel, SenderChannel};
-use std::collections::BTreeMap;
 use std::error::Error;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tracing::info;
 use url::Url;
-use uuid::Uuid;
 
 pub struct AmqpClient {
+    #[allow(dead_code)]
     connection: ConnectionHandle<()>,
     session: SessionHandle<()>,
 }

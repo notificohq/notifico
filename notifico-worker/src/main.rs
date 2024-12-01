@@ -13,6 +13,7 @@ use notifico_core::pipeline::executor::PipelineExecutor;
 use notifico_core::queue::ReceiverChannel;
 use notifico_core::recorder::BaseRecorder;
 use notifico_dbpipeline::DbPipelineStorage;
+use notifico_pushover::PushoverPlugin;
 use notifico_slack::SlackPlugin;
 use notifico_smpp::SmppPlugin;
 use notifico_smtp::EmailPlugin;
@@ -128,6 +129,10 @@ async fn main() {
     )));
     engine.add_plugin(Arc::new(SmppPlugin::new(credentials.clone())));
     engine.add_plugin(Arc::new(SlackPlugin::new(
+        credentials.clone(),
+        recorder.clone(),
+    )));
+    engine.add_plugin(Arc::new(PushoverPlugin::new(
         credentials.clone(),
         recorder.clone(),
     )));
