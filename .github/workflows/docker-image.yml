@@ -2,8 +2,7 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ "main" ]
-    tags: [ "*" ]
+    tags: [ "v*" ]
 
 jobs:
   build:
@@ -40,7 +39,9 @@ jobs:
           push: true
           tags: |
             notificohq/${{ matrix.image }}:latest
+            notificohq/${{ matrix.image }}:${{ github.ref_name }}
             ghcr.io/notificohq/${{ matrix.image }}:latest
+            ghcr.io/notificohq/${{ matrix.image }}:${{ github.ref_name }}
           context: .
           file: container/${{ matrix.image }}.dockerfile
           cache-from: type=gha
