@@ -19,6 +19,14 @@ impl Recipient {
             .find(|contact| contact.r#type() == channel)
             .cloned()
     }
+
+    pub fn get_all_contacts(&self, channel: &str) -> Vec<Contact> {
+        self.contacts
+            .iter()
+            .filter(|contact| contact.r#type() == channel)
+            .cloned()
+            .collect()
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, ToSchema)]

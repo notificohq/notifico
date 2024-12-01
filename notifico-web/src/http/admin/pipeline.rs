@@ -25,7 +25,7 @@ impl From<PipelineResult> for PipelineItem {
         Self {
             id: value.pipeline.id,
             project_id: value.pipeline.project_id,
-            steps: serde_json::to_string(&value.pipeline.steps).unwrap(),
+            steps: serde_json::to_string_pretty(&value.pipeline.steps).unwrap(),
             channel: value.pipeline.channel,
 
             event_ids: value.event_ids,

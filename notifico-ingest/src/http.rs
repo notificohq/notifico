@@ -67,7 +67,7 @@ async fn send_webhook(
         id: Uuid::now_v7(),
         project_id: parameters.project_id,
         event: parameters.event.clone(),
-        recipient: None,
+        recipients: vec![],
         context,
     };
 

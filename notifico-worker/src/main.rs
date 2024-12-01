@@ -6,6 +6,7 @@ use figment::{providers::Format, providers::Toml, Figment};
 use log::debug;
 use notifico_core::config::credentials::MemoryCredentialStorage;
 use notifico_core::db::create_sqlite_if_not_exists;
+use notifico_core::engine::plugin::core::CorePlugin;
 use notifico_core::engine::Engine;
 use notifico_core::pipeline::event::EventHandler;
 use notifico_core::pipeline::executor::PipelineExecutor;
@@ -88,10 +89,27 @@ async fn main() {
     };
     let pipelines = Arc::new(DbPipelineStorage::new(db_connection.clone()));
 
+    // Initialize AMQP client
+    let mut amqp_client = AmqpClient::connect(args.amqp_url, "wrk".to_string())
+        .await
+        .unwrap();
+
+    let (pipelines_tx, pipelines_rx) = amqp_client
+        .channel("pipelines", "pipeline-link")
+        .await
+        .unwrap();
+    let pipelines_tx = Arc::new(pipelines_tx);
+    let events_rx = amqp_client
+        .create_receiver("notifico_workers", "event-link")
+        .await
+        .unwrap();
+
     // Create Engine with plugins
     let mut engine = Engine::new();
 
     let recorder = Arc::new(BaseRecorder::new());
+
+    engine.add_plugin(Arc::new(CorePlugin::new(pipelines_tx.clone())));
 
     let templater_source = Arc::new(DbTemplateSource::new(db_connection.clone()));
     engine.add_plugin(Arc::new(Templater::new(templater_source.clone())));
@@ -126,21 +144,8 @@ async fn main() {
     templater_source.setup().await.unwrap();
     subman.setup().await.unwrap();
 
-    let mut amqp_client = AmqpClient::connect(args.amqp_url, "wrk".to_string())
-        .await
-        .unwrap();
-
-    let (pipelines_tx, pipelines_rx) = amqp_client
-        .channel("pipelines", "pipeline-link")
-        .await
-        .unwrap();
-    let events_rx = amqp_client
-        .create_receiver("notifico_workers", "event-link")
-        .await
-        .unwrap();
-
     let executor = Arc::new(PipelineExecutor::new(engine));
-    let event_handler = EventHandler::new(pipelines.clone(), Arc::new(pipelines_tx));
+    let event_handler = EventHandler::new(pipelines.clone(), pipelines_tx.clone());
 
     loop {
         tokio::select! {

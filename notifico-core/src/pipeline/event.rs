@@ -16,7 +16,7 @@ pub struct ProcessEventRequest {
     #[serde(default = "Uuid::nil")]
     pub project_id: Uuid,
     pub event: String,
-    pub recipient: Option<RecipientSelector>,
+    pub recipients: Vec<RecipientSelector>,
     pub context: EventContext,
 }
 
@@ -24,6 +24,14 @@ pub struct ProcessEventRequest {
 #[serde(rename_all = "snake_case", untagged)]
 pub enum RecipientSelector {
     Recipient(Recipient),
+}
+
+impl RecipientSelector {
+    pub fn resolve(self) -> Recipient {
+        match self {
+            RecipientSelector::Recipient(recipient) => recipient,
+        }
+    }
 }
 
 pub struct EventHandler {
@@ -49,43 +57,41 @@ impl EventHandler {
             .get_pipelines_for_event(msg.project_id, &msg.event)
             .await?;
 
-        // Determine the recipient based on the recipient selector
-        let recipient = match msg.recipient {
-            None => None,
-            Some(RecipientSelector::Recipient(recipient)) => Some(recipient),
-        };
-
         // Execute each pipeline in a separate task in parallel
         for pipeline in pipelines {
-            let recipient = recipient.clone();
-            let event_context = msg.context.clone();
-            let event_name = msg.event.to_string();
-
-            let channel = pipeline.channel.clone();
-
-            let contact = recipient
-                .clone()
-                .map(|r| r.get_primary_contact(&channel))
-                .unwrap_or_default();
-
             let context = PipelineContext {
+                pipeline: pipeline.clone(),
                 step_number: 0,
 
                 project_id: msg.project_id,
-                recipient,
-                event_name,
-                event_context,
+                recipient: Default::default(),
+                event_name: msg.event.clone(),
+                event_context: msg.context.clone(),
                 plugin_contexts: Default::default(),
                 messages: Default::default(),
-                channel,
-                contact,
+                contact: Default::default(),
                 notification_id: Uuid::now_v7(),
                 event_id: msg.id,
             };
 
-            let task = serde_json::to_string(&PipelineTask { pipeline, context }).unwrap();
+            if context.recipient.is_none() {
+                let task = serde_json::to_string(&PipelineTask { context }).unwrap();
+                self.task_tx.send(task).await.unwrap();
+                return Ok(());
+            }
 
-            self.task_tx.send(task).await.unwrap();
+            for recipient in &msg.recipients {
+                let recipient = recipient.clone().resolve();
+                for contact in recipient.get_all_contacts(&pipeline.channel) {
+                    let mut context = context.clone();
+                    context.recipient = Some(recipient.clone());
+                    context.contact = Some(contact);
+
+                    let task = serde_json::to_string(&PipelineTask { context }).unwrap();
+
+                    self.task_tx.send(task).await.unwrap();
+                }
+            }
         }
         Ok(())
     }

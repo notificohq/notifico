@@ -86,7 +86,11 @@ impl EnginePlugin for Templater {
                     // Template
                     let template = self
                         .source
-                        .get_template(context.project_id, context.channel.as_str(), template)
+                        .get_template(
+                            context.project_id,
+                            context.pipeline.channel.as_str(),
+                            template,
+                        )
                         .await?;
 
                     // Context
