@@ -7,7 +7,7 @@ edition = "2021"
 rusmpp = { version = "0.1.3", features = ["tokio-codec", "tracing"] }
 tokio = { version = "1.41.1", features = ["net"] }
 tokio-util = { version = "0.7.12", features = ["full"] }
-tracing = "0.1.40"
+tracing = "0.1.41"
 
 notifico-core = { path = "../../notifico-core" }
 serde = { version = "1.0.215", features = ["derive"] }
