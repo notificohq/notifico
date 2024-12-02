@@ -14,7 +14,8 @@ jobs:
           toolchain: nightly
           override: true
           components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
       - name: Run lint
-        run: cargo fmt -- --check && cargo clippy -- -D warnings
+        run: cargo fmt -- --check && cargo clippy --no-deps -- -D warnings
       - name: Run tests
         run: cargo test
