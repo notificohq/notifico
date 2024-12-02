@@ -1,4 +1,6 @@
 use async_trait::async_trait;
+use backoff::future::retry;
+use backoff::ExponentialBackoff;
 use fe2o3_amqp::connection::ConnectionHandle;
 use fe2o3_amqp::session::SessionHandle;
 use fe2o3_amqp::{Connection, Receiver, Sender, Session};
@@ -18,7 +20,10 @@ pub struct AmqpClient {
 impl AmqpClient {
     pub async fn connect(url: Url, container_id: String) -> anyhow::Result<Self> {
         info!("Connecting to AMQP broker: {}", url);
-        let mut connection = Connection::open(container_id, url.clone()).await?;
+        let mut connection = retry(ExponentialBackoff::default(), || async {
+            Ok(Connection::open(container_id.clone(), url.clone()).await?)
+        })
+        .await?;
         info!("Connected to AMQP broker: {}", url);
         let session = Session::begin(&mut connection).await?;
         Ok(Self {
