@@ -7,6 +7,7 @@ use async_trait::async_trait;
 use std::any::Any;
 use std::borrow::Cow;
 
+#[derive(Debug, Eq, PartialEq)]
 pub enum StepOutput {
     Continue,
     Interrupt,

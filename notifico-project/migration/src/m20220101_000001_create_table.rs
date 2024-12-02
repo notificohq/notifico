@@ -25,7 +25,6 @@ impl MigrationTrait for Migration {
         project::ActiveModel {
             id: Set(Uuid::nil()),
             name: Set("Default Project".to_string()),
-            ..Default::default()
         }
         .insert(db)
         .await?;

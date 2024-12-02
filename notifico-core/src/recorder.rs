@@ -14,6 +14,12 @@ pub trait Recorder: Send + Sync + 'static {
 
 pub struct BaseRecorder {}
 
+impl Default for BaseRecorder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl BaseRecorder {
     pub fn new() -> Self {
         Self {}
