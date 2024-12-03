@@ -7,6 +7,7 @@ members = [
     "transports/notifico-whatsapp",
     "transports/notifico-smpp",
     "transports/notifico-slack",
+    "transports/notifico-pushover",
     "notifico-template",
     "notifico-template/migration",
     "notifico-worker",
@@ -18,7 +19,8 @@ members = [
     "notifico-project",
     "notifico-project/migration",
     "notifico-web",
-    "notifico-ingest", "transports/notifico-pushover",
+    "notifico-ingest",
+    "notificox",
 ]
 
 [workspace.dependencies]

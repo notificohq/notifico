@@ -50,3 +50,41 @@ pub trait TemplateSource: Send + Sync + 'static {
 
     async fn delete_template(&self, id: Uuid) -> Result<(), TemplaterError>;
 }
+
+pub struct DummyTemplateSource;
+
+#[async_trait]
+impl TemplateSource for DummyTemplateSource {
+    async fn get_template(
+        &self,
+        _project_id: Uuid,
+        _channel: &str,
+        _template: TemplateSelector,
+    ) -> Result<PreRenderedTemplate, TemplaterError> {
+        Err(TemplaterError::TemplateNotFound)
+    }
+
+    async fn get_template_by_id(&self, _id: Uuid) -> Result<TemplateItem, TemplaterError> {
+        Err(TemplaterError::TemplateNotFound)
+    }
+
+    async fn list_templates(
+        &self,
+        _channel: &str,
+        _params: ListQueryParams,
+    ) -> Result<PaginatedResult<TemplateItem>, TemplaterError> {
+        unimplemented!()
+    }
+
+    async fn create_template(&self, _item: TemplateItem) -> Result<TemplateItem, TemplaterError> {
+        unimplemented!()
+    }
+
+    async fn update_template(&self, _item: TemplateItem) -> Result<TemplateItem, TemplaterError> {
+        unimplemented!()
+    }
+
+    async fn delete_template(&self, _id: Uuid) -> Result<(), TemplaterError> {
+        unimplemented!()
+    }
+}
