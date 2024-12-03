@@ -1,4 +1,5 @@
 use clap::{Parser, Subcommand};
+use log::{debug, info};
 use notifico_core::credentials::DummyCredentialStorage;
 use notifico_core::engine::plugin::core::CorePlugin;
 use notifico_core::engine::Engine;
@@ -7,6 +8,7 @@ use notifico_core::pipeline::executor::PipelineExecutor;
 use notifico_core::pipeline::storage::SinglePipelineStorage;
 use notifico_core::pipeline::Pipeline;
 use notifico_core::recorder::BaseRecorder;
+use notifico_core::step::SerializedStep;
 use notifico_pushover::PushoverPlugin;
 use notifico_slack::SlackPlugin;
 use notifico_smpp::SmppPlugin;
@@ -15,6 +17,7 @@ use notifico_telegram::TelegramPlugin;
 use notifico_template::source::DummyTemplateSource;
 use notifico_template::Templater;
 use notifico_whatsapp::WaBusinessPlugin;
+use serde_json::{json, Map, Value};
 use std::sync::Arc;
 use tokio::task::JoinSet;
 use uuid::Uuid;
@@ -34,6 +37,8 @@ enum Command {
         recipient: Vec<String>,
         #[arg(short, long)]
         step: Vec<String>,
+        #[arg(short, long)]
+        template: Vec<String>,
     },
 }
 
@@ -42,8 +47,10 @@ async fn main() {
     let _ = dotenvy::dotenv();
 
     if std::env::var("RUST_LOG").is_err() {
-        std::env::set_var("RUST_LOG", "info");
+        std::env::set_var("RUST_LOG", "notificox=info");
     }
+
+    env_logger::init();
 
     // tracing_subscriber::registry()
     //     .with(fmt::layer())
@@ -58,6 +65,7 @@ async fn main() {
             channel,
             recipient,
             step,
+            template,
         } => {
             let mut pipeline = Pipeline::default();
 
@@ -66,10 +74,30 @@ async fn main() {
                 .map(|s| json5::from_str(s).unwrap())
                 .collect();
 
+            if !template.is_empty() {
+                let templates: Vec<Map<String, Value>> = template
+                    .iter()
+                    .map(|s| json5::from_str(s).unwrap())
+                    .collect();
+
+                let step = json!({
+                    "step": "templates.load",
+                    "templates": templates,
+                });
+
+                let step = SerializedStep(step.as_object().cloned().unwrap());
+                pipeline.steps.push(step);
+            }
+
             for step in step {
                 pipeline.steps.push(json5::from_str(&step).unwrap());
             }
             pipeline.channel = channel;
+
+            info!(
+                "Running pipeline: {}",
+                serde_json::to_string_pretty(&pipeline).unwrap()
+            );
 
             // Create Engine with plugins
             let mut engine = Engine::new();
