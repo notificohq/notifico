@@ -8,6 +8,7 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::sync::Arc;
+use uuid::Uuid;
 
 pub struct CorePlugin {
     pipeline_sender: Arc<dyn SenderChannel>,
@@ -59,6 +60,8 @@ impl EnginePlugin for CorePlugin {
                         context.step_number += 1;
                         context.recipient = Some(recipient.clone());
                         context.contact = Some(contact);
+
+                        context.notification_id = Uuid::now_v7();
 
                         let task = serde_json::to_string(&PipelineTask { context }).unwrap();
 
