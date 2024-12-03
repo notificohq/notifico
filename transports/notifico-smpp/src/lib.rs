@@ -59,7 +59,7 @@ impl EnginePlugin for SmppPlugin {
             Step::Send { credential } => {
                 let credential: SmppServerCredentials = self
                     .credentials
-                    .get_typed_credential(context.project_id, &credential)
+                    .resolve(context.project_id, credential)
                     .await?;
 
                 let stream = TcpStream::connect((credential.host.clone(), credential.port))

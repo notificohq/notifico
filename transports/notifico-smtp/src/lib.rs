@@ -83,7 +83,7 @@ impl EnginePlugin for EmailPlugin {
 
                 let credential: SmtpServerCredentials = self
                     .credentials
-                    .get_typed_credential(context.project_id, &credential)
+                    .resolve(context.project_id, credential)
                     .await?;
 
                 let transport = self.get_transport(credential).await;

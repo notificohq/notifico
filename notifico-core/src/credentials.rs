@@ -4,6 +4,13 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(untagged)]
+pub enum CredentialSelector {
+    ByName(String),
+    Inline(Credential),
+}
+
 /// Generic credential with type information.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Credential {
@@ -34,12 +41,29 @@ pub trait CredentialStorage: Send + Sync {
 }
 
 impl dyn CredentialStorage {
-    pub async fn get_typed_credential<T>(&self, project: Uuid, name: &str) -> Result<T, EngineError>
+    pub async fn resolve<T>(
+        &self,
+        project: Uuid,
+        name: CredentialSelector,
+    ) -> Result<T, EngineError>
     where
         T: TypedCredential,
     {
-        self.get_credential(project, name)
-            .await
-            .and_then(|c| c.into_typed())
+        match name {
+            CredentialSelector::ByName(name) => self
+                .get_credential(project, &name)
+                .await
+                .and_then(|c| c.into_typed()),
+            CredentialSelector::Inline(credential) => credential.into_typed(),
+        }
+    }
+}
+
+pub struct DummyCredentialStorage;
+
+#[async_trait]
+impl CredentialStorage for DummyCredentialStorage {
+    async fn get_credential(&self, _project: Uuid, _name: &str) -> Result<Credential, EngineError> {
+        Err(EngineError::CredentialNotFound)
     }
 }

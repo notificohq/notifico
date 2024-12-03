@@ -41,6 +41,7 @@ impl TemplateSource for DbTemplateSource {
                 .one(&self.db)
                 .await?
                 .ok_or(TemplaterError::TemplateNotFound)?,
+            TemplateSelector::Inline(_) => unimplemented!(),
         }
         .into())
     }

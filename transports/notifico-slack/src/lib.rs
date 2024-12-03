@@ -52,7 +52,7 @@ impl EnginePlugin for SlackPlugin {
             Step::Send { credential } => {
                 let credential: SlackCredentials = self
                     .credentials
-                    .get_typed_credential(context.project_id, &credential)
+                    .resolve(context.project_id, credential)
                     .await?;
 
                 let contact: SlackContact = context.get_contact()?;

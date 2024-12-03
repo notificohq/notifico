@@ -57,7 +57,7 @@ impl EnginePlugin for TelegramPlugin {
             Step::Send { credential } => {
                 let credential: TelegramBotCredentials = self
                     .credentials
-                    .get_typed_credential(context.project_id, &credential)
+                    .resolve(context.project_id, credential)
                     .await?;
                 let bot = Bot::new(credential.token);
                 let contact: TelegramContact = context.get_contact()?;

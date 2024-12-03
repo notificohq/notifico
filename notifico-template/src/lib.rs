@@ -84,14 +84,18 @@ impl EnginePlugin for Templater {
                     debug!("Assigned Message ID: {:?}", message_id);
 
                     // Template
-                    let template = self
-                        .source
-                        .get_template(
-                            context.project_id,
-                            context.pipeline.channel.as_str(),
-                            template,
-                        )
-                        .await?;
+                    let template = match template {
+                        TemplateSelector::Inline(t) => t,
+                        sel => {
+                            self.source
+                                .get_template(
+                                    context.project_id,
+                                    context.pipeline.channel.as_str(),
+                                    sel,
+                                )
+                                .await?
+                        }
+                    };
 
                     // Context
                     let mut template_context = context.event_context.0.clone();
@@ -132,6 +136,7 @@ impl EnginePlugin for Templater {
 #[derive(Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum TemplateSelector {
+    Inline(PreRenderedTemplate),
     ByName(String),
 }
 

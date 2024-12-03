@@ -53,7 +53,7 @@ impl EnginePlugin for WaBusinessPlugin {
                 // Send
                 let credential: WhatsAppCredentials = self
                     .credentials
-                    .get_typed_credential(context.project_id, &credential)
+                    .resolve(context.project_id, credential)
                     .await?;
 
                 let url = format!(

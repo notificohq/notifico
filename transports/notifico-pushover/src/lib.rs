@@ -72,7 +72,7 @@ impl EnginePlugin for PushoverPlugin {
             Step::Send { credential } => {
                 let credential: PushoverCredentials = self
                     .credentials
-                    .get_typed_credential(context.project_id, &credential)
+                    .resolve(context.project_id, credential)
                     .await?;
 
                 let contact: PushoverContact = context.get_contact()?;
