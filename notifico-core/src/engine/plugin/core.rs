@@ -40,7 +40,7 @@ impl EnginePlugin for CorePlugin {
                     let recipient = &recipients[0].clone().resolve();
                     context.recipient = Some(recipient.clone());
 
-                    let contacts = recipient.get_all_contacts(&context.pipeline.channel);
+                    let contacts = recipient.get_contacts(&context.pipeline.channel);
                     match contacts.len() {
                         0 => return Ok(StepOutput::Continue), // It will fail later in the pipeline if there's no contact.
                         1 => {
@@ -54,7 +54,7 @@ impl EnginePlugin for CorePlugin {
                 for recipient in recipients {
                     let recipient = recipient.resolve();
 
-                    for contact in recipient.get_all_contacts(&context.pipeline.channel) {
+                    for contact in recipient.get_contacts(&context.pipeline.channel) {
                         let mut context = context.clone();
 
                         context.step_number += 1;

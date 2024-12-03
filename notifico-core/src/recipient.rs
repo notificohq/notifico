@@ -13,14 +13,7 @@ pub struct Recipient {
 }
 
 impl Recipient {
-    pub fn get_primary_contact(&self, channel: &str) -> Option<Contact> {
-        self.contacts
-            .iter()
-            .find(|contact| contact.r#type() == channel)
-            .cloned()
-    }
-
-    pub fn get_all_contacts(&self, channel: &str) -> Vec<Contact> {
+    pub fn get_contacts(&self, channel: &str) -> Vec<Contact> {
         self.contacts
             .iter()
             .filter(|contact| contact.r#type() == channel)
@@ -37,10 +30,6 @@ impl Contact {
         self.0["type"]
             .as_str()
             .expect("Contact type must be a string")
-    }
-
-    pub fn into_json(self) -> Value {
-        self.0
     }
 
     pub fn into_contact<T>(self) -> Result<T, EngineError>

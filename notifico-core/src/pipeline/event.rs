@@ -82,7 +82,7 @@ impl EventHandler {
 
             for recipient in &msg.recipients {
                 let recipient = recipient.clone().resolve();
-                for contact in recipient.get_all_contacts(&pipeline.channel) {
+                for contact in recipient.get_contacts(&pipeline.channel) {
                     let mut context = context.clone();
                     context.recipient = Some(recipient.clone());
                     context.contact = Some(contact);

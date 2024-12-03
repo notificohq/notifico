@@ -61,7 +61,7 @@ impl PipelineContext {
 
 /// Engine is used to run steps in the pipeline.
 /// Can be cloned and shared across tasks.
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct Engine {
     steps: HashMap<Cow<'static, str>, Arc<dyn EnginePlugin>>,
 }
@@ -73,17 +73,9 @@ impl Debug for Engine {
     }
 }
 
-impl Default for Engine {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl Engine {
     pub fn new() -> Self {
-        Self {
-            steps: Default::default(),
-        }
+        Self::default()
     }
 
     pub fn add_plugin(&mut self, plugin: Arc<dyn EnginePlugin + 'static>) {
