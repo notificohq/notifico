@@ -108,7 +108,7 @@ mod tests {
                         "contacts": [
                             {
                                 "type": "",
-                                "chat_id": 1234567890
+                                "value": "1234567890"
                             }
                         ]
                     }
@@ -140,7 +140,7 @@ mod tests {
                         "contacts": [
                             {
                                 "type": "",
-                                "chat_id": 1234567890
+                                "value": "1234567890"
                             }
                         ]
                     },
@@ -149,7 +149,7 @@ mod tests {
                         "contacts": [
                             {
                                 "type": "",
-                                "chat_id": 1234567890
+                                "value": "1234567890"
                             }
                         ]
                     }
