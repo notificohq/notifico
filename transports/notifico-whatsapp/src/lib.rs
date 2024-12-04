@@ -48,7 +48,7 @@ impl EnginePlugin for WaBusinessPlugin {
 
         match step {
             Step::Send { credential } => {
-                let contact: MobilePhoneContact = context.get_contact()?;
+                let contacts: Vec<MobilePhoneContact> = context.get_recipient()?.get_contacts();
 
                 // Send
                 let credential: WhatsAppCredentials = self
@@ -61,38 +61,40 @@ impl EnginePlugin for WaBusinessPlugin {
                     credential.phone_id
                 );
 
-                for message in context.messages.iter().cloned() {
-                    let wa_message: WhatsAppContent = message.content.try_into().unwrap();
+                for contact in contacts {
+                    for message in context.messages.iter().cloned() {
+                        let wa_message: WhatsAppContent = message.content.try_into().unwrap();
 
-                    let wamessage = cloudapi::Message {
-                        messaging_product: MessagingProduct::Whatsapp,
-                        to: contact.number.clone(),
-                        language: "en_US".into(),
-                        message: MessageType::Text {
-                            preview_url: false,
-                            body: wa_message.body,
-                        },
-                    };
+                        let wamessage = cloudapi::Message {
+                            messaging_product: MessagingProduct::Whatsapp,
+                            to: contact.number.clone(),
+                            language: "en_US".into(),
+                            message: MessageType::Text {
+                                preview_url: false,
+                                body: wa_message.body,
+                            },
+                        };
 
-                    let result = self
-                        .client
-                        .post(url.clone())
-                        .header("Authorization", format!("Bearer {}", credential.token))
-                        .json(&wamessage)
-                        .send()
-                        .await;
-                    match result {
-                        Ok(_) => self.recorder.record_message_sent(
-                            context.event_id,
-                            context.notification_id,
-                            message.id,
-                        ),
-                        Err(e) => self.recorder.record_message_failed(
-                            context.event_id,
-                            context.notification_id,
-                            message.id,
-                            &e.to_string(),
-                        ),
+                        let result = self
+                            .client
+                            .post(url.clone())
+                            .header("Authorization", format!("Bearer {}", credential.token))
+                            .json(&wamessage)
+                            .send()
+                            .await;
+                        match result {
+                            Ok(_) => self.recorder.record_message_sent(
+                                context.event_id,
+                                context.notification_id,
+                                message.id,
+                            ),
+                            Err(e) => self.recorder.record_message_failed(
+                                context.event_id,
+                                context.notification_id,
+                                message.id,
+                                &e.to_string(),
+                            ),
+                        }
                     }
                 }
             }

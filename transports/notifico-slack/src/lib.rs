@@ -55,32 +55,34 @@ impl EnginePlugin for SlackPlugin {
                     .resolve(context.project_id, credential)
                     .await?;
 
-                let contact: SlackContact = context.get_contact()?;
+                let contact: Vec<SlackContact> = context.get_recipient()?.get_contacts();
 
-                for message in context.messages.iter().cloned() {
-                    let content: SlackMessage = message.content.try_into()?;
-                    let slack_message = slackapi::SlackMessage::Text {
-                        channel: contact.channel_id.clone(),
-                        text: content.text,
-                    };
+                for contact in contact {
+                    for message in context.messages.iter().cloned() {
+                        let content: SlackMessage = message.content.try_into()?;
+                        let slack_message = slackapi::SlackMessage::Text {
+                            channel: contact.channel_id.clone(),
+                            text: content.text,
+                        };
 
-                    let result = self
-                        .client
-                        .chat_post_message(&credential.token, slack_message)
-                        .await;
+                        let result = self
+                            .client
+                            .chat_post_message(&credential.token, slack_message)
+                            .await;
 
-                    match result {
-                        Ok(_) => self.recorder.record_message_sent(
-                            context.event_id,
-                            context.notification_id,
-                            message.id,
-                        ),
-                        Err(e) => self.recorder.record_message_failed(
-                            context.event_id,
-                            context.notification_id,
-                            message.id,
-                            &e.to_string(),
-                        ),
+                        match result {
+                            Ok(_) => self.recorder.record_message_sent(
+                                context.event_id,
+                                context.notification_id,
+                                message.id,
+                            ),
+                            Err(e) => self.recorder.record_message_failed(
+                                context.event_id,
+                                context.notification_id,
+                                message.id,
+                                &e.to_string(),
+                            ),
+                        }
                     }
                 }
                 Ok(StepOutput::Continue)

@@ -1,5 +1,4 @@
 use crate::error::EngineError;
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use utoipa::ToSchema;
@@ -13,12 +12,14 @@ pub struct Recipient {
 }
 
 impl Recipient {
-    pub fn get_contacts(&self, channel: &str) -> Vec<Contact> {
-        self.contacts
-            .iter()
-            .filter(|contact| contact.r#type() == channel)
-            .cloned()
-            .collect()
+    pub fn get_contacts<T: TypedContact>(&self) -> Vec<T> {
+        let mut contacts = vec![];
+        for contact in self.contacts.iter() {
+            if contact.r#type() == T::CONTACT_TYPE {
+                contacts.push(contact.clone().into_contact().unwrap());
+            }
+        }
+        contacts
     }
 }
 
@@ -57,9 +58,4 @@ impl MobilePhoneContact {
     pub fn msisdn(&self) -> &str {
         self.number.strip_prefix("+").unwrap_or(&self.number)
     }
-}
-
-#[async_trait]
-pub trait RecipientDirectory {
-    async fn get_recipient(&self, project: Uuid, id: &str) -> Option<Recipient>;
 }

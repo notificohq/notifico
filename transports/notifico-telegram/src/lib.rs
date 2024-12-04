@@ -60,28 +60,30 @@ impl EnginePlugin for TelegramPlugin {
                     .resolve(context.project_id, credential)
                     .await?;
                 let bot = Bot::new(credential.token);
-                let contact: TelegramContact = context.get_contact()?;
+                let contacts: Vec<TelegramContact> = context.get_recipient()?.get_contacts();
 
-                for message in context.messages.iter().cloned() {
-                    let content: TelegramContent = message.content.try_into().unwrap();
+                for contact in contacts {
+                    for message in context.messages.iter().cloned() {
+                        let content: TelegramContent = message.content.try_into().unwrap();
 
-                    // Send
-                    let result = bot
-                        .send_message(contact.clone().into_recipient(), content.body)
-                        .await;
+                        // Send
+                        let result = bot
+                            .send_message(contact.clone().into_recipient(), content.body)
+                            .await;
 
-                    match result {
-                        Ok(_) => self.recorder.record_message_sent(
-                            context.event_id,
-                            context.notification_id,
-                            message.id,
-                        ),
-                        Err(e) => self.recorder.record_message_failed(
-                            context.event_id,
-                            context.notification_id,
-                            message.id,
-                            &e.to_string(),
-                        ),
+                        match result {
+                            Ok(_) => self.recorder.record_message_sent(
+                                context.event_id,
+                                context.notification_id,
+                                message.id,
+                            ),
+                            Err(e) => self.recorder.record_message_failed(
+                                context.event_id,
+                                context.notification_id,
+                                message.id,
+                                &e.to_string(),
+                            ),
+                        }
                     }
                 }
             }

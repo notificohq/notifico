@@ -79,7 +79,7 @@ impl EnginePlugin for EmailPlugin {
 
         match step {
             Step::Send { credential } => {
-                let contact: EmailContact = context.get_contact()?;
+                let contacts: Vec<EmailContact> = context.get_recipient()?.get_contacts();
 
                 let credential: SmtpServerCredentials = self
                     .credentials
@@ -91,38 +91,41 @@ impl EnginePlugin for EmailPlugin {
                 let plugin_context: PluginContext =
                     serde_json::from_value(context.plugin_contexts.clone().into()).unwrap();
 
-                for message in context.messages.iter().cloned() {
-                    let rendered: RenderedEmail = message.content.try_into()?;
+                for contact in contacts {
+                    for message in context.messages.iter().cloned() {
+                        let rendered: RenderedEmail = message.content.try_into()?;
 
-                    let email_message = {
-                        let mut builder = lettre::Message::builder();
-                        builder = builder.from(rendered.from);
-                        builder = builder.to(contact.address.clone());
-                        builder = builder.subject(rendered.subject);
-                        if let Some(list_unsubscribe) = plugin_context.list_unsubscribe.clone() {
-                            builder = builder.header(ListUnsubscribe::from(list_unsubscribe));
+                        let email_message = {
+                            let mut builder = lettre::Message::builder();
+                            builder = builder.from(rendered.from);
+                            builder = builder.to(contact.address.clone());
+                            builder = builder.subject(rendered.subject);
+                            if let Some(list_unsubscribe) = plugin_context.list_unsubscribe.clone()
+                            {
+                                builder = builder.header(ListUnsubscribe::from(list_unsubscribe));
+                            }
+                            builder
+                                .multipart(MultiPart::alternative_plain_html(
+                                    rendered.body_plaintext,
+                                    rendered.body_html,
+                                ))
+                                .unwrap()
+                        };
+
+                        let result = transport.send(email_message).await;
+                        match result {
+                            Ok(_) => self.recorder.record_message_sent(
+                                context.event_id,
+                                context.notification_id,
+                                message.id,
+                            ),
+                            Err(e) => self.recorder.record_message_failed(
+                                context.event_id,
+                                context.notification_id,
+                                message.id,
+                                &e.to_string(),
+                            ),
                         }
-                        builder
-                            .multipart(MultiPart::alternative_plain_html(
-                                rendered.body_plaintext,
-                                rendered.body_html,
-                            ))
-                            .unwrap()
-                    };
-
-                    let result = transport.send(email_message).await;
-                    match result {
-                        Ok(_) => self.recorder.record_message_sent(
-                            context.event_id,
-                            context.notification_id,
-                            message.id,
-                        ),
-                        Err(e) => self.recorder.record_message_failed(
-                            context.event_id,
-                            context.notification_id,
-                            message.id,
-                            &e.to_string(),
-                        ),
                     }
                 }
             }

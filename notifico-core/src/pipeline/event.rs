@@ -69,7 +69,6 @@ impl EventHandler {
                 event_context: msg.context.clone(),
                 plugin_contexts: Default::default(),
                 messages: Default::default(),
-                contact: Default::default(),
                 notification_id: Uuid::now_v7(),
                 event_id: msg.id,
             };
@@ -82,15 +81,12 @@ impl EventHandler {
 
             for recipient in &msg.recipients {
                 let recipient = recipient.clone().resolve();
-                for contact in recipient.get_contacts(&pipeline.channel) {
-                    let mut context = context.clone();
-                    context.recipient = Some(recipient.clone());
-                    context.contact = Some(contact);
+                let mut context = context.clone();
+                context.recipient = Some(recipient.clone());
 
-                    let task = serde_json::to_string(&PipelineTask { context }).unwrap();
+                let task = serde_json::to_string(&PipelineTask { context }).unwrap();
 
-                    self.task_tx.send(task).await.unwrap();
-                }
+                self.task_tx.send(task).await.unwrap();
             }
         }
         Ok(())

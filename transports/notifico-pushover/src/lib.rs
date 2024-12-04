@@ -75,46 +75,48 @@ impl EnginePlugin for PushoverPlugin {
                     .resolve(context.project_id, credential)
                     .await?;
 
-                let contact: PushoverContact = context.get_contact()?;
+                let contact: Vec<PushoverContact> = context.get_recipient()?.get_contacts();
 
-                for message in context.messages.iter().cloned() {
-                    let content: Message = message.content.try_into()?;
-                    let request = PushoverMessageRequest {
-                        token: credential.token.clone(),
-                        user: contact.user.clone(),
-                        message: content.text,
-                        attachment_base64: None,
-                        attachment_type: None,
-                        device: None,
-                        html: Some(1),
-                        priority: None,
-                        sound: None,
-                        timestamp: None,
-                        title: Some(content.title),
-                        ttl: None,
-                        url: None,
-                        url_title: None,
-                    };
+                for contact in contact {
+                    for message in context.messages.iter().cloned() {
+                        let content: Message = message.content.try_into()?;
+                        let request = PushoverMessageRequest {
+                            token: credential.token.clone(),
+                            user: contact.user.clone(),
+                            message: content.text,
+                            attachment_base64: None,
+                            attachment_type: None,
+                            device: None,
+                            html: Some(1),
+                            priority: None,
+                            sound: None,
+                            timestamp: None,
+                            title: Some(content.title),
+                            ttl: None,
+                            url: None,
+                            url_title: None,
+                        };
 
-                    let result = self
-                        .client
-                        .post("https://api.pushover.net/1/messages.json")
-                        .body(serde_urlencoded::to_string(request).unwrap_or_default())
-                        .send()
-                        .await;
+                        let result = self
+                            .client
+                            .post("https://api.pushover.net/1/messages.json")
+                            .body(serde_urlencoded::to_string(request).unwrap_or_default())
+                            .send()
+                            .await;
 
-                    match result {
-                        Ok(_) => self.recorder.record_message_sent(
-                            context.event_id,
-                            context.notification_id,
-                            message.id,
-                        ),
-                        Err(e) => self.recorder.record_message_failed(
-                            context.event_id,
-                            context.notification_id,
-                            message.id,
-                            &e.to_string(),
-                        ),
+                        match result {
+                            Ok(_) => self.recorder.record_message_sent(
+                                context.event_id,
+                                context.notification_id,
+                                message.id,
+                            ),
+                            Err(e) => self.recorder.record_message_failed(
+                                context.event_id,
+                                context.notification_id,
+                                message.id,
+                                &e.to_string(),
+                            ),
+                        }
                     }
                 }
                 Ok(StepOutput::Continue)

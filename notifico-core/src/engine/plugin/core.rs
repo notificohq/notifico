@@ -39,34 +39,22 @@ impl EnginePlugin for CorePlugin {
                 if recipients.len() == 1 {
                     let recipient = &recipients[0].clone().resolve();
                     context.recipient = Some(recipient.clone());
-
-                    let contacts = recipient.get_contacts(&context.pipeline.channel);
-                    match contacts.len() {
-                        0 => return Ok(StepOutput::Continue), // It will fail later in the pipeline if there's no contact.
-                        1 => {
-                            context.contact = Some(contacts[0].clone());
-                            return Ok(StepOutput::Continue);
-                        }
-                        _ => {}
-                    }
+                    return Ok(StepOutput::Continue);
                 }
 
                 for recipient in recipients {
                     let recipient = recipient.resolve();
 
-                    for contact in recipient.get_contacts(&context.pipeline.channel) {
-                        let mut context = context.clone();
+                    let mut context = context.clone();
 
-                        context.step_number += 1;
-                        context.recipient = Some(recipient.clone());
-                        context.contact = Some(contact);
+                    context.step_number += 1;
+                    context.recipient = Some(recipient.clone());
 
-                        context.notification_id = Uuid::now_v7();
+                    context.notification_id = Uuid::now_v7();
 
-                        let task = serde_json::to_string(&PipelineTask { context }).unwrap();
+                    let task = serde_json::to_string(&PipelineTask { context }).unwrap();
 
-                        self.pipeline_sender.send(task).await.unwrap();
-                    }
+                    self.pipeline_sender.send(task).await.unwrap();
                 }
 
                 Ok(StepOutput::Interrupt)
@@ -136,7 +124,6 @@ mod tests {
 
         assert_eq!(output, StepOutput::Continue);
         assert!(context.recipient.is_some());
-        assert!(context.contact.is_some());
         assert!(pipeline_rx.is_empty())
     }
 

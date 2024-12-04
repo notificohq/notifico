@@ -1,5 +1,5 @@
 use crate::error::EngineError;
-use crate::recipient::{Contact, Recipient, TypedContact};
+use crate::recipient::Recipient;
 use crate::step::SerializedStep;
 use crate::templater::RenderedTemplate;
 use serde::{Deserialize, Serialize};
@@ -37,7 +37,6 @@ pub struct PipelineContext {
     pub notification_id: Uuid,
 
     pub recipient: Option<Recipient>,
-    pub contact: Option<Contact>,
 
     pub event_name: String,
     pub event_context: EventContext,
@@ -46,16 +45,8 @@ pub struct PipelineContext {
 }
 
 impl PipelineContext {
-    pub fn get_contact<T: TypedContact>(&self) -> Result<T, EngineError> {
-        let Some(contact) = &self.contact else {
-            return Err(EngineError::ContactNotSet);
-        };
-
-        if contact.r#type() != T::CONTACT_TYPE {
-            return Err(EngineError::ContactTypeMismatch(T::CONTACT_TYPE.to_owned()));
-        }
-
-        contact.clone().into_contact()
+    pub fn get_recipient(&self) -> Result<&Recipient, EngineError> {
+        self.recipient.as_ref().ok_or(EngineError::RecipientNotSet)
     }
 }
 

@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand};
-use log::{debug, info};
+use log::info;
 use notifico_core::credentials::DummyCredentialStorage;
 use notifico_core::engine::plugin::core::CorePlugin;
 use notifico_core::engine::Engine;

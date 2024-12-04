@@ -101,62 +101,66 @@ impl EnginePlugin for SmppPlugin {
                     }
                 }
 
-                let contact: MobilePhoneContact = context.get_contact()?;
+                let contact: Vec<MobilePhoneContact> = context.get_recipient()?.get_contacts();
 
-                for message in context.messages.iter().cloned() {
-                    let rendered: SmsContent = message.content.try_into().unwrap();
+                for contact in contact {
+                    for message in context.messages.iter().cloned() {
+                        let rendered: SmsContent = message.content.try_into().unwrap();
 
-                    let payload: Vec<u8> = rendered
-                        .body
-                        .encode_utf16()
-                        .flat_map(|c| c.to_be_bytes())
-                        .collect();
+                        let payload: Vec<u8> = rendered
+                            .body
+                            .encode_utf16()
+                            .flat_map(|c| c.to_be_bytes())
+                            .collect();
 
-                    let submit_sm_command = Command::new(
-                        CommandStatus::EsmeRok,
-                        2,
-                        SubmitSm::builder()
-                            .serivce_type(ServiceType::default())
-                            .source_addr_ton(Ton::Unknown)
-                            .source_addr_npi(Npi::Unknown)
-                            .source_addr(COctetString::from_str(&rendered.source_address).unwrap())
-                            .destination_addr(COctetString::from_str(contact.msisdn()).unwrap())
-                            .esm_class(EsmClass::default())
-                            .registered_delivery(RegisteredDelivery::request_all())
-                            .data_coding(DataCoding::Ucs2)
-                            .push_tlv(
-                                MessageSubmissionRequestTLVValue::MessagePayload(
-                                    AnyOctetString::new(&payload),
+                        let submit_sm_command = Command::new(
+                            CommandStatus::EsmeRok,
+                            2,
+                            SubmitSm::builder()
+                                .serivce_type(ServiceType::default())
+                                .source_addr_ton(Ton::Unknown)
+                                .source_addr_npi(Npi::Unknown)
+                                .source_addr(
+                                    COctetString::from_str(&rendered.source_address).unwrap(),
                                 )
-                                .into(),
-                            )
-                            .build()
-                            .into_submit_sm(),
-                    );
+                                .destination_addr(COctetString::from_str(contact.msisdn()).unwrap())
+                                .esm_class(EsmClass::default())
+                                .registered_delivery(RegisteredDelivery::request_all())
+                                .data_coding(DataCoding::Ucs2)
+                                .push_tlv(
+                                    MessageSubmissionRequestTLVValue::MessagePayload(
+                                        AnyOctetString::new(&payload),
+                                    )
+                                    .into(),
+                                )
+                                .build()
+                                .into_submit_sm(),
+                        );
 
-                    framed_write.send(&submit_sm_command).await.unwrap();
+                        framed_write.send(&submit_sm_command).await.unwrap();
 
-                    'outer: while let Some(Ok(command)) = framed_read.next().await {
-                        match command.pdu() {
-                            Some(Pdu::SubmitSmResp(_)) => {
-                                debug!("SubmitSmResp received.");
+                        'outer: while let Some(Ok(command)) = framed_read.next().await {
+                            match command.pdu() {
+                                Some(Pdu::SubmitSmResp(_)) => {
+                                    debug!("SubmitSmResp received.");
 
-                                if let CommandStatus::EsmeRok = command.command_status {
-                                    debug!("Successful submit.");
-                                }
-                            }
-                            Some(Pdu::DeliverSm(deliver_sm)) => {
-                                debug!("DeliverSm received.");
-
-                                for tlv in deliver_sm.tlvs().iter() {
-                                    if let TLVTag::ReceiptedMessageId = tlv.tag() {
-                                        debug!("Delivery receipt received.");
-
-                                        break 'outer;
+                                    if let CommandStatus::EsmeRok = command.command_status {
+                                        debug!("Successful submit.");
                                     }
                                 }
+                                Some(Pdu::DeliverSm(deliver_sm)) => {
+                                    debug!("DeliverSm received.");
+
+                                    for tlv in deliver_sm.tlvs().iter() {
+                                        if let TLVTag::ReceiptedMessageId = tlv.tag() {
+                                            debug!("Delivery receipt received.");
+
+                                            break 'outer;
+                                        }
+                                    }
+                                }
+                                _ => {}
                             }
-                            _ => {}
                         }
                     }
                 }
