@@ -9,11 +9,10 @@ serde = { version = "1.0.215", features = ["derive"] }
 serde_json = "1.0.133"
 uuid = { workspace = true }
 tracing = "0.1.41"
-tokio = "1.41.1"
-jsonwebtoken = "9.3.0"
+tokio = "1.42.0"
 axum = { workspace = true }
-url = { version = "2.5.4", features = ["serde"] }
+url = { workspace = true }
 sea-orm = { workspace = true }
-anyhow = "1.0.93"
+anyhow = "1.0.94"
 utoipa = { version = "5", features = ["uuid"] }
 flume = "0.11.1"

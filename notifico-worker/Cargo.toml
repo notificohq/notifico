@@ -16,7 +16,7 @@ notifico-template = { path = "../notifico-template" }
 notifico-subscription = { path = "../notifico-subscription" }
 notifico-dbpipeline = { path = "../notifico-dbpipeline" }
 
-anyhow = "1.0.93"
+anyhow = "1.0.94"
 async-trait = "0.1.83"
 backoff = { version = "0.4.0", features = ["tokio"] }
 clap = { workspace = true }
@@ -29,7 +29,7 @@ ractor = "0.13.2"
 sea-orm = { workspace = true }
 serde = { version = "1.0.215", features = ["derive"] }
 serde_json = "1.0.133"
-tokio = { version = "1.41", features = ["macros", "rt", "sync", "rt-multi-thread"] }
+tokio = { version = "1.42", features = ["macros", "rt", "sync", "rt-multi-thread"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter", "fmt"] }
 url = "2.5.4"

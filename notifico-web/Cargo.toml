@@ -10,8 +10,6 @@ notifico-dbpipeline = { path = "../notifico-dbpipeline" }
 notifico-project = { path = "../notifico-project" }
 notifico-template = { path = "../notifico-template" }
 
-anyhow = "1.0.93"
-async-trait = "0.1.83"
 axum = { workspace = true }
 clap = { workspace = true }
 dotenvy = "0.15.7"
@@ -20,9 +18,9 @@ rust-embed = { version = "8.5.0", features = ["mime-guess"] }
 sea-orm = { workspace = true }
 serde = { version = "1.0.215", features = ["derive"] }
 serde_json = "1.0.133"
-tokio = { version = "1.41", features = ["macros", "rt", "sync", "rt-multi-thread", "signal"] }
+tokio = { version = "1.42", features = ["macros", "rt", "sync", "rt-multi-thread", "signal"] }
 tower-http = { version = "0.6.2", features = ["cors"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter", "fmt"] }
-url = { version = "2.5.4", features = ["serde"] }
+url = { workspace = true }
 uuid = { workspace = true }
