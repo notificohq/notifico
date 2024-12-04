@@ -8,31 +8,28 @@ use uuid::Uuid;
 #[serde(untagged)]
 pub enum CredentialSelector {
     ByName(String),
-    Inline(Credential),
 }
 
 /// Generic credential with type information.
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Credential {
-    pub r#type: String,
-    pub value: Value,
+#[serde(untagged)]
+pub enum Credential {
+    Long { r#type: String, value: Value },
+    Short(String),
 }
 
 impl Credential {
-    pub fn into_typed<T>(self) -> Result<T, EngineError>
-    where
-        T: TypedCredential,
-    {
-        if self.r#type != T::CREDENTIAL_TYPE {
-            return Err(EngineError::InvalidCredentialFormat);
+    pub fn transport(&self) -> &str {
+        match self {
+            Credential::Long { r#type, .. } => r#type,
+            Credential::Short(url) => url.split("://").next().unwrap(),
         }
-        serde_json::from_value(self.value).map_err(|_| EngineError::InvalidCredentialFormat)
     }
 }
 
 /// Specific credential types should implement this trait.
-pub trait TypedCredential: for<'de> Deserialize<'de> {
-    const CREDENTIAL_TYPE: &'static str;
+pub trait TypedCredential: TryFrom<Credential, Error = EngineError> {
+    const TRANSPORT_NAME: &'static str;
 }
 
 #[async_trait]
@@ -53,17 +50,7 @@ impl dyn CredentialStorage {
             CredentialSelector::ByName(name) => self
                 .get_credential(project, &name)
                 .await
-                .and_then(|c| c.into_typed()),
-            CredentialSelector::Inline(credential) => credential.into_typed(),
+                .and_then(|c| c.try_into()),
         }
-    }
-}
-
-pub struct DummyCredentialStorage;
-
-#[async_trait]
-impl CredentialStorage for DummyCredentialStorage {
-    async fn get_credential(&self, _project: Uuid, _name: &str) -> Result<Credential, EngineError> {
-        Err(EngineError::CredentialNotFound)
     }
 }

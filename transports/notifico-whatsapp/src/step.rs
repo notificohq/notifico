@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "step")]
 pub enum Step {
-    #[serde(rename = "whatsapp.send")]
+    #[serde(rename = "waba.send")]
     Send { credential: CredentialSelector },
 }
 
-pub const STEPS: &[&str] = &["whatsapp.send"];
+pub const STEPS: &[&str] = &["waba.send"];

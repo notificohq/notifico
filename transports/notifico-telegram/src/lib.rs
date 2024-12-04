@@ -1,8 +1,10 @@
 use crate::step::STEPS;
 use async_trait::async_trait;
 use contact::TelegramContact;
+use notifico_core::credentials::Credential;
 use notifico_core::recorder::Recorder;
 use notifico_core::step::SerializedStep;
+use notifico_core::transport::Transport;
 use notifico_core::{
     credentials::{CredentialStorage, TypedCredential},
     engine::PipelineContext,
@@ -26,8 +28,31 @@ struct TelegramBotCredentials {
     token: String,
 }
 
+impl TryFrom<Credential> for TelegramBotCredentials {
+    type Error = EngineError;
+
+    fn try_from(value: Credential) -> Result<Self, Self::Error> {
+        if value.transport() != Self::TRANSPORT_NAME {
+            return Err(EngineError::InvalidCredentialFormat)?;
+        }
+
+        match value {
+            Credential::Long { value, .. } => {
+                Ok(serde_json::from_value(value)
+                    .map_err(|_| EngineError::InvalidCredentialFormat)?)
+            }
+            Credential::Short(url) => Ok(Self {
+                token: url
+                    .strip_prefix("telegram://")
+                    .unwrap_or_default()
+                    .to_owned(),
+            }),
+        }
+    }
+}
+
 impl TypedCredential for TelegramBotCredentials {
-    const CREDENTIAL_TYPE: &'static str = "telegram_bot";
+    const TRANSPORT_NAME: &'static str = "telegram";
 }
 
 pub struct TelegramPlugin {
@@ -94,6 +119,16 @@ impl EnginePlugin for TelegramPlugin {
 
     fn steps(&self) -> Vec<Cow<'static, str>> {
         STEPS.iter().map(|&s| s.into()).collect()
+    }
+}
+
+impl Transport for TelegramPlugin {
+    fn name(&self) -> Cow<'static, str> {
+        "telegram".into()
+    }
+
+    fn send_step(&self) -> Cow<'static, str> {
+        "telegram.send".into()
     }
 }
 

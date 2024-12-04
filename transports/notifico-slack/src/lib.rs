@@ -1,27 +1,21 @@
+mod credentials;
 mod slackapi;
 mod step;
 
 use crate::step::{Step, STEPS};
 use async_trait::async_trait;
+use credentials::SlackCredentials;
 use notifico_core::contact::{Contact, TypedContact};
-use notifico_core::credentials::{CredentialStorage, TypedCredential};
+use notifico_core::credentials::CredentialStorage;
 use notifico_core::engine::{EnginePlugin, PipelineContext, StepOutput};
 use notifico_core::error::EngineError;
 use notifico_core::recorder::Recorder;
 use notifico_core::step::SerializedStep;
 use notifico_core::templater::RenderedTemplate;
+use notifico_core::transport::Transport;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::sync::Arc;
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct SlackCredentials {
-    token: String,
-}
-
-impl TypedCredential for SlackCredentials {
-    const CREDENTIAL_TYPE: &'static str = "slack";
-}
 
 pub struct SlackPlugin {
     client: slackapi::SlackApi,
@@ -92,6 +86,16 @@ impl EnginePlugin for SlackPlugin {
 
     fn steps(&self) -> Vec<Cow<'static, str>> {
         STEPS.iter().map(|&s| s.into()).collect()
+    }
+}
+
+impl Transport for SlackPlugin {
+    fn name(&self) -> Cow<'static, str> {
+        "slack".into()
+    }
+
+    fn send_step(&self) -> Cow<'static, str> {
+        "slack.send".into()
     }
 }
 

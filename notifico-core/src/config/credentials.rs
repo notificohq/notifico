@@ -27,12 +27,21 @@ impl MemoryCredentialStorage {
                         creds.add_credential(
                             project_id,
                             name.clone(),
-                            r#type.clone(),
-                            value.clone(),
+                            Credential::Long {
+                                r#type: r#type.clone(),
+                                value: value.clone(),
+                            },
                         );
                     }
                 } else {
-                    creds.add_credential(Uuid::nil(), name_or_project_id, r#type.clone(), value);
+                    creds.add_credential(
+                        Uuid::nil(),
+                        name_or_project_id,
+                        Credential::Long {
+                            r#type: r#type.clone(),
+                            value: value.clone(),
+                        },
+                    );
                 };
             }
         }
@@ -40,19 +49,13 @@ impl MemoryCredentialStorage {
         Ok(creds)
     }
 
-    pub fn add_credential(
-        &mut self,
-        project: Uuid,
-        name: String,
-        r#type: String,
-        value: serde_json::Value,
-    ) {
+    pub fn add_credential(&mut self, project: Uuid, name: String, credential: Credential) {
         self.0.insert(
             CredentialKey {
                 project,
                 name: Cow::Owned(name),
             },
-            Credential { r#type, value },
+            credential,
         );
     }
 }

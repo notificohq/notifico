@@ -2335,6 +2335,7 @@ dependencies = [
  "notifico-core",
  "reqwest 0.12.9",
  "serde",
+ "serde_json",
  "serde_urlencoded",
  "url",
 ]
@@ -2364,6 +2365,7 @@ dependencies = [
  "tokio",
  "tokio-util",
  "tracing",
+ "url",
 ]
 
 [[package]]
@@ -2508,6 +2510,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "notifico-core",
+ "regex",
  "reqwest 0.12.9",
  "serde",
  "serde_json",
@@ -2554,6 +2557,7 @@ dependencies = [
 name = "notificox"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "clap",
  "dotenvy",
  "env_logger",
@@ -2568,9 +2572,11 @@ dependencies = [
  "notifico-telegram",
  "notifico-template",
  "notifico-whatsapp",
+ "regex",
  "serde",
  "serde_json",
  "tokio",
+ "url",
  "uuid",
 ]
 

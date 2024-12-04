@@ -8,6 +8,25 @@ pub struct Contact {
     pub value: String,
 }
 
+impl Contact {
+    pub fn from_url(url: &str) -> Result<Self, EngineError> {
+        let mut iter = url.split("://");
+        let r#type = iter
+            .next()
+            .ok_or(EngineError::InvalidContactFormat(
+                "Invalid URL format".to_string(),
+            ))?
+            .to_owned();
+        let value = iter
+            .next()
+            .ok_or(EngineError::InvalidContactFormat(
+                "Invalid URL format".to_string(),
+            ))?
+            .to_owned();
+        Ok(Self { r#type, value })
+    }
+}
+
 pub trait TypedContact: TryFrom<Contact, Error = EngineError> {
     const CONTACT_TYPE: &'static str;
 }

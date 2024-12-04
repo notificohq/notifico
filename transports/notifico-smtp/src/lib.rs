@@ -18,6 +18,7 @@ use moka::future::Cache;
 use notifico_core::contact::{Contact, TypedContact};
 use notifico_core::recorder::Recorder;
 use notifico_core::step::SerializedStep;
+use notifico_core::transport::Transport;
 use notifico_core::{
     credentials::CredentialStorage,
     engine::{EnginePlugin, PipelineContext, StepOutput},
@@ -148,5 +149,15 @@ impl EnginePlugin for EmailPlugin {
 
     fn steps(&self) -> Vec<Cow<'static, str>> {
         STEPS.iter().map(|&s| s.into()).collect()
+    }
+}
+
+impl Transport for EmailPlugin {
+    fn name(&self) -> Cow<'static, str> {
+        "smtp".into()
+    }
+
+    fn send_step(&self) -> Cow<'static, str> {
+        "smtp.send".into()
     }
 }

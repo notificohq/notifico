@@ -5,6 +5,7 @@ use async_trait::async_trait;
 use notifico_core::contact::MobilePhoneContact;
 use notifico_core::recorder::Recorder;
 use notifico_core::step::SerializedStep;
+use notifico_core::transport::Transport;
 use notifico_core::{
     credentials::CredentialStorage,
     engine::PipelineContext,
@@ -105,6 +106,16 @@ impl EnginePlugin for WaBusinessPlugin {
 
     fn steps(&self) -> Vec<Cow<'static, str>> {
         STEPS.iter().map(|&s| s.into()).collect()
+    }
+}
+
+impl Transport for WaBusinessPlugin {
+    fn name(&self) -> Cow<'static, str> {
+        "waba".into()
+    }
+
+    fn send_step(&self) -> Cow<'static, str> {
+        "waba.send".into()
     }
 }
 

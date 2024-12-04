@@ -12,6 +12,7 @@ use notifico_core::engine::{EnginePlugin, PipelineContext, StepOutput};
 use notifico_core::error::EngineError;
 use notifico_core::step::SerializedStep;
 use notifico_core::templater::RenderedTemplate;
+use notifico_core::transport::Transport;
 use rusmpp::commands::tlvs::tlv::message_submission_request::MessageSubmissionRequestTLVValue;
 use rusmpp::commands::types::{
     DataCoding, EsmClass, InterfaceVersion, Npi, RegisteredDelivery, ServiceType, Ton,
@@ -187,6 +188,16 @@ impl EnginePlugin for SmppPlugin {
 
     fn steps(&self) -> Vec<Cow<'static, str>> {
         STEPS.iter().map(|&s| Cow::from(s)).collect()
+    }
+}
+
+impl Transport for SmppPlugin {
+    fn name(&self) -> Cow<'static, str> {
+        "smpp".into()
+    }
+
+    fn send_step(&self) -> Cow<'static, str> {
+        "smpp.send".into()
     }
 }
 

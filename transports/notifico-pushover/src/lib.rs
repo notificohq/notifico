@@ -3,12 +3,13 @@ mod step;
 use crate::step::{Step, STEPS};
 use async_trait::async_trait;
 use notifico_core::contact::{Contact, TypedContact};
-use notifico_core::credentials::{CredentialStorage, TypedCredential};
+use notifico_core::credentials::{Credential, CredentialStorage, TypedCredential};
 use notifico_core::engine::{EnginePlugin, PipelineContext, StepOutput};
 use notifico_core::error::EngineError;
 use notifico_core::recorder::Recorder;
 use notifico_core::step::SerializedStep;
 use notifico_core::templater::RenderedTemplate;
+use notifico_core::transport::Transport;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::sync::Arc;
@@ -19,8 +20,31 @@ pub struct PushoverCredentials {
     token: String,
 }
 
+impl TryFrom<Credential> for PushoverCredentials {
+    type Error = EngineError;
+
+    fn try_from(value: Credential) -> Result<Self, Self::Error> {
+        if value.transport() != Self::TRANSPORT_NAME {
+            return Err(EngineError::InvalidCredentialFormat)?;
+        }
+
+        match value {
+            Credential::Long { value, .. } => {
+                Ok(serde_json::from_value(value)
+                    .map_err(|_| EngineError::InvalidCredentialFormat)?)
+            }
+            Credential::Short(url) => Ok(Self {
+                token: url
+                    .strip_prefix("pushover://")
+                    .unwrap_or_default()
+                    .to_owned(),
+            }),
+        }
+    }
+}
+
 impl TypedCredential for PushoverCredentials {
-    const CREDENTIAL_TYPE: &'static str = "pushover";
+    const TRANSPORT_NAME: &'static str = "pushover";
 }
 
 #[derive(Serialize, Deserialize)]
@@ -126,6 +150,16 @@ impl EnginePlugin for PushoverPlugin {
 
     fn steps(&self) -> Vec<Cow<'static, str>> {
         STEPS.iter().map(|&s| s.into()).collect()
+    }
+}
+
+impl Transport for PushoverPlugin {
+    fn name(&self) -> Cow<'static, str> {
+        "pushover".into()
+    }
+
+    fn send_step(&self) -> Cow<'static, str> {
+        "pushover.send".into()
     }
 }
 
