@@ -2,6 +2,7 @@ use crate::cloudapi::{MessageType, MessagingProduct};
 use crate::credentials::WhatsAppCredentials;
 use crate::step::{Step, STEPS};
 use async_trait::async_trait;
+use notifico_core::contact::MobilePhoneContact;
 use notifico_core::recorder::Recorder;
 use notifico_core::step::SerializedStep;
 use notifico_core::{
@@ -9,7 +10,6 @@ use notifico_core::{
     engine::PipelineContext,
     engine::{EnginePlugin, StepOutput},
     error::EngineError,
-    recipient::MobilePhoneContact,
     templater::RenderedTemplate,
 };
 use serde::{Deserialize, Serialize};

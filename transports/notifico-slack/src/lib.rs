@@ -3,10 +3,10 @@ mod step;
 
 use crate::step::{Step, STEPS};
 use async_trait::async_trait;
+use notifico_core::contact::{Contact, TypedContact};
 use notifico_core::credentials::{CredentialStorage, TypedCredential};
 use notifico_core::engine::{EnginePlugin, PipelineContext, StepOutput};
 use notifico_core::error::EngineError;
-use notifico_core::recipient::TypedContact;
 use notifico_core::recorder::Recorder;
 use notifico_core::step::SerializedStep;
 use notifico_core::templater::RenderedTemplate;
@@ -98,6 +98,16 @@ impl EnginePlugin for SlackPlugin {
 #[derive(Serialize, Deserialize, Clone)]
 struct SlackContact {
     channel_id: String,
+}
+
+impl TryFrom<Contact> for SlackContact {
+    type Error = EngineError;
+
+    fn try_from(value: Contact) -> Result<Self, Self::Error> {
+        Ok(Self {
+            channel_id: value.value,
+        })
+    }
 }
 
 impl TypedContact for SlackContact {

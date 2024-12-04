@@ -15,22 +15,34 @@ use lettre::{
     AsyncSmtpTransport, AsyncTransport, Tokio1Executor,
 };
 use moka::future::Cache;
+use notifico_core::contact::{Contact, TypedContact};
 use notifico_core::recorder::Recorder;
 use notifico_core::step::SerializedStep;
 use notifico_core::{
     credentials::CredentialStorage,
     engine::{EnginePlugin, PipelineContext, StepOutput},
     error::EngineError,
-    recipient::TypedContact,
 };
 use serde::Deserialize;
 use std::borrow::Cow;
+use std::str::FromStr;
 use std::sync::Arc;
 use step::Step;
 
 #[derive(Debug, Deserialize)]
 pub struct EmailContact {
     address: Mailbox,
+}
+
+impl TryFrom<Contact> for EmailContact {
+    type Error = EngineError;
+
+    fn try_from(value: Contact) -> Result<Self, Self::Error> {
+        Ok(Self {
+            address: Mailbox::from_str(&value.value)
+                .map_err(|e| EngineError::InvalidContactFormat(e.to_string()))?,
+        })
+    }
 }
 
 impl TypedContact for EmailContact {

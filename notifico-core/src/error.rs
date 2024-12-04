@@ -9,7 +9,7 @@ pub enum EngineError {
     RecipientNotSet,
     ContactNotSet,
     ContactTypeMismatch(String),
-    InvalidContactFormat(serde_json::Error),
+    InvalidContactFormat(String),
     TemplateRenderingError,
     MissingTemplateParameter(String),
     InvalidRenderedTemplateFormat(Box<dyn Error>),
