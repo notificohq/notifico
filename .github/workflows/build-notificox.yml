@@ -7,8 +7,17 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ ubuntu-latest, windows-latest, macos-latest ]
-    runs-on: ${{ matrix.os }}
+        platform:
+          - os: ubuntu-latest
+            bin: notificox
+            artifact: notificox-x86_64-unknown-linux-gnu
+          - os: windows-latest
+            bin: notificox
+            artifact: notificox-x86_64-pc-windows-msvc.exe
+          - os: macos-latest
+            bin: notificox
+            artifact: notificox-x86_64-apple-darwin
+    runs-on: ${{ matrix.platform.os }}
     steps:
       - uses: actions/checkout@v4
       - name: Install latest nightly
@@ -18,10 +27,10 @@ jobs:
           override: true
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
-      - name: Run tests
+      - name: Build package
         run: cargo build --release --package notificox
+      - run: mkdir artifacts/ && mv target/release/${{ matrix.platform.bin }} artifacts/${{ matrix.platform.artifact }}
       - uses: actions/upload-artifact@v4
         with:
           path: |
-            target/release/notificox*
-            !target/release/*.d
+            artifacts/${{ matrix.platform.artifact }}
