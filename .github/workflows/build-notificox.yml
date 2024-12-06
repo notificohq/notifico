@@ -38,6 +38,7 @@ jobs:
           name: ${{ matrix.platform.artifact }}
           path: artifacts/${{ matrix.platform.artifact }}
   release:
+    name: Release
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -48,3 +49,10 @@ jobs:
           pattern: notificox-*
           path: artifacts
           merge-multiple: true
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          draft: true
+          files: |
+            artifacts/notificox-*
