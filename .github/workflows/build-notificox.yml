@@ -1,0 +1,27 @@
+name: Build notificox
+
+on:
+  push:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install latest nightly
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Run tests
+        run: cargo build --release --package notificox
+      - uses: actions/upload-artifact@v4
+        with:
+          path: |
+            target/release/notificox*
+            !target/release/*.d
