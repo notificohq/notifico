@@ -10,13 +10,16 @@ jobs:
         platform:
           - os: ubuntu-latest
             bin: notificox
-            artifact: notificox-x86_64-unknown-linux-gnu
+            target: x86_64-unknown-linux-musl
+            artifact: notificox-x86_64-unknown-linux-musl
           - os: windows-latest
             bin: notificox.exe
+            target: x86_64-pc-windows-msvc
             artifact: notificox-x86_64-pc-windows-msvc.exe
           - os: macos-latest
             bin: notificox
-            artifact: notificox-x86_64-apple-darwin
+            target: aarch64-apple-darwin
+            artifact: notificox-aarch64-apple-darwin
     runs-on: ${{ matrix.platform.os }}
     steps:
       - uses: actions/checkout@v4
@@ -25,12 +28,26 @@ jobs:
         with:
           toolchain: nightly
           override: true
-          components: rustfmt, clippy
+          target: ${{ matrix.platform.target }}
       - uses: Swatinem/rust-cache@v2
+      - name: Install musl-tools on Linux
+        run: sudo apt-get update --yes && sudo apt-get install --yes musl-tools
+        if: contains(matrix.platform.os, 'ubuntu')
       - name: Build package
-        run: cargo build --release --package notificox
-      - run: mkdir artifacts/ && mv target/release/${{ matrix.platform.bin }} artifacts/${{ matrix.platform.artifact }}
+        run: cargo build --target ${{ matrix.platform.target }} --release --package notificox
+      - run: mkdir artifacts/ && mv target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }} artifacts/${{ matrix.platform.artifact }}
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.platform.artifact }}
           path: artifacts/${{ matrix.platform.artifact }}
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: notificox-*
+          path: artifacts
+          merge-multiple: true
