@@ -10,8 +10,8 @@ jobs:
         platform:
           - os: ubuntu-latest
             bin: notificox
-            target: x86_64-unknown-linux-musl
-            artifact: notificox-x86_64-unknown-linux-musl
+            target: x86_64-unknown-linux-gnu
+            artifact: notificox-x86_64-unknown-linux-gnu
           - os: windows-latest
             bin: notificox.exe
             target: x86_64-pc-windows-msvc
@@ -30,9 +30,6 @@ jobs:
           override: true
           target: ${{ matrix.platform.target }}
       - uses: Swatinem/rust-cache@v2
-      - name: Install musl-tools on Linux
-        run: sudo apt-get update --yes && sudo apt-get install --yes musl-tools
-        if: contains(matrix.platform.os, 'ubuntu')
       - name: Build package
         run: cargo build --target ${{ matrix.platform.target }} --release --package notificox
       - run: mkdir artifacts/ && mv target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }} artifacts/${{ matrix.platform.artifact }}
@@ -48,6 +45,6 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          name: notificox-*
+          pattern: notificox-*
           path: artifacts
           merge-multiple: true
