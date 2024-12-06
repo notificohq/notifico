@@ -4,6 +4,19 @@ on:
   push:
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install latest nightly
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Run lint
+        run: cargo fmt -- --check && cargo clippy --no-deps -- -D warnings
   test:
     strategy:
       matrix:
@@ -18,7 +31,5 @@ jobs:
           override: true
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
-      - name: Run lint
-        run: cargo fmt -- --check && cargo clippy --no-deps -- -D warnings
       - name: Run tests
         run: cargo test
