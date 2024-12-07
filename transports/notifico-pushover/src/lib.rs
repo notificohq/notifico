@@ -36,7 +36,7 @@ impl TypedCredential for PushoverCredentials {
     const TRANSPORT_NAME: &'static str = "pushover";
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize)]
 struct PushoverMessageRequest {
     token: String,
     user: String,

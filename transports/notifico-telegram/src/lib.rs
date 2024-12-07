@@ -8,8 +8,8 @@ use notifico_core::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use teloxide::prelude::Requester;
-use teloxide::Bot;
+
+const API_URL: &str = "https://api.telegram.org/bot";
 
 mod contact;
 
@@ -38,15 +38,23 @@ impl TryFrom<Credential> for TelegramBotCredentials {
     }
 }
 
+#[derive(Serialize)]
+struct SendMessageRequest {
+    chat_id: i64,
+    text: String,
+}
+
 impl TypedCredential for TelegramBotCredentials {
     const TRANSPORT_NAME: &'static str = "telegram";
 }
 
-pub struct TelegramTransport {}
+pub struct TelegramTransport {
+    client: reqwest::Client,
+}
 
 impl TelegramTransport {
-    pub fn new() -> Self {
-        Self {}
+    pub fn new(client: reqwest::Client) -> Self {
+        Self { client }
     }
 }
 
@@ -59,12 +67,20 @@ impl SimpleTransport for TelegramTransport {
         message: RenderedTemplate,
     ) -> Result<(), EngineError> {
         let credential: TelegramBotCredentials = credential.try_into()?;
-        let bot = Bot::new(credential.token);
         let contact: TelegramContact = contact.try_into()?;
         let content: TelegramContent = message.try_into()?;
 
-        // Send
-        bot.send_message(contact.clone().into_recipient(), content.body)
+        let request = SendMessageRequest {
+            chat_id: contact.chat_id,
+            text: content.body,
+        };
+
+        let url = format!("{}{}/sendMessage", API_URL, credential.token);
+
+        self.client
+            .post(url)
+            .json(&request)
+            .send()
             .await
             .map_err(|e| EngineError::InternalError(e.into()))?;
         Ok(())

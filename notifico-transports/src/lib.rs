@@ -27,7 +27,7 @@ pub fn all_transports(
     plugins.push((smpp_plugin.clone(), smpp_plugin.clone()));
 
     // Simple transports
-    let telegram_transport = Arc::new(TelegramTransport::new());
+    let telegram_transport = Arc::new(TelegramTransport::new(http.clone()));
     let telegram_plugin = Arc::new(SimpleTransportWrapper::new(
         telegram_transport,
         credentials.clone(),
