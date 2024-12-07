@@ -13,6 +13,7 @@ notifico-whatsapp = { path = "../transports/notifico-whatsapp" }
 notifico-smpp = { path = "../transports/notifico-smpp" }
 notifico-slack = { path = "../transports/notifico-slack" }
 notifico-pushover = { path = "../transports/notifico-pushover" }
+notifico-gotify = { path = "../transports/notifico-gotify" }
 # Other deps
 serde = { version = "1.0.215", features = ["derive"] }
 serde_json = "1.0.133"

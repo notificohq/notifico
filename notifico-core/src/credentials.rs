@@ -28,7 +28,9 @@ impl Credential {
 }
 
 /// Specific credential types should implement this trait.
-pub trait TypedCredential: TryFrom<Credential, Error = EngineError> {
+pub trait TypedCredential:
+    TryFrom<Credential, Error = EngineError> + Serialize + for<'de> Deserialize<'de>
+{
     const TRANSPORT_NAME: &'static str;
 }
 
