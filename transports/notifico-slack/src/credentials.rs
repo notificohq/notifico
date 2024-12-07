@@ -21,7 +21,7 @@ impl TryFrom<Credential> for SlackCredentials {
                     .map_err(|_| EngineError::InvalidCredentialFormat)?)
             }
             Credential::Short(url) => Ok(Self {
-                token: url.strip_prefix("slack://").unwrap_or_default().to_owned(),
+                token: url.strip_prefix("slack:").unwrap_or_default().to_owned(),
             }),
         }
     }

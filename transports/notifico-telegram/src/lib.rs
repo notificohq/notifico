@@ -32,10 +32,7 @@ impl TryFrom<Credential> for TelegramBotCredentials {
                     .map_err(|_| EngineError::InvalidCredentialFormat)?)
             }
             Credential::Short(url) => Ok(Self {
-                token: url
-                    .strip_prefix("telegram://")
-                    .unwrap_or_default()
-                    .to_owned(),
+                token: url.strip_prefix("telegram:").unwrap_or_default().to_owned(),
             }),
         }
     }

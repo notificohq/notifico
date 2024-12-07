@@ -22,7 +22,7 @@ impl TryFrom<Credential> for GotifyCredentials {
                     .map_err(|_| EngineError::InvalidCredentialFormat)?)
             }
             Credential::Short(url) => {
-                let mut url = url.splitn(2, "://");
+                let mut url = url.splitn(2, ":");
                 let _ = url.next();
                 let url = url.next().unwrap_or_default();
                 let url = Url::parse(url).map_err(|_| EngineError::InvalidCredentialFormat)?;

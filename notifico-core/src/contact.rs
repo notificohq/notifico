@@ -1,5 +1,6 @@
 use crate::error::EngineError;
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 use utoipa::ToSchema;
 
 #[derive(Clone, Debug, Serialize, Deserialize, ToSchema)]
@@ -8,21 +9,14 @@ pub struct Contact {
     pub value: String,
 }
 
-impl Contact {
-    pub fn from_url(url: &str) -> Result<Self, EngineError> {
-        let mut iter = url.split("://");
-        let r#type = iter
-            .next()
-            .ok_or(EngineError::InvalidContactFormat(
-                "Invalid URL format".to_string(),
-            ))?
-            .to_owned();
-        let value = iter
-            .next()
-            .ok_or(EngineError::InvalidContactFormat(
-                "Invalid URL format".to_string(),
-            ))?
-            .to_owned();
+impl FromStr for Contact {
+    type Err = EngineError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let (r#type, value) = s.split_once(':').ok_or(EngineError::InvalidContactFormat(
+            "Invalid URL format".to_string(),
+        ))?;
+        let (r#type, value) = (r#type.to_owned(), value.to_owned());
         Ok(Self { r#type, value })
     }
 }

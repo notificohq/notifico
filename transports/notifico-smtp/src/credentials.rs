@@ -28,6 +28,8 @@ impl TryFrom<Credential> for SmtpServerCredentials {
                     .map_err(|_| EngineError::InvalidCredentialFormat)?)
             }
             Credential::Short(url) => {
+                let url = url.strip_prefix("smtp:").unwrap_or_default();
+                let url = String::from("smtp://") + url;
                 let url = Url::parse(&url).map_err(|_| EngineError::InvalidCredentialFormat)?;
                 let query: BTreeMap<Cow<str>, Cow<str>> = url.query_pairs().collect();
                 let tls = query

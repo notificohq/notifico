@@ -22,7 +22,7 @@ impl Credential {
     pub fn transport(&self) -> &str {
         match self {
             Credential::Long { r#type, .. } => r#type,
-            Credential::Short(url) => url.split("://").next().unwrap(),
+            Credential::Short(url) => url.split(":").next().unwrap(),
         }
     }
 }

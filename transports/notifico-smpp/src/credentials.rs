@@ -25,6 +25,8 @@ impl TryFrom<Credential> for SmppServerCredentials {
                     .map_err(|_| EngineError::InvalidCredentialFormat)?)
             }
             Credential::Short(url) => {
+                let url = url.strip_prefix("smpp:").unwrap_or_default();
+                let url = String::from("smpp://") + url;
                 let url = Url::parse(&url).map_err(|_| EngineError::InvalidCredentialFormat)?;
                 Ok(Self {
                     host: url.host_str().unwrap_or_default().to_owned(),

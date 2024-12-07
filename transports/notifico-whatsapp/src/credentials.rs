@@ -26,7 +26,7 @@ impl TryFrom<Credential> for WhatsAppCredentials {
             Credential::Short(url) => {
                 static WABA_REGEX: OnceLock<Regex> = OnceLock::new();
                 let regex = WABA_REGEX
-                    .get_or_init(|| Regex::new("^waba://([0-9]+):([0-9a-zA-Z]+)$").unwrap());
+                    .get_or_init(|| Regex::new("^waba:([0-9]+):([0-9a-zA-Z]+)$").unwrap());
 
                 let caps = regex
                     .captures(&url)

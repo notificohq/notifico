@@ -120,15 +120,7 @@ async fn main() {
                 pipeline
             };
 
-            let contacts: Vec<Contact> = {
-                let mut contacts = vec![];
-
-                for contact in to {
-                    contacts.push(Contact::from_url(&contact).unwrap())
-                }
-
-                contacts
-            };
+            let contacts: Vec<Contact> = to.iter().map(|s| s.parse().unwrap()).collect();
 
             let recipient = Recipient {
                 id: Uuid::nil(),
