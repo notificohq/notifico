@@ -60,7 +60,10 @@ impl EnginePlugin for SimpleTransportWrapper {
             "will fail on searching for suitable plugins"
         );
 
-        let credential_selector = step.0.get("credential").ok_or(EngineError::InvalidStep2)?;
+        let credential_selector = step
+            .0
+            .get("credential")
+            .ok_or(EngineError::MissingCredential)?;
         let credential_selector: CredentialSelector =
             serde_json::from_value(credential_selector.clone())
                 .map_err(EngineError::InvalidStep)?;
@@ -74,7 +77,7 @@ impl EnginePlugin for SimpleTransportWrapper {
             context.get_recipient()?.contacts.clone()
         } else {
             vec![Contact {
-                r#type: "dummy".to_string(),
+                r#type: String::default(),
                 value: String::default(),
             }]
         };
@@ -86,19 +89,19 @@ impl EnginePlugin for SimpleTransportWrapper {
                     .send_message(credential.clone(), contact.clone(), message.content.clone())
                     .await;
 
-                // match result {
-                //     Ok(_) => self.recorder.record_message_sent(
-                //         context.event_id,
-                //         context.notification_id,
-                //         message.id,
-                //     ),
-                //     Err(e) => self.recorder.record_message_failed(
-                //         context.event_id,
-                //         context.notification_id,
-                //         message.id,
-                //         &e.to_string(),
-                //     ),
-                // }
+                match result {
+                    Ok(_) => self.recorder.record_message_sent(
+                        context.event_id,
+                        context.notification_id,
+                        message.id,
+                    ),
+                    Err(e) => self.recorder.record_message_failed(
+                        context.event_id,
+                        context.notification_id,
+                        message.id,
+                        &e.to_string(),
+                    ),
+                }
             }
         }
         Ok(StepOutput::Continue)
