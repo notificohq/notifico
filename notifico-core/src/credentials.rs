@@ -36,23 +36,24 @@ pub trait TypedCredential:
 
 #[async_trait]
 pub trait CredentialStorage: Send + Sync {
-    async fn get_credential(&self, project: Uuid, name: &str) -> Result<Credential, EngineError>;
+    async fn get_credential(
+        &self,
+        project: Uuid,
+        selector: &CredentialSelector,
+    ) -> Result<Credential, EngineError>;
 }
 
 impl dyn CredentialStorage {
     pub async fn resolve<T>(
         &self,
         project: Uuid,
-        name: CredentialSelector,
+        selector: CredentialSelector,
     ) -> Result<T, EngineError>
     where
         T: TypedCredential,
     {
-        match name {
-            CredentialSelector::ByName(name) => self
-                .get_credential(project, &name)
-                .await
-                .and_then(|c| c.try_into()),
-        }
+        self.get_credential(project, &selector)
+            .await
+            .and_then(|c| c.try_into())
     }
 }

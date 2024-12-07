@@ -1,4 +1,4 @@
-use crate::credentials::{Credential, CredentialStorage};
+use crate::credentials::{Credential, CredentialSelector, CredentialStorage};
 use crate::error::EngineError;
 use async_trait::async_trait;
 use std::borrow::Cow;
@@ -62,15 +62,23 @@ impl MemoryCredentialStorage {
 
 #[async_trait]
 impl CredentialStorage for MemoryCredentialStorage {
-    async fn get_credential(&self, project: Uuid, name: &str) -> Result<Credential, EngineError> {
-        let key = CredentialKey {
-            project,
-            name: Cow::from(name),
-        };
+    async fn get_credential(
+        &self,
+        project: Uuid,
+        selector: &CredentialSelector,
+    ) -> Result<Credential, EngineError> {
+        match selector {
+            CredentialSelector::ByName(name) => {
+                let key = CredentialKey {
+                    project,
+                    name: Cow::from(name),
+                };
 
-        self.0
-            .get(&key)
-            .cloned()
-            .ok_or(EngineError::CredentialNotFound)
+                self.0
+                    .get(&key)
+                    .cloned()
+                    .ok_or(EngineError::CredentialNotFound)
+            }
+        }
     }
 }

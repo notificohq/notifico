@@ -15,6 +15,7 @@ pub enum EngineError {
     InvalidRenderedTemplateFormat(Box<dyn Error>),
     InternalError(Box<dyn Error>),
     InvalidStep(serde_json::Error),
+    InvalidStep2,
 }
 
 impl From<DbErr> for EngineError {
