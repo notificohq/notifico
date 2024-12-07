@@ -16,10 +16,8 @@ pub struct WabaTransport {
 }
 
 impl WabaTransport {
-    pub fn new() -> Self {
-        Self {
-            client: reqwest::Client::new(),
-        }
+    pub fn new(client: reqwest::Client) -> Self {
+        Self { client }
     }
 }
 

@@ -24,8 +24,8 @@ pub struct GotifyTransport {
 }
 
 impl GotifyTransport {
-    pub fn new() -> Self {
-        Default::default()
+    pub fn new(client: reqwest::Client) -> Self {
+        Self { client }
     }
 }
 

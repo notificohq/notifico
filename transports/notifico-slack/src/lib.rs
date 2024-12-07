@@ -15,9 +15,9 @@ pub struct SlackTransport {
 }
 
 impl SlackTransport {
-    pub fn new() -> Self {
+    pub fn new(client: reqwest::Client) -> Self {
         SlackTransport {
-            client: slackapi::SlackApi::new(),
+            client: slackapi::SlackApi::new(client),
         }
     }
 }

@@ -61,10 +61,8 @@ pub struct PushoverTransport {
 }
 
 impl PushoverTransport {
-    pub fn new() -> Self {
-        Self {
-            client: reqwest::Client::new(),
-        }
+    pub fn new(client: reqwest::Client) -> Self {
+        Self { client }
     }
 }
 

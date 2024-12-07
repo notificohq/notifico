@@ -8,6 +8,7 @@ members = [
     "transports/notifico-smpp",
     "transports/notifico-slack",
     "transports/notifico-pushover",
+    "transports/notifico-gotify",
     "notifico-template",
     "notifico-template/migration",
     "notifico-worker",
@@ -20,12 +21,13 @@ members = [
     "notifico-project/migration",
     "notifico-web",
     "notifico-ingest",
-    "notificox", "transports/notifico-gotify", "notifico-transports",
+    "notificox",
+    "notifico-transports",
 ]
 
 [workspace.dependencies]
 sea-orm = { version = "1.1.2", features = ["sqlx-sqlite", "sqlx-postgres", "sqlx-mysql", "runtime-tokio-native-tls", "macros"] }
-reqwest = { version = "0.12.9", default-features = false, features = ["json", "default-tls", "charset"] }
+reqwest = { version = "0.12.9", default-features = false, features = ["json", "native-tls", "native-tls-alpn", "charset", "http2"] }
 axum = { version = "0.7.9", features = ["macros"] }
 clap = { version = "4.5.22", features = ["derive", "color", "usage", "env"] }
 url = { version = "2.5.4", features = ["serde"] }

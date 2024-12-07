@@ -17,6 +17,7 @@ pub fn all_transports(
     recorder: Arc<dyn Recorder>,
 ) -> Vec<(Arc<dyn EnginePlugin>, Arc<dyn Transport>)> {
     let mut plugins: Vec<(Arc<dyn EnginePlugin>, Arc<dyn Transport>)> = vec![];
+    let http = reqwest::Client::builder().build().unwrap();
 
     // Complicated transports
     let email_plugin = Arc::new(EmailPlugin::new(credentials.clone(), recorder.clone()));
@@ -34,7 +35,7 @@ pub fn all_transports(
     ));
     plugins.push((telegram_plugin.clone(), telegram_plugin.clone()));
 
-    let waba_transport = Arc::new(WabaTransport::new());
+    let waba_transport = Arc::new(WabaTransport::new(http.clone()));
     let waba_plugin = Arc::new(SimpleTransportWrapper::new(
         waba_transport,
         credentials.clone(),
@@ -42,7 +43,7 @@ pub fn all_transports(
     ));
     plugins.push((waba_plugin.clone(), waba_plugin.clone()));
 
-    let slack_transport = Arc::new(SlackTransport::new());
+    let slack_transport = Arc::new(SlackTransport::new(http.clone()));
     let slack_plugin = Arc::new(SimpleTransportWrapper::new(
         slack_transport,
         credentials.clone(),
@@ -50,7 +51,7 @@ pub fn all_transports(
     ));
     plugins.push((slack_plugin.clone(), slack_plugin.clone()));
 
-    let pushover_transport = Arc::new(PushoverTransport::new());
+    let pushover_transport = Arc::new(PushoverTransport::new(http.clone()));
     let pushover_plugin = Arc::new(SimpleTransportWrapper::new(
         pushover_transport,
         credentials.clone(),
@@ -58,7 +59,7 @@ pub fn all_transports(
     ));
     plugins.push((pushover_plugin.clone(), pushover_plugin.clone()));
 
-    let gotify_transport = Arc::new(GotifyTransport::new());
+    let gotify_transport = Arc::new(GotifyTransport::new(http.clone()));
     let gotify_plugin = Arc::new(SimpleTransportWrapper::new(
         gotify_transport,
         credentials.clone(),
