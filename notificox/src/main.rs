@@ -2,7 +2,7 @@ use clap::{Parser, Subcommand};
 use log::info;
 use notifico_core::config::credentials::MemoryCredentialStorage;
 use notifico_core::contact::Contact;
-use notifico_core::credentials::{Credential, CredentialStorage};
+use notifico_core::credentials::Credential;
 use notifico_core::engine::plugin::core::CorePlugin;
 use notifico_core::engine::Engine;
 use notifico_core::pipeline::event::{EventHandler, ProcessEventRequest, RecipientSelector};
@@ -10,19 +10,12 @@ use notifico_core::pipeline::executor::PipelineExecutor;
 use notifico_core::pipeline::storage::SinglePipelineStorage;
 use notifico_core::pipeline::Pipeline;
 use notifico_core::recipient::Recipient;
-use notifico_core::recorder::{BaseRecorder, Recorder};
-use notifico_core::simpletransport::SimpleTransportWrapper;
+use notifico_core::recorder::BaseRecorder;
 use notifico_core::step::SerializedStep;
 use notifico_core::transport::TransportRegistry;
-use notifico_gotify::GotifyTransport;
-use notifico_pushover::PushoverPlugin;
-use notifico_slack::SlackPlugin;
-use notifico_smpp::SmppPlugin;
-use notifico_smtp::EmailPlugin;
-use notifico_telegram::TelegramPlugin;
 use notifico_template::source::DummyTemplateSource;
 use notifico_template::Templater;
-use notifico_whatsapp::WaBusinessPlugin;
+use notifico_transports::all_transports;
 use serde_json::{json, Map, Value};
 use std::sync::Arc;
 use tokio::task::JoinSet;
@@ -89,12 +82,12 @@ async fn main() {
                 Arc::new(credentials)
             };
 
-            add_transports(
-                &mut engine,
-                &mut transport_registry,
-                credentials.clone(),
-                recorder.clone(),
-            );
+            for (engine_plugin, transport_plugin) in
+                all_transports(credentials.clone(), recorder.clone())
+            {
+                engine.add_plugin(engine_plugin);
+                transport_registry.register(transport_plugin);
+            }
 
             let pipeline = {
                 let mut pipeline = Pipeline {
@@ -188,44 +181,4 @@ async fn main() {
             }
         }
     }
-}
-
-fn add_transports(
-    engine: &mut Engine,
-    transport_registry: &mut TransportRegistry,
-    credentials: Arc<dyn CredentialStorage>,
-    recorder: Arc<dyn Recorder>,
-) {
-    let telegram_plugin = Arc::new(TelegramPlugin::new(credentials.clone(), recorder.clone()));
-    engine.add_plugin(telegram_plugin.clone());
-    transport_registry.register(telegram_plugin);
-
-    let email_plugin = Arc::new(EmailPlugin::new(credentials.clone(), recorder.clone()));
-    engine.add_plugin(email_plugin.clone());
-    transport_registry.register(email_plugin);
-
-    let whatsapp_plugin = Arc::new(WaBusinessPlugin::new(credentials.clone(), recorder.clone()));
-    engine.add_plugin(whatsapp_plugin.clone());
-    transport_registry.register(whatsapp_plugin);
-
-    let smpp_plugin = Arc::new(SmppPlugin::new(credentials.clone()));
-    engine.add_plugin(smpp_plugin.clone());
-    transport_registry.register(smpp_plugin);
-
-    let slack_plugin = Arc::new(SlackPlugin::new(credentials.clone(), recorder.clone()));
-    engine.add_plugin(slack_plugin.clone());
-    transport_registry.register(slack_plugin);
-
-    let pushover_plugin = Arc::new(PushoverPlugin::new(credentials.clone(), recorder.clone()));
-    engine.add_plugin(pushover_plugin.clone());
-    transport_registry.register(pushover_plugin);
-
-    let gotify_transport = Arc::new(GotifyTransport::new());
-    let gotify_plugin = Arc::new(SimpleTransportWrapper::new(
-        gotify_transport.clone(),
-        credentials.clone(),
-        recorder.clone(),
-    ));
-    engine.add_plugin(gotify_plugin.clone());
-    transport_registry.register(gotify_plugin);
 }

@@ -2456,6 +2456,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "notifico-transports"
+version = "0.1.0"
+dependencies = [
+ "notifico-core",
+ "notifico-gotify",
+ "notifico-pushover",
+ "notifico-slack",
+ "notifico-smpp",
+ "notifico-smtp",
+ "notifico-telegram",
+ "notifico-template",
+ "notifico-whatsapp",
+]
+
+[[package]]
 name = "notifico-userapi"
 version = "0.1.0"
 dependencies = [
@@ -2533,14 +2548,9 @@ dependencies = [
  "log",
  "notifico-core",
  "notifico-dbpipeline",
- "notifico-pushover",
- "notifico-slack",
- "notifico-smpp",
- "notifico-smtp",
  "notifico-subscription",
- "notifico-telegram",
  "notifico-template",
- "notifico-whatsapp",
+ "notifico-transports",
  "ractor",
  "sea-orm",
  "serde",
@@ -2564,14 +2574,8 @@ dependencies = [
  "json5",
  "log",
  "notifico-core",
- "notifico-gotify",
- "notifico-pushover",
- "notifico-slack",
- "notifico-smpp",
- "notifico-smtp",
- "notifico-telegram",
  "notifico-template",
- "notifico-whatsapp",
+ "notifico-transports",
  "regex",
  "serde",
  "serde_json",

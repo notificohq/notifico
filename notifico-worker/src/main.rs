@@ -12,16 +12,12 @@ use notifico_core::pipeline::event::EventHandler;
 use notifico_core::pipeline::executor::PipelineExecutor;
 use notifico_core::queue::ReceiverChannel;
 use notifico_core::recorder::BaseRecorder;
+use notifico_core::transport::TransportRegistry;
 use notifico_dbpipeline::DbPipelineStorage;
-use notifico_pushover::PushoverPlugin;
-use notifico_slack::SlackPlugin;
-use notifico_smpp::SmppPlugin;
-use notifico_smtp::EmailPlugin;
 use notifico_subscription::SubscriptionManager;
-use notifico_telegram::TelegramPlugin;
 use notifico_template::db::DbTemplateSource;
 use notifico_template::Templater;
-use notifico_whatsapp::WaBusinessPlugin;
+use notifico_transports::all_transports;
 use sea_orm::{ConnectOptions, Database};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -115,27 +111,11 @@ async fn main() {
     let templater_source = Arc::new(DbTemplateSource::new(db_connection.clone()));
     engine.add_plugin(Arc::new(Templater::new(templater_source.clone())));
 
-    engine.add_plugin(Arc::new(TelegramPlugin::new(
-        credentials.clone(),
-        recorder.clone(),
-    )));
-    engine.add_plugin(Arc::new(EmailPlugin::new(
-        credentials.clone(),
-        recorder.clone(),
-    )));
-    engine.add_plugin(Arc::new(WaBusinessPlugin::new(
-        credentials.clone(),
-        recorder.clone(),
-    )));
-    engine.add_plugin(Arc::new(SmppPlugin::new(credentials.clone())));
-    engine.add_plugin(Arc::new(SlackPlugin::new(
-        credentials.clone(),
-        recorder.clone(),
-    )));
-    engine.add_plugin(Arc::new(PushoverPlugin::new(
-        credentials.clone(),
-        recorder.clone(),
-    )));
+    let mut transport_registry = TransportRegistry::new();
+    for (engine_plugin, transport_plugin) in all_transports(credentials.clone(), recorder.clone()) {
+        engine.add_plugin(engine_plugin);
+        transport_registry.register(transport_plugin);
+    }
 
     let subman = Arc::new(SubscriptionManager::new(
         db_connection,

@@ -20,7 +20,7 @@ members = [
     "notifico-project/migration",
     "notifico-web",
     "notifico-ingest",
-    "notificox", "transports/notifico-gotify",
+    "notificox", "transports/notifico-gotify", "notifico-transports",
 ]
 
 [workspace.dependencies]

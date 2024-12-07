@@ -1,101 +1,53 @@
 mod credentials;
 mod slackapi;
-mod step;
 
-use crate::step::{Step, STEPS};
 use async_trait::async_trait;
 use credentials::SlackCredentials;
 use notifico_core::contact::{Contact, TypedContact};
-use notifico_core::credentials::CredentialStorage;
-use notifico_core::engine::{EnginePlugin, PipelineContext, StepOutput};
+use notifico_core::credentials::Credential;
 use notifico_core::error::EngineError;
-use notifico_core::recorder::Recorder;
-use notifico_core::step::SerializedStep;
+use notifico_core::simpletransport::SimpleTransport;
 use notifico_core::templater::RenderedTemplate;
-use notifico_core::transport::Transport;
 use serde::{Deserialize, Serialize};
-use std::borrow::Cow;
-use std::sync::Arc;
 
-pub struct SlackPlugin {
+pub struct SlackTransport {
     client: slackapi::SlackApi,
-    credentials: Arc<dyn CredentialStorage>,
-    recorder: Arc<dyn Recorder>,
 }
 
-impl SlackPlugin {
-    pub fn new(credentials: Arc<dyn CredentialStorage>, recorder: Arc<dyn Recorder>) -> Self {
-        SlackPlugin {
+impl SlackTransport {
+    pub fn new() -> Self {
+        SlackTransport {
             client: slackapi::SlackApi::new(),
-            credentials,
-            recorder,
         }
     }
 }
 
 #[async_trait]
-impl EnginePlugin for SlackPlugin {
-    async fn execute_step(
+impl SimpleTransport for SlackTransport {
+    async fn send_message(
         &self,
-        context: &mut PipelineContext,
-        step: &SerializedStep,
-    ) -> Result<StepOutput, EngineError> {
-        let step: Step = step.clone().convert_step()?;
+        credential: Credential,
+        contact: Contact,
+        message: RenderedTemplate,
+    ) -> Result<(), EngineError> {
+        let credential: SlackCredentials = credential.try_into()?;
+        let contact: SlackContact = contact.try_into()?;
+        let content: SlackMessage = message.try_into()?;
 
-        match step {
-            Step::Send { credential } => {
-                let credential: SlackCredentials = self
-                    .credentials
-                    .resolve(context.project_id, credential)
-                    .await?;
+        let slack_message = slackapi::SlackMessage::Text {
+            channel: contact.channel_id.clone(),
+            text: content.text,
+        };
 
-                let contact: Vec<SlackContact> = context.get_recipient()?.get_contacts();
-
-                for contact in contact {
-                    for message in context.messages.iter().cloned() {
-                        let content: SlackMessage = message.content.try_into()?;
-                        let slack_message = slackapi::SlackMessage::Text {
-                            channel: contact.channel_id.clone(),
-                            text: content.text,
-                        };
-
-                        let result = self
-                            .client
-                            .chat_post_message(&credential.token, slack_message)
-                            .await;
-
-                        match result {
-                            Ok(_) => self.recorder.record_message_sent(
-                                context.event_id,
-                                context.notification_id,
-                                message.id,
-                            ),
-                            Err(e) => self.recorder.record_message_failed(
-                                context.event_id,
-                                context.notification_id,
-                                message.id,
-                                &e.to_string(),
-                            ),
-                        }
-                    }
-                }
-                Ok(StepOutput::Continue)
-            }
-        }
+        self.client
+            .chat_post_message(&credential.token, slack_message)
+            .await
+            .map_err(|e| EngineError::InternalError(e.into()))?;
+        Ok(())
     }
 
-    fn steps(&self) -> Vec<Cow<'static, str>> {
-        STEPS.iter().map(|&s| s.into()).collect()
-    }
-}
-
-impl Transport for SlackPlugin {
-    fn name(&self) -> Cow<'static, str> {
-        "slack".into()
-    }
-
-    fn send_step(&self) -> Cow<'static, str> {
-        "slack.send".into()
+    fn name(&self) -> &'static str {
+        "slack"
     }
 }
 

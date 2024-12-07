@@ -1,18 +1,10 @@
-mod step;
-
-use crate::step::{Step, STEPS};
 use async_trait::async_trait;
 use notifico_core::contact::{Contact, TypedContact};
-use notifico_core::credentials::{Credential, CredentialStorage, TypedCredential};
-use notifico_core::engine::{EnginePlugin, PipelineContext, StepOutput};
+use notifico_core::credentials::{Credential, TypedCredential};
 use notifico_core::error::EngineError;
-use notifico_core::recorder::Recorder;
-use notifico_core::step::SerializedStep;
+use notifico_core::simpletransport::SimpleTransport;
 use notifico_core::templater::RenderedTemplate;
-use notifico_core::transport::Transport;
 use serde::{Deserialize, Serialize};
-use std::borrow::Cow;
-use std::sync::Arc;
 use url::Url;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -67,99 +59,58 @@ struct PushoverMessageRequest {
     url_title: Option<String>,
 }
 
-pub struct PushoverPlugin {
+pub struct PushoverTransport {
     client: reqwest::Client,
-    credentials: Arc<dyn CredentialStorage>,
-    recorder: Arc<dyn Recorder>,
 }
 
-impl PushoverPlugin {
-    pub fn new(credentials: Arc<dyn CredentialStorage>, recorder: Arc<dyn Recorder>) -> Self {
+impl PushoverTransport {
+    pub fn new() -> Self {
         Self {
             client: reqwest::Client::new(),
-            credentials,
-            recorder,
         }
     }
 }
 
 #[async_trait]
-impl EnginePlugin for PushoverPlugin {
-    async fn execute_step(
+impl SimpleTransport for PushoverTransport {
+    async fn send_message(
         &self,
-        context: &mut PipelineContext,
-        step: &SerializedStep,
-    ) -> Result<StepOutput, EngineError> {
-        let step: Step = step.clone().convert_step()?;
+        credential: Credential,
+        contact: Contact,
+        message: RenderedTemplate,
+    ) -> Result<(), EngineError> {
+        let credential: PushoverCredentials = credential.try_into()?;
+        let contact: PushoverContact = contact.try_into()?;
+        let message: Message = message.try_into()?;
 
-        match step {
-            Step::Send { credential } => {
-                let credential: PushoverCredentials = self
-                    .credentials
-                    .resolve(context.project_id, credential)
-                    .await?;
+        let request = PushoverMessageRequest {
+            token: credential.token.clone(),
+            user: contact.user.clone(),
+            message: message.text,
+            attachment_base64: None,
+            attachment_type: None,
+            device: None,
+            html: Some(1),
+            priority: None,
+            sound: None,
+            timestamp: None,
+            title: Some(message.title),
+            ttl: None,
+            url: None,
+            url_title: None,
+        };
 
-                let contacts: Vec<PushoverContact> = context.get_recipient()?.get_contacts();
-
-                for contact in contacts {
-                    for message in context.messages.iter().cloned() {
-                        let content: Message = message.content.try_into()?;
-                        let request = PushoverMessageRequest {
-                            token: credential.token.clone(),
-                            user: contact.user.clone(),
-                            message: content.text,
-                            attachment_base64: None,
-                            attachment_type: None,
-                            device: None,
-                            html: Some(1),
-                            priority: None,
-                            sound: None,
-                            timestamp: None,
-                            title: Some(content.title),
-                            ttl: None,
-                            url: None,
-                            url_title: None,
-                        };
-
-                        let result = self
-                            .client
-                            .post("https://api.pushover.net/1/messages.json")
-                            .body(serde_urlencoded::to_string(request).unwrap_or_default())
-                            .send()
-                            .await;
-
-                        match result {
-                            Ok(_) => self.recorder.record_message_sent(
-                                context.event_id,
-                                context.notification_id,
-                                message.id,
-                            ),
-                            Err(e) => self.recorder.record_message_failed(
-                                context.event_id,
-                                context.notification_id,
-                                message.id,
-                                &e.to_string(),
-                            ),
-                        }
-                    }
-                }
-                Ok(StepOutput::Continue)
-            }
-        }
+        self.client
+            .post("https://api.pushover.net/1/messages.json")
+            .body(serde_urlencoded::to_string(request).unwrap_or_default())
+            .send()
+            .await
+            .map_err(|e| EngineError::InternalError(e.into()))?;
+        Ok(())
     }
 
-    fn steps(&self) -> Vec<Cow<'static, str>> {
-        STEPS.iter().map(|&s| s.into()).collect()
-    }
-}
-
-impl Transport for PushoverPlugin {
-    fn name(&self) -> Cow<'static, str> {
-        "pushover".into()
-    }
-
-    fn send_step(&self) -> Cow<'static, str> {
-        "pushover.send".into()
+    fn name(&self) -> &'static str {
+        "pushover"
     }
 }
 

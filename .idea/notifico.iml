@@ -25,6 +25,7 @@
       <sourceFolder url="file://$MODULE_DIR$/notifico-web/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/transports/notifico-pushover/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/notificox/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/notifico-transports/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/transports/notifico-gotify/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.idea/dataSources" />
       <excludeFolder url="file://$MODULE_DIR$/example/rabbitmq/mnesia" />
