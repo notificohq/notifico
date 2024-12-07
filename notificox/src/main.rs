@@ -11,9 +11,10 @@ use notifico_core::pipeline::storage::SinglePipelineStorage;
 use notifico_core::pipeline::Pipeline;
 use notifico_core::recipient::Recipient;
 use notifico_core::recorder::{BaseRecorder, Recorder};
+use notifico_core::simpletransport::SimpleTransportWrapper;
 use notifico_core::step::SerializedStep;
 use notifico_core::transport::TransportRegistry;
-use notifico_gotify::GotifyPlugin;
+use notifico_gotify::GotifyTransport;
 use notifico_pushover::PushoverPlugin;
 use notifico_slack::SlackPlugin;
 use notifico_smpp::SmppPlugin;
@@ -219,7 +220,12 @@ fn add_transports(
     engine.add_plugin(pushover_plugin.clone());
     transport_registry.register(pushover_plugin);
 
-    let gotify_plugin = Arc::new(GotifyPlugin::new(credentials.clone(), recorder.clone()));
+    let gotify_transport = Arc::new(GotifyTransport::new());
+    let gotify_plugin = Arc::new(SimpleTransportWrapper::new(
+        gotify_transport.clone(),
+        credentials.clone(),
+        recorder.clone(),
+    ));
     engine.add_plugin(gotify_plugin.clone());
     transport_registry.register(gotify_plugin);
 }

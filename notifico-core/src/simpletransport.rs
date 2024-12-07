@@ -15,9 +15,9 @@ pub trait SimpleTransport: Send + Sync {
     async fn send_message(
         &self,
         credential: Credential,
-        contact: &Contact,
-        message: &RenderedTemplate,
-    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
+        contact: Contact,
+        message: RenderedTemplate,
+    ) -> Result<(), EngineError>;
 
     fn name(&self) -> &'static str;
 
@@ -83,22 +83,22 @@ impl EnginePlugin for SimpleTransportWrapper {
             for message in &context.messages {
                 let result = self
                     .inner
-                    .send_message(credential.clone(), &contact, &message.content)
+                    .send_message(credential.clone(), contact.clone(), message.content.clone())
                     .await;
 
-                match result {
-                    Ok(_) => self.recorder.record_message_sent(
-                        context.event_id,
-                        context.notification_id,
-                        message.id,
-                    ),
-                    Err(e) => self.recorder.record_message_failed(
-                        context.event_id,
-                        context.notification_id,
-                        message.id,
-                        &e.to_string(),
-                    ),
-                }
+                // match result {
+                //     Ok(_) => self.recorder.record_message_sent(
+                //         context.event_id,
+                //         context.notification_id,
+                //         message.id,
+                //     ),
+                //     Err(e) => self.recorder.record_message_failed(
+                //         context.event_id,
+                //         context.notification_id,
+                //         message.id,
+                //         &e.to_string(),
+                //     ),
+                // }
             }
         }
         Ok(StepOutput::Continue)
