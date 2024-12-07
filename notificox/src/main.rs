@@ -29,14 +29,18 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Command {
+    /// Send a notification locally (simple syntax)
     Send {
-        #[arg(long)]
+        /// Credential string, transport-specific (refer to the documentation for specific transport)
         credential: String,
-        #[arg(long)]
-        to: Vec<String>,
-        #[arg(long)]
+        /// Recipient(s), can be an email, phone number, or any other unique identifier
+        /// in following format: "TYPE:VALUE"
+        contacts: Vec<String>,
+        /// Channel (email, sms, slack, ...)
+        #[arg(short, long)]
         channel: String,
-        #[arg(long)]
+        /// Template object in JSON5 format (can be used without escaping)
+        #[arg(short, long, required = true)]
         template: Vec<String>,
     },
 }
@@ -62,7 +66,7 @@ async fn main() {
     match cli.command {
         Command::Send {
             credential,
-            to,
+            contacts,
             channel,
             template,
         } => {
@@ -120,7 +124,7 @@ async fn main() {
                 pipeline
             };
 
-            let contacts: Vec<Contact> = to.iter().map(|s| s.parse().unwrap()).collect();
+            let contacts: Vec<Contact> = contacts.iter().map(|s| s.parse().unwrap()).collect();
 
             let recipient = Recipient {
                 id: Uuid::nil(),
