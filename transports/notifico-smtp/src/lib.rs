@@ -117,12 +117,17 @@ impl EnginePlugin for EmailPlugin {
                             {
                                 builder = builder.header(ListUnsubscribe::from(list_unsubscribe));
                             }
-                            builder
-                                .multipart(MultiPart::alternative_plain_html(
-                                    rendered.body_plaintext,
-                                    rendered.body_html,
-                                ))
-                                .unwrap()
+
+                            if rendered.body_html.is_empty() && !rendered.body.is_empty() {
+                                builder.body(rendered.body).unwrap()
+                            } else {
+                                builder
+                                    .multipart(MultiPart::alternative_plain_html(
+                                        rendered.body,
+                                        rendered.body_html,
+                                    ))
+                                    .unwrap()
+                            }
                         };
 
                         let result = transport.send(email_message).await;

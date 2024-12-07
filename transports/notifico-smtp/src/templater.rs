@@ -8,7 +8,7 @@ pub struct RenderedEmail {
     pub from: Mailbox,
     pub subject: String,
     pub body_html: String,
-    pub body_plaintext: String,
+    pub body: String,
 }
 
 impl TryFrom<RenderedTemplate> for RenderedEmail {
@@ -22,7 +22,7 @@ impl TryFrom<RenderedTemplate> for RenderedEmail {
                 .map_err(|e| EngineError::InvalidRenderedTemplateFormat(e.into()))?,
             subject: value.get("subject")?.to_string(),
             body_html: value.get("body_html")?.to_string(),
-            body_plaintext: value.get("body_plaintext")?.to_string(),
+            body: value.get("body")?.to_string(),
         })
     }
 }

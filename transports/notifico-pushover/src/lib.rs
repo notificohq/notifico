@@ -83,7 +83,7 @@ impl SimpleTransport for PushoverTransport {
         let request = PushoverMessageRequest {
             token: credential.token.clone(),
             user: contact.user.clone(),
-            message: message.text,
+            message: message.body,
             attachment_base64: None,
             attachment_type: None,
             device: None,
@@ -130,7 +130,7 @@ impl TypedContact for PushoverContact {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Message {
-    pub text: String,
+    pub body: String,
     pub title: String,
 }
 
@@ -139,7 +139,7 @@ impl TryFrom<RenderedTemplate> for Message {
 
     fn try_from(value: RenderedTemplate) -> Result<Self, Self::Error> {
         Ok(Self {
-            text: value.get("text")?.to_string(),
+            body: value.get("body")?.to_string(),
             title: value.get("title")?.to_string(),
         })
     }

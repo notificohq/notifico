@@ -36,7 +36,7 @@ impl SimpleTransport for SlackTransport {
 
         let slack_message = slackapi::SlackMessage::Text {
             channel: contact.channel_id.clone(),
-            text: content.text,
+            text: content.body,
         };
 
         self.client
@@ -72,7 +72,7 @@ impl TypedContact for SlackContact {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct SlackMessage {
-    pub text: String,
+    pub body: String,
 }
 
 impl TryFrom<RenderedTemplate> for SlackMessage {
@@ -80,7 +80,7 @@ impl TryFrom<RenderedTemplate> for SlackMessage {
 
     fn try_from(value: RenderedTemplate) -> Result<Self, Self::Error> {
         Ok(Self {
-            text: value.get("text")?.to_string(),
+            body: value.get("body")?.to_string(),
         })
     }
 }
