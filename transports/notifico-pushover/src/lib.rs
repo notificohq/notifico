@@ -99,9 +99,9 @@ impl EnginePlugin for PushoverPlugin {
                     .resolve(context.project_id, credential)
                     .await?;
 
-                let contact: Vec<PushoverContact> = context.get_recipient()?.get_contacts();
+                let contacts: Vec<PushoverContact> = context.get_recipient()?.get_contacts();
 
-                for contact in contact {
+                for contact in contacts {
                     for message in context.messages.iter().cloned() {
                         let content: Message = message.content.try_into()?;
                         let request = PushoverMessageRequest {

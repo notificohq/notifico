@@ -77,9 +77,15 @@ async fn main() {
 
             let credential = Credential::Short(credential);
 
-            let mut credentials = MemoryCredentialStorage::default();
-            credentials.add_credential(Uuid::nil(), "notificox".to_string(), credential.clone());
-            let credentials = Arc::new(credentials);
+            let credentials = {
+                let mut credentials = MemoryCredentialStorage::default();
+                credentials.add_credential(
+                    Uuid::nil(),
+                    "notificox".to_string(),
+                    credential.clone(),
+                );
+                Arc::new(credentials)
+            };
 
             add_transports(
                 &mut engine,
