@@ -14,4 +14,4 @@ notifico-template-migration = { path = "migration" }
 sea-orm = { workspace = true }
 uuid = { workspace = true }
 anyhow = "1.0.94"
-thiserror = "2.0.4"
+thiserror = "2.0.5"
