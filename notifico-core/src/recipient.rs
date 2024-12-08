@@ -7,6 +7,7 @@ use uuid::Uuid;
 pub struct Recipient {
     #[serde(default = "Uuid::nil")]
     pub id: Uuid,
+    #[schema(value_type = String)]
     pub contacts: Vec<Contact>,
 }
 

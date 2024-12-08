@@ -13,7 +13,7 @@ impl TryFrom<Contact> for TelegramContact {
     fn try_from(value: Contact) -> Result<Self, Self::Error> {
         Ok(Self {
             chat_id: value.value.parse().map_err(|e| {
-                EngineError::ContactTypeMismatch(format!("chat_id must be an integer, got: {e:?}"))
+                EngineError::InvalidContactFormat(format!("chat_id must be an integer, got: {e:?}"))
             })?,
         })
     }

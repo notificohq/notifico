@@ -1,9 +1,10 @@
 use crate::error::EngineError;
 use serde::{Deserialize, Serialize};
+use serde_with::{DeserializeFromStr, SerializeDisplay};
+use std::fmt::{Display, Formatter};
 use std::str::FromStr;
-use utoipa::ToSchema;
 
-#[derive(Clone, Debug, Serialize, Deserialize, ToSchema)]
+#[derive(Clone, Debug, SerializeDisplay, DeserializeFromStr)]
 pub struct Contact {
     pub r#type: String,
     pub value: String,
@@ -18,6 +19,12 @@ impl FromStr for Contact {
         ))?;
         let (r#type, value) = (r#type.to_owned(), value.to_owned());
         Ok(Self { r#type, value })
+    }
+}
+
+impl Display for Contact {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}:{}", self.r#type, self.value)
     }
 }
 
