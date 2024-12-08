@@ -106,10 +106,7 @@ mod tests {
                     {
                         "id": Uuid::now_v7(),
                         "contacts": [
-                            {
-                                "type": "",
-                                "value": "1234567890"
-                            }
+                            "abc:1234567890"
                         ]
                     }
                 ]
@@ -138,19 +135,13 @@ mod tests {
                     {
                         "id": Uuid::now_v7(),
                         "contacts": [
-                            {
-                                "type": "",
-                                "value": "1234567890"
-                            }
+                            "abc:1234567890"
                         ]
                     },
                     {
                         "id": Uuid::now_v7(),
                         "contacts": [
-                            {
-                                "type": "",
-                                "value": "1234567890"
-                            }
+                            "abc:1234567890"
                         ]
                     }
                 ]
