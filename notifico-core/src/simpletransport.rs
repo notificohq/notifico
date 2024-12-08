@@ -24,6 +24,8 @@ pub trait SimpleTransport: Send + Sync {
     fn has_contacts(&self) -> bool {
         true
     }
+
+    fn supports_contact(&self, r#type: &str) -> bool;
 }
 
 pub struct SimpleTransportWrapper {
@@ -83,6 +85,9 @@ impl EnginePlugin for SimpleTransportWrapper {
         };
 
         for contact in contacts {
+            if !self.inner.supports_contact(&contact.r#type) {
+                continue;
+            }
             for message in &context.messages {
                 let result = self
                     .inner

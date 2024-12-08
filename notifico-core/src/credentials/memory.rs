@@ -15,40 +15,6 @@ struct CredentialKey<'a> {
 pub struct MemoryCredentialStorage(HashMap<CredentialKey<'static>, Credential>);
 
 impl MemoryCredentialStorage {
-    pub fn from_config(config: serde_json::Value) -> Result<Self, serde_json::Error> {
-        let mut creds = MemoryCredentialStorage::default();
-
-        let obj = config.as_object().unwrap().clone();
-        for (r#type, v) in obj {
-            let obj = v.as_object().unwrap().clone();
-            for (name_or_project_id, value) in obj {
-                if let Ok(project_id) = Uuid::parse_str(&name_or_project_id) {
-                    for (name, value) in value.as_object().unwrap().iter() {
-                        creds.add_credential(
-                            project_id,
-                            name.clone(),
-                            Credential::Long {
-                                r#type: r#type.clone(),
-                                value: value.clone(),
-                            },
-                        );
-                    }
-                } else {
-                    creds.add_credential(
-                        Uuid::nil(),
-                        name_or_project_id,
-                        Credential::Long {
-                            r#type: r#type.clone(),
-                            value: value.clone(),
-                        },
-                    );
-                };
-            }
-        }
-
-        Ok(creds)
-    }
-
     pub fn add_credential(&mut self, project: Uuid, name: String, credential: Credential) {
         self.0.insert(
             CredentialKey {

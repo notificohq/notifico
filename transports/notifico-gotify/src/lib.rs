@@ -63,6 +63,10 @@ impl SimpleTransport for GotifyTransport {
     fn has_contacts(&self) -> bool {
         false
     }
+
+    fn supports_contact(&self, _type: &str) -> bool {
+        false
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone)]

@@ -1,7 +1,7 @@
 use clap::{Parser, Subcommand};
 use log::info;
-use notifico_core::config::credentials::MemoryCredentialStorage;
 use notifico_core::contact::Contact;
+use notifico_core::credentials::memory::MemoryCredentialStorage;
 use notifico_core::credentials::Credential;
 use notifico_core::engine::plugin::core::CorePlugin;
 use notifico_core::engine::Engine;

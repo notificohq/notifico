@@ -1,4 +1,3 @@
-pub mod config;
 pub mod contact;
 pub mod credentials;
 pub mod db;

@@ -61,6 +61,10 @@ impl SimpleTransport for WabaTransport {
     fn name(&self) -> &'static str {
         "waba"
     }
+
+    fn supports_contact(&self, r#type: &str) -> bool {
+        r#type == "mobile_phone"
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone)]

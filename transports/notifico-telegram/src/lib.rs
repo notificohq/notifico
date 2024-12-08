@@ -89,6 +89,10 @@ impl SimpleTransport for TelegramTransport {
     fn name(&self) -> &'static str {
         "telegram"
     }
+
+    fn supports_contact(&self, r#type: &str) -> bool {
+        r#type == "telegram"
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone)]

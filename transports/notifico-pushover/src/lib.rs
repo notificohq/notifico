@@ -107,6 +107,10 @@ impl SimpleTransport for PushoverTransport {
     fn name(&self) -> &'static str {
         "pushover"
     }
+
+    fn supports_contact(&self, r#type: &str) -> bool {
+        r#type == "pushover"
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone)]

@@ -49,6 +49,10 @@ impl SimpleTransport for SlackTransport {
     fn name(&self) -> &'static str {
         "slack"
     }
+
+    fn supports_contact(&self, r#type: &str) -> bool {
+        r#type == "slack"
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone)]

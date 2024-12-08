@@ -2,9 +2,8 @@ mod amqp;
 
 use crate::amqp::AmqpClient;
 use clap::Parser;
-use figment::{providers::Format, providers::Toml, Figment};
 use log::debug;
-use notifico_core::config::credentials::MemoryCredentialStorage;
+use notifico_core::credentials::env::EnvCredentialStorage;
 use notifico_core::db::create_sqlite_if_not_exists;
 use notifico_core::engine::plugin::core::CorePlugin;
 use notifico_core::engine::Engine;
@@ -55,7 +54,7 @@ async fn main() {
     let _ = dotenvy::dotenv();
 
     if std::env::var("RUST_LOG").is_err() {
-        std::env::set_var("RUST_LOG", "info");
+        std::env::set_var("RUST_LOG", "h2=warn,info");
     }
 
     let args = Args::parse();
@@ -74,16 +73,7 @@ async fn main() {
 
     let db_connection = Database::connect(db_conn_options).await.unwrap();
 
-    let credentials = {
-        let credential_config: serde_json::Value = {
-            let mut config = Figment::new().merge(Toml::file(args.credentials_path));
-            if let Ok(env_credentials) = std::env::var("NOTIFICO_CREDENTIALS") {
-                config = config.merge(Toml::string(&env_credentials));
-            }
-            config.extract().unwrap()
-        };
-        Arc::new(MemoryCredentialStorage::from_config(credential_config).unwrap())
-    };
+    let credentials = Arc::new(EnvCredentialStorage::new());
     let pipelines = Arc::new(DbPipelineStorage::new(db_connection.clone()));
 
     // Initialize AMQP client
