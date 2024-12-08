@@ -15,27 +15,14 @@ impl TryFrom<Credential> for SmppServerCredentials {
     type Error = EngineError;
 
     fn try_from(value: Credential) -> Result<Self, Self::Error> {
-        if value.transport() != Self::TRANSPORT_NAME {
-            return Err(EngineError::InvalidCredentialFormat)?;
-        }
-
-        match value {
-            Credential::Long { value, .. } => {
-                Ok(serde_json::from_value(value)
-                    .map_err(|_| EngineError::InvalidCredentialFormat)?)
-            }
-            Credential::Short(url) => {
-                let url = url.strip_prefix("smpp:").unwrap_or_default();
-                let url = String::from("smpp://") + url;
-                let url = Url::parse(&url).map_err(|_| EngineError::InvalidCredentialFormat)?;
-                Ok(Self {
-                    host: url.host_str().unwrap_or_default().to_owned(),
-                    port: url.port().unwrap_or_default(),
-                    username: url.username().to_owned(),
-                    password: url.password().unwrap_or_default().to_owned(),
-                })
-            }
-        }
+        let url = String::from("smpp://") + &value.value;
+        let url = Url::parse(&url).map_err(|_| EngineError::InvalidCredentialFormat)?;
+        Ok(Self {
+            host: url.host_str().unwrap_or_default().to_owned(),
+            port: url.port().unwrap_or_default(),
+            username: url.username().to_owned(),
+            password: url.password().unwrap_or_default().to_owned(),
+        })
     }
 }
 

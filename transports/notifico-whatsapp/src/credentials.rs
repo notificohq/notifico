@@ -14,32 +14,19 @@ impl TryFrom<Credential> for WhatsAppCredentials {
     type Error = EngineError;
 
     fn try_from(value: Credential) -> Result<Self, Self::Error> {
-        if value.transport() != Self::TRANSPORT_NAME {
-            return Err(EngineError::InvalidCredentialFormat)?;
-        }
+        static WABA_REGEX: OnceLock<Regex> = OnceLock::new();
+        let regex = WABA_REGEX.get_or_init(|| Regex::new("^([0-9]+):([0-9a-zA-Z]+)$").unwrap());
 
-        match value {
-            Credential::Long { value, .. } => {
-                Ok(serde_json::from_value(value)
-                    .map_err(|_| EngineError::InvalidCredentialFormat)?)
-            }
-            Credential::Short(url) => {
-                static WABA_REGEX: OnceLock<Regex> = OnceLock::new();
-                let regex = WABA_REGEX
-                    .get_or_init(|| Regex::new("^waba:([0-9]+):([0-9a-zA-Z]+)$").unwrap());
+        let caps = regex
+            .captures(&value.value)
+            .ok_or(EngineError::InvalidCredentialFormat)?;
 
-                let caps = regex
-                    .captures(&url)
-                    .ok_or(EngineError::InvalidCredentialFormat)?;
-
-                Ok(Self {
-                    phone_id: caps[0]
-                        .parse()
-                        .map_err(|_| EngineError::InvalidCredentialFormat)?,
-                    token: caps[1].to_owned(),
-                })
-            }
-        }
+        Ok(Self {
+            phone_id: caps[0]
+                .parse()
+                .map_err(|_| EngineError::InvalidCredentialFormat)?,
+            token: caps[1].to_owned(),
+        })
     }
 }
 

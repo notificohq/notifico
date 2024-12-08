@@ -12,24 +12,9 @@ impl TryFrom<Credential> for GotifyCredentials {
     type Error = EngineError;
 
     fn try_from(value: Credential) -> Result<Self, Self::Error> {
-        if value.transport() != Self::TRANSPORT_NAME {
-            return Err(EngineError::InvalidCredentialFormat)?;
-        }
+        let url = Url::parse(&value.value).map_err(|_| EngineError::InvalidCredentialFormat)?;
 
-        match value {
-            Credential::Long { value, .. } => {
-                Ok(serde_json::from_value(value)
-                    .map_err(|_| EngineError::InvalidCredentialFormat)?)
-            }
-            Credential::Short(url) => {
-                let mut url = url.splitn(2, ":");
-                let _ = url.next();
-                let url = url.next().unwrap_or_default();
-                let url = Url::parse(url).map_err(|_| EngineError::InvalidCredentialFormat)?;
-
-                Ok(Self { url })
-            }
-        }
+        Ok(Self { url })
     }
 }
 

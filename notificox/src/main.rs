@@ -17,6 +17,7 @@ use notifico_template::source::DummyTemplateSource;
 use notifico_template::Templater;
 use notifico_transports::all_transports;
 use serde_json::{json, Map, Value};
+use std::str::FromStr;
 use std::sync::Arc;
 use tokio::task::JoinSet;
 use uuid::Uuid;
@@ -74,7 +75,7 @@ async fn main() {
             let mut transport_registry = TransportRegistry::new();
             let recorder = Arc::new(BaseRecorder::new());
 
-            let credential = Credential::Short(credential);
+            let credential = Credential::from_str(&credential).unwrap();
 
             let credentials = {
                 let mut credentials = MemoryCredentialStorage::default();
@@ -113,9 +114,9 @@ async fn main() {
                     let step = SerializedStep(step.as_object().cloned().unwrap());
                     pipeline.steps.push(step);
                 }
-                let transport_name = credential.transport();
+                let transport_name = credential.transport;
                 let step = SerializedStep(
-                    json!({ "step": transport_registry.get_step(transport_name).unwrap(), "credential": "notificox" })
+                    json!({ "step": transport_registry.get_step(&transport_name).unwrap(), "credential": "notificox" })
                         .as_object()
                         .cloned()
                         .unwrap(),

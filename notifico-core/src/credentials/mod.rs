@@ -4,7 +4,7 @@ pub mod memory;
 use crate::error::EngineError;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use std::str::FromStr;
 use uuid::Uuid;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -15,18 +15,20 @@ pub enum CredentialSelector {
 
 /// Generic credential with type information.
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(untagged)]
-pub enum Credential {
-    Long { r#type: String, value: Value },
-    Short(String),
+pub struct Credential {
+    pub transport: String,
+    pub value: String,
 }
 
-impl Credential {
-    pub fn transport(&self) -> &str {
-        match self {
-            Credential::Long { r#type, .. } => r#type,
-            Credential::Short(url) => url.split(":").next().unwrap(),
-        }
+impl FromStr for Credential {
+    type Err = EngineError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let (transport, value) = s
+            .split_once(':')
+            .ok_or(EngineError::InvalidCredentialFormat)?;
+        let (transport, value) = (transport.to_owned(), value.to_owned());
+        Ok(Self { transport, value })
     }
 }
 
@@ -55,8 +57,10 @@ impl dyn CredentialStorage {
     where
         T: TypedCredential,
     {
-        self.get_credential(project, &selector)
-            .await
-            .and_then(|c| c.try_into())
+        let credential = self.get_credential(project, &selector).await?;
+        if credential.transport != T::TRANSPORT_NAME {
+            return Err(EngineError::InvalidCredentialFormat);
+        }
+        credential.try_into()
     }
 }

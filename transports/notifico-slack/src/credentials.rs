@@ -11,19 +11,7 @@ impl TryFrom<Credential> for SlackCredentials {
     type Error = EngineError;
 
     fn try_from(value: Credential) -> Result<Self, Self::Error> {
-        if value.transport() != Self::TRANSPORT_NAME {
-            return Err(EngineError::InvalidCredentialFormat)?;
-        }
-
-        match value {
-            Credential::Long { value, .. } => {
-                Ok(serde_json::from_value(value)
-                    .map_err(|_| EngineError::InvalidCredentialFormat)?)
-            }
-            Credential::Short(url) => Ok(Self {
-                token: url.strip_prefix("slack:").unwrap_or_default().to_owned(),
-            }),
-        }
+        Ok(Self { token: value.value })
     }
 }
 

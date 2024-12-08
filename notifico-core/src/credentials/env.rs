@@ -3,6 +3,7 @@ use crate::error::EngineError;
 use async_trait::async_trait;
 use regex::Regex;
 use std::collections::HashMap;
+use std::str::FromStr;
 use tracing::info;
 use uuid::Uuid;
 
@@ -29,7 +30,7 @@ impl EnvCredentialStorage {
                 .get(1)
                 .map_or_else(Uuid::nil, |m| Uuid::parse_str(m.as_str()).unwrap());
             let name = captures.get(2).unwrap().as_str();
-            let credential = Credential::Short(value);
+            let credential = Credential::from_str(&value).unwrap();
 
             storage.insert(
                 CredentialKey {

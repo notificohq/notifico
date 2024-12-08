@@ -75,6 +75,10 @@ impl EnginePlugin for SimpleTransportWrapper {
             .get_credential(context.project_id, &credential_selector)
             .await?;
 
+        if credential.transport != self.name() {
+            return Err(EngineError::InvalidCredentialFormat);
+        }
+
         let contacts = if self.inner.has_contacts() {
             context.get_recipient()?.contacts.clone()
         } else {
