@@ -199,7 +199,7 @@ async fn main() {
         } => {
             let recipients: Vec<RecipientSelector> = recipient
                 .iter()
-                .map(|s| json5::from_str(&s).unwrap())
+                .map(|s| json5::from_str(s).unwrap())
                 .collect();
 
             let request = ProcessEventRequest {
