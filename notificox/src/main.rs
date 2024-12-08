@@ -20,6 +20,7 @@ use serde_json::{json, Map, Value};
 use std::str::FromStr;
 use std::sync::Arc;
 use tokio::task::JoinSet;
+use url::Url;
 use uuid::Uuid;
 
 #[derive(Parser, Debug)]
@@ -43,6 +44,19 @@ enum Command {
         /// Template object in JSON5 format (can be used without escaping)
         #[arg(short, long, required = true)]
         template: Vec<String>,
+    },
+    /// Send an event to remote Notifico Ingest API
+    SendEvent {
+        /// URL of the Notifico Ingest API
+        #[arg(short, long)]
+        ingest: Url,
+        /// Event name
+        event: String,
+        /// Recipient in JSON5 format (can be used without escaping). Refer to documentation for recipient schema.
+        #[arg(short, long)]
+        recipient: Vec<String>,
+        /// Context in JSON5 format (can be used without escaping).
+        context: String,
     },
 }
 
@@ -176,6 +190,30 @@ async fn main() {
                     },
                 }
             }
+        }
+        Command::SendEvent {
+            ingest,
+            event,
+            recipient,
+            context,
+        } => {
+            let recipients: Vec<RecipientSelector> = recipient
+                .iter()
+                .map(|s| json5::from_str(&s).unwrap())
+                .collect();
+
+            let request = ProcessEventRequest {
+                id: Uuid::now_v7(),
+                project_id: Default::default(),
+                event,
+                recipients,
+                context: json5::from_str(&context).unwrap(),
+            };
+
+            let url = ingest.join("/v1/send").unwrap();
+
+            let client = reqwest::Client::new();
+            client.post(url).json(&request).send().await.unwrap();
         }
     }
 }

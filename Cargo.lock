@@ -2353,9 +2353,11 @@ dependencies = [
  "notifico-core",
  "notifico-template",
  "notifico-transports",
+ "reqwest",
  "serde",
  "serde_json",
  "tokio",
+ "url",
  "uuid",
 ]
 
