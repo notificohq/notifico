@@ -42,6 +42,7 @@ notifications effectively.
 - [x] Telegram
 - [x] WhatsApp Business
 - [x] Pushover
+- [x] Gotify
 - [ ] Microsoft Teams
 - [ ] Discord
 - [ ] Mattermost
