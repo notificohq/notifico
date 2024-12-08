@@ -19,6 +19,7 @@ pub use plugin::{EnginePlugin, StepOutput};
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(transparent)]
+/// Event context contains all variables, that will be passed to templating engine.
 pub struct EventContext(pub Map<String, Value>);
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
