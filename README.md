@@ -1,20 +1,22 @@
 # Notifico
 
-[Documentation](https://notifico.tech)
+[📕 Documentation](https://notifico.tech)
 
 Notifico is a self-hosted, open-source notification server that delivers real-time notifications
 to various clients via email, SMS, messengers and other means of communication.
 
 ## Features
 
-- **High Performance**: Efficiently handles a large volume of notifications.
-- **Scalable Architecture**: Optimized for high availability configurations using AMQP 1.0 for task distribution.
-- **List-Unsubscribe Support**: Simplifies the process for recipients to opt-out of notifications.
-- **Low-Code implementation**: You can use Notifico just with a little knowledge of JSON. No need for JS or any other language.
+- 📑 **Embedded Templating**: Powerful and flexible templating system powered by [minijinja](https://github.com/mitsuhiko/minijinja), allowing for
+  dynamic content generation in notifications.
+- ⚡ **Command-line Companion Tool**: [Notificox](https://notifico.tech/notificox), a versatile CLI tool for interacting with Notifico, enabling easy
+  notifications from the command line.
+- 📈 **Scalable Architecture**: Optimized for high availability configurations using AMQP 1.0 for task distribution.
+- 🧑🏻‍💻 **Low-Code implementation**: You can use Notifico just with a little knowledge of JSON. No need for JS or any other language.
 
 ## Getting Started
 
-To start using Notifico, please refer to the [Documentation](https://notifico.tech) for detailed installation and
+To start using Notifico, please refer to the [📕 Documentation](https://notifico.tech) for detailed installation and
 configuration instructions.
 The documentation includes guides on setting up the server, configuring different transports, and managing
 notifications effectively.
@@ -43,6 +45,8 @@ notifications effectively.
 - [x] WhatsApp Business
 - [x] Pushover
 - [x] Gotify
+- [x] Ntfy
+- [ ] Apprise API
 - [ ] Microsoft Teams
 - [ ] Discord
 - [ ] Mattermost

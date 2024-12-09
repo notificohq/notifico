@@ -1,7 +1,7 @@
 use crate::credentials::GotifyCredentials;
 use async_trait::async_trait;
-use notifico_core::contact::Contact;
-use notifico_core::credentials::Credential;
+use notifico_core::contact::RawContact;
+use notifico_core::credentials::RawCredential;
 use notifico_core::error::EngineError;
 use notifico_core::simpletransport::SimpleTransport;
 use notifico_core::templater::RenderedTemplate;
@@ -11,7 +11,7 @@ use serde_json::{Map, Value};
 mod credentials;
 
 #[derive(Serialize)]
-struct GotifyRequest {
+struct Request {
     title: Option<String>,
     message: String,
     priority: Option<i8>,
@@ -33,14 +33,14 @@ impl GotifyTransport {
 impl SimpleTransport for GotifyTransport {
     async fn send_message(
         &self,
-        credential: Credential,
-        _contact: Contact,
+        credential: RawCredential,
+        _contact: RawContact,
         message: RenderedTemplate,
     ) -> Result<(), EngineError> {
         let credential: GotifyCredentials = credential.try_into()?;
-        let content: GotifyContent = message.try_into()?;
+        let content: Content = message.try_into()?;
 
-        let request = GotifyRequest {
+        let request = Request {
             title: content.title,
             message: content.body,
             priority: None,
@@ -70,12 +70,12 @@ impl SimpleTransport for GotifyTransport {
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-struct GotifyContent {
+struct Content {
     title: Option<String>,
     body: String,
 }
 
-impl TryFrom<RenderedTemplate> for GotifyContent {
+impl TryFrom<RenderedTemplate> for Content {
     type Error = EngineError;
 
     fn try_from(value: RenderedTemplate) -> Result<Self, Self::Error> {

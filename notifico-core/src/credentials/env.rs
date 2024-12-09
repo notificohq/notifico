@@ -1,4 +1,4 @@
-use crate::credentials::{Credential, CredentialSelector, CredentialStorage};
+use crate::credentials::{CredentialSelector, CredentialStorage, RawCredential};
 use crate::error::EngineError;
 use async_trait::async_trait;
 use regex::Regex;
@@ -14,7 +14,7 @@ struct CredentialKey {
 }
 
 #[derive(Default, Debug)]
-pub struct EnvCredentialStorage(HashMap<CredentialKey, Credential>);
+pub struct EnvCredentialStorage(HashMap<CredentialKey, RawCredential>);
 
 impl EnvCredentialStorage {
     pub fn new() -> Self {
@@ -30,7 +30,7 @@ impl EnvCredentialStorage {
                 .get(1)
                 .map_or_else(Uuid::nil, |m| Uuid::parse_str(m.as_str()).unwrap());
             let name = captures.get(2).unwrap().as_str();
-            let credential = Credential::from_str(&value).unwrap();
+            let credential = RawCredential::from_str(&value).unwrap();
 
             storage.insert(
                 CredentialKey {
@@ -55,7 +55,7 @@ impl CredentialStorage for EnvCredentialStorage {
         &self,
         project: Uuid,
         selector: &CredentialSelector,
-    ) -> Result<Credential, EngineError> {
+    ) -> Result<RawCredential, EngineError> {
         match selector {
             CredentialSelector::ByName(name) => {
                 let key = CredentialKey {

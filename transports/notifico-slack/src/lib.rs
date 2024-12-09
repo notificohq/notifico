@@ -3,8 +3,8 @@ mod slackapi;
 
 use async_trait::async_trait;
 use credentials::SlackCredentials;
-use notifico_core::contact::{Contact, TypedContact};
-use notifico_core::credentials::Credential;
+use notifico_core::contact::{RawContact, TypedContact};
+use notifico_core::credentials::RawCredential;
 use notifico_core::error::EngineError;
 use notifico_core::simpletransport::SimpleTransport;
 use notifico_core::templater::RenderedTemplate;
@@ -26,8 +26,8 @@ impl SlackTransport {
 impl SimpleTransport for SlackTransport {
     async fn send_message(
         &self,
-        credential: Credential,
-        contact: Contact,
+        credential: RawCredential,
+        contact: RawContact,
         message: RenderedTemplate,
     ) -> Result<(), EngineError> {
         let credential: SlackCredentials = credential.try_into()?;
@@ -60,10 +60,10 @@ struct SlackContact {
     channel_id: String,
 }
 
-impl TryFrom<Contact> for SlackContact {
+impl TryFrom<RawContact> for SlackContact {
     type Error = EngineError;
 
-    fn try_from(value: Contact) -> Result<Self, Self::Error> {
+    fn try_from(value: RawContact) -> Result<Self, Self::Error> {
         Ok(Self {
             channel_id: value.value,
         })

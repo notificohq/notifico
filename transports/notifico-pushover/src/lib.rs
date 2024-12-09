@@ -1,6 +1,6 @@
 use async_trait::async_trait;
-use notifico_core::contact::{Contact, TypedContact};
-use notifico_core::credentials::{Credential, TypedCredential};
+use notifico_core::contact::{RawContact, TypedContact};
+use notifico_core::credentials::{RawCredential, TypedCredential};
 use notifico_core::error::EngineError;
 use notifico_core::simpletransport::SimpleTransport;
 use notifico_core::templater::RenderedTemplate;
@@ -12,10 +12,10 @@ pub struct PushoverCredentials {
     token: String,
 }
 
-impl TryFrom<Credential> for PushoverCredentials {
+impl TryFrom<RawCredential> for PushoverCredentials {
     type Error = EngineError;
 
-    fn try_from(value: Credential) -> Result<Self, Self::Error> {
+    fn try_from(value: RawCredential) -> Result<Self, Self::Error> {
         Ok(Self { token: value.value })
     }
 }
@@ -58,8 +58,8 @@ impl PushoverTransport {
 impl SimpleTransport for PushoverTransport {
     async fn send_message(
         &self,
-        credential: Credential,
-        contact: Contact,
+        credential: RawCredential,
+        contact: RawContact,
         message: RenderedTemplate,
     ) -> Result<(), EngineError> {
         let credential: PushoverCredentials = credential.try_into()?;
@@ -106,10 +106,10 @@ struct PushoverContact {
     user: String,
 }
 
-impl TryFrom<Contact> for PushoverContact {
+impl TryFrom<RawContact> for PushoverContact {
     type Error = EngineError;
 
-    fn try_from(value: Contact) -> Result<Self, Self::Error> {
+    fn try_from(value: RawContact) -> Result<Self, Self::Error> {
         Ok(Self { user: value.value })
     }
 }

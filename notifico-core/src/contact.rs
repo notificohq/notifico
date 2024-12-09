@@ -5,12 +5,12 @@ use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
 #[derive(Clone, Debug, SerializeDisplay, DeserializeFromStr)]
-pub struct Contact {
+pub struct RawContact {
     pub r#type: String,
     pub value: String,
 }
 
-impl FromStr for Contact {
+impl FromStr for RawContact {
     type Err = EngineError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -22,13 +22,13 @@ impl FromStr for Contact {
     }
 }
 
-impl Display for Contact {
+impl Display for RawContact {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}:{}", self.r#type, self.value)
     }
 }
 
-pub trait TypedContact: TryFrom<Contact, Error = EngineError> {
+pub trait TypedContact: TryFrom<RawContact, Error = EngineError> {
     const CONTACT_TYPE: &'static str;
 }
 
@@ -37,10 +37,10 @@ pub struct MobilePhoneContact {
     pub number: String,
 }
 
-impl TryFrom<Contact> for MobilePhoneContact {
+impl TryFrom<RawContact> for MobilePhoneContact {
     type Error = EngineError;
 
-    fn try_from(value: Contact) -> Result<Self, Self::Error> {
+    fn try_from(value: RawContact) -> Result<Self, Self::Error> {
         Ok(Self {
             number: value.value,
         })

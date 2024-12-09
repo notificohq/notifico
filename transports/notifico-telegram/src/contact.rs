@@ -1,4 +1,4 @@
-use notifico_core::contact::{Contact, TypedContact};
+use notifico_core::contact::{RawContact, TypedContact};
 use notifico_core::error::EngineError;
 use serde::Deserialize;
 
@@ -7,10 +7,10 @@ pub struct TelegramContact {
     pub chat_id: i64,
 }
 
-impl TryFrom<Contact> for TelegramContact {
+impl TryFrom<RawContact> for TelegramContact {
     type Error = EngineError;
 
-    fn try_from(value: Contact) -> Result<Self, Self::Error> {
+    fn try_from(value: RawContact) -> Result<Self, Self::Error> {
         Ok(Self {
             chat_id: value.value.parse().map_err(|e| {
                 EngineError::InvalidContactFormat(format!("chat_id must be an integer, got: {e:?}"))

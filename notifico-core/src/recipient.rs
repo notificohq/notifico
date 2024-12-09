@@ -1,4 +1,4 @@
-use crate::contact::{Contact, TypedContact};
+use crate::contact::{RawContact, TypedContact};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -10,7 +10,7 @@ pub struct Recipient {
     /// It is recommended to store it in an external system and use the same ID for the same Recipient.
     pub id: Uuid,
     #[schema(value_type = Vec<String>, examples("telegram:123456789", "mobile_phone:+123456789", "email:Anyone <anyone@example.com>"))]
-    pub contacts: Vec<Contact>,
+    pub contacts: Vec<RawContact>,
 }
 
 impl Recipient {

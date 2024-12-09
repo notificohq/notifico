@@ -1,8 +1,8 @@
 use crate::cloudapi::{MessageType, MessagingProduct};
 use crate::credentials::WhatsAppCredentials;
 use async_trait::async_trait;
-use notifico_core::contact::{Contact, MobilePhoneContact};
-use notifico_core::credentials::Credential;
+use notifico_core::contact::{MobilePhoneContact, RawContact};
+use notifico_core::credentials::RawCredential;
 use notifico_core::simpletransport::SimpleTransport;
 use notifico_core::{error::EngineError, templater::RenderedTemplate};
 use serde::{Deserialize, Serialize};
@@ -25,8 +25,8 @@ impl WabaTransport {
 impl SimpleTransport for WabaTransport {
     async fn send_message(
         &self,
-        credential: Credential,
-        contact: Contact,
+        credential: RawCredential,
+        contact: RawContact,
         message: RenderedTemplate,
     ) -> Result<(), EngineError> {
         let credential: WhatsAppCredentials = credential.try_into()?;

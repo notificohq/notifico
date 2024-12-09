@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use contact::TelegramContact;
-use notifico_core::contact::Contact;
-use notifico_core::credentials::Credential;
+use notifico_core::contact::RawContact;
+use notifico_core::credentials::RawCredential;
 use notifico_core::simpletransport::SimpleTransport;
 use notifico_core::{
     credentials::TypedCredential, error::EngineError, templater::RenderedTemplate,
@@ -18,10 +18,10 @@ struct TelegramBotCredentials {
     token: String,
 }
 
-impl TryFrom<Credential> for TelegramBotCredentials {
+impl TryFrom<RawCredential> for TelegramBotCredentials {
     type Error = EngineError;
 
-    fn try_from(value: Credential) -> Result<Self, Self::Error> {
+    fn try_from(value: RawCredential) -> Result<Self, Self::Error> {
         Ok(Self { token: value.value })
     }
 }
@@ -50,8 +50,8 @@ impl TelegramTransport {
 impl SimpleTransport for TelegramTransport {
     async fn send_message(
         &self,
-        credential: Credential,
-        contact: Contact,
+        credential: RawCredential,
+        contact: RawContact,
         message: RenderedTemplate,
     ) -> Result<(), EngineError> {
         let credential: TelegramBotCredentials = credential.try_into()?;

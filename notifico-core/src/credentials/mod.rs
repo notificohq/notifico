@@ -15,12 +15,12 @@ pub enum CredentialSelector {
 
 /// Generic credential with type information.
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Credential {
+pub struct RawCredential {
     pub transport: String,
     pub value: String,
 }
 
-impl FromStr for Credential {
+impl FromStr for RawCredential {
     type Err = EngineError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -34,7 +34,7 @@ impl FromStr for Credential {
 
 /// Specific credential types should implement this trait.
 pub trait TypedCredential:
-    TryFrom<Credential, Error = EngineError> + Serialize + for<'de> Deserialize<'de>
+    TryFrom<RawCredential, Error = EngineError> + Serialize + for<'de> Deserialize<'de>
 {
     const TRANSPORT_NAME: &'static str;
 }
@@ -45,7 +45,7 @@ pub trait CredentialStorage: Send + Sync {
         &self,
         project: Uuid,
         selector: &CredentialSelector,
-    ) -> Result<Credential, EngineError>;
+    ) -> Result<RawCredential, EngineError>;
 }
 
 impl dyn CredentialStorage {

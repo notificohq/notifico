@@ -1,4 +1,4 @@
-use notifico_core::credentials::{Credential, TypedCredential};
+use notifico_core::credentials::{RawCredential, TypedCredential};
 use notifico_core::error::EngineError;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -10,10 +10,10 @@ pub struct WhatsAppCredentials {
     pub(crate) token: String,
 }
 
-impl TryFrom<Credential> for WhatsAppCredentials {
+impl TryFrom<RawCredential> for WhatsAppCredentials {
     type Error = EngineError;
 
-    fn try_from(value: Credential) -> Result<Self, Self::Error> {
+    fn try_from(value: RawCredential) -> Result<Self, Self::Error> {
         static WABA_REGEX: OnceLock<Regex> = OnceLock::new();
         let regex = WABA_REGEX.get_or_init(|| Regex::new("^([0-9]+):([0-9a-zA-Z]+)$").unwrap());
 

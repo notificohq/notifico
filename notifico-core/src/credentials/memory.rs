@@ -1,4 +1,4 @@
-use crate::credentials::{Credential, CredentialSelector, CredentialStorage};
+use crate::credentials::{CredentialSelector, CredentialStorage, RawCredential};
 use crate::error::EngineError;
 use async_trait::async_trait;
 use std::borrow::Cow;
@@ -12,10 +12,10 @@ struct CredentialKey<'a> {
 }
 
 #[derive(Default, Debug)]
-pub struct MemoryCredentialStorage(HashMap<CredentialKey<'static>, Credential>);
+pub struct MemoryCredentialStorage(HashMap<CredentialKey<'static>, RawCredential>);
 
 impl MemoryCredentialStorage {
-    pub fn add_credential(&mut self, project: Uuid, name: String, credential: Credential) {
+    pub fn add_credential(&mut self, project: Uuid, name: String, credential: RawCredential) {
         self.0.insert(
             CredentialKey {
                 project,
@@ -32,7 +32,7 @@ impl CredentialStorage for MemoryCredentialStorage {
         &self,
         project: Uuid,
         selector: &CredentialSelector,
-    ) -> Result<Credential, EngineError> {
+    ) -> Result<RawCredential, EngineError> {
         match selector {
             CredentialSelector::ByName(name) => {
                 let key = CredentialKey {

@@ -15,7 +15,7 @@ use lettre::{
     AsyncSmtpTransport, AsyncTransport, Tokio1Executor,
 };
 use moka::future::Cache;
-use notifico_core::contact::{Contact, TypedContact};
+use notifico_core::contact::{RawContact, TypedContact};
 use notifico_core::recorder::Recorder;
 use notifico_core::step::SerializedStep;
 use notifico_core::transport::Transport;
@@ -35,10 +35,10 @@ pub struct EmailContact {
     address: Mailbox,
 }
 
-impl TryFrom<Contact> for EmailContact {
+impl TryFrom<RawContact> for EmailContact {
     type Error = EngineError;
 
-    fn try_from(value: Contact) -> Result<Self, Self::Error> {
+    fn try_from(value: RawContact) -> Result<Self, Self::Error> {
         Ok(Self {
             address: Mailbox::from_str(&value.value)
                 .map_err(|e| EngineError::InvalidContactFormat(e.to_string()))?,

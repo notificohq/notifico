@@ -1,5 +1,5 @@
-use crate::contact::Contact;
-use crate::credentials::{Credential, CredentialSelector, CredentialStorage};
+use crate::contact::RawContact;
+use crate::credentials::{CredentialSelector, CredentialStorage, RawCredential};
 use crate::engine::{EnginePlugin, PipelineContext, StepOutput};
 use crate::error::EngineError;
 use crate::recorder::Recorder;
@@ -14,8 +14,8 @@ use std::sync::Arc;
 pub trait SimpleTransport: Send + Sync {
     async fn send_message(
         &self,
-        credential: Credential,
-        contact: Contact,
+        credential: RawCredential,
+        contact: RawContact,
         message: RenderedTemplate,
     ) -> Result<(), EngineError>;
 
@@ -82,7 +82,7 @@ impl EnginePlugin for SimpleTransportWrapper {
         let contacts = if self.inner.has_contacts() {
             context.get_recipient()?.contacts.clone()
         } else {
-            vec![Contact {
+            vec![RawContact {
                 r#type: String::default(),
                 value: String::default(),
             }]

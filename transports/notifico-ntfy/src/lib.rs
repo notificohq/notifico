@@ -1,6 +1,6 @@
 use async_trait::async_trait;
-use notifico_core::contact::Contact;
-use notifico_core::credentials::{Credential, TypedCredential};
+use notifico_core::contact::RawContact;
+use notifico_core::credentials::{RawCredential, TypedCredential};
 use notifico_core::error::EngineError;
 use notifico_core::simpletransport::SimpleTransport;
 use notifico_core::templater::RenderedTemplate;
@@ -20,7 +20,7 @@ impl NtfyTransport {
 }
 
 #[derive(Serialize)]
-struct NtfyRequest {
+struct Request {
     topic: String,
     message: Option<String>,
     title: Option<String>,
@@ -30,15 +30,15 @@ struct NtfyRequest {
 impl SimpleTransport for NtfyTransport {
     async fn send_message(
         &self,
-        credential: Credential,
-        contact: Contact,
+        credential: RawCredential,
+        contact: RawContact,
         message: RenderedTemplate,
     ) -> Result<(), EngineError> {
-        let credential: Credentials = credential.try_into()?;
-        let content: NtfyContent = message.try_into()?;
-        let contact: NtfyContact = contact.try_into()?;
+        let credential: Credential = credential.try_into()?;
+        let content: Content = message.try_into()?;
+        let contact: Contact = contact.try_into()?;
 
-        let request = NtfyRequest {
+        let request = Request {
             topic: contact.topic,
             message: Some(content.body),
             title: content.title,
@@ -63,31 +63,31 @@ impl SimpleTransport for NtfyTransport {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct Credentials {
+pub struct Credential {
     pub url: Url,
 }
 
-impl TryFrom<Credential> for Credentials {
+impl TryFrom<RawCredential> for Credential {
     type Error = EngineError;
 
-    fn try_from(value: Credential) -> Result<Self, Self::Error> {
+    fn try_from(value: RawCredential) -> Result<Self, Self::Error> {
         let url = Url::parse(&value.value).map_err(|_| EngineError::InvalidCredentialFormat)?;
 
         Ok(Self { url })
     }
 }
 
-impl TypedCredential for Credentials {
+impl TypedCredential for Credential {
     const TRANSPORT_NAME: &'static str = "ntfy";
 }
 
 #[derive(Deserialize, Clone)]
-struct NtfyContent {
+struct Content {
     title: Option<String>,
     body: String,
 }
 
-impl TryFrom<RenderedTemplate> for NtfyContent {
+impl TryFrom<RenderedTemplate> for Content {
     type Error = EngineError;
 
     fn try_from(value: RenderedTemplate) -> Result<Self, Self::Error> {
@@ -96,14 +96,14 @@ impl TryFrom<RenderedTemplate> for NtfyContent {
     }
 }
 
-struct NtfyContact {
+struct Contact {
     topic: String,
 }
 
-impl TryFrom<Contact> for NtfyContact {
+impl TryFrom<RawContact> for Contact {
     type Error = EngineError;
 
-    fn try_from(value: Contact) -> Result<Self, Self::Error> {
+    fn try_from(value: RawContact) -> Result<Self, Self::Error> {
         Ok(Self { topic: value.value })
     }
 }

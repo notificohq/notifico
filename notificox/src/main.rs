@@ -1,8 +1,8 @@
 use clap::{Parser, Subcommand};
 use log::info;
-use notifico_core::contact::Contact;
+use notifico_core::contact::RawContact;
 use notifico_core::credentials::memory::MemoryCredentialStorage;
-use notifico_core::credentials::Credential;
+use notifico_core::credentials::RawCredential;
 use notifico_core::engine::plugin::core::CorePlugin;
 use notifico_core::engine::Engine;
 use notifico_core::pipeline::event::{EventHandler, ProcessEventRequest, RecipientSelector};
@@ -89,7 +89,7 @@ async fn main() {
             let mut transport_registry = TransportRegistry::new();
             let recorder = Arc::new(BaseRecorder::new());
 
-            let credential = Credential::from_str(&credential).unwrap();
+            let credential = RawCredential::from_str(&credential).unwrap();
 
             let credentials = {
                 let mut credentials = MemoryCredentialStorage::default();
@@ -139,7 +139,7 @@ async fn main() {
                 pipeline
             };
 
-            let contacts: Vec<Contact> = contacts.iter().map(|s| s.parse().unwrap()).collect();
+            let contacts: Vec<RawContact> = contacts.iter().map(|s| s.parse().unwrap()).collect();
 
             let recipient = Recipient {
                 id: Uuid::nil(),

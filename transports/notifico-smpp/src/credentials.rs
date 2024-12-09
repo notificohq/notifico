@@ -1,4 +1,4 @@
-use notifico_core::credentials::{Credential, TypedCredential};
+use notifico_core::credentials::{RawCredential, TypedCredential};
 use notifico_core::error::EngineError;
 use serde::{Deserialize, Serialize};
 use url::Url;
@@ -11,10 +11,10 @@ pub struct SmppServerCredentials {
     pub password: String,
 }
 
-impl TryFrom<Credential> for SmppServerCredentials {
+impl TryFrom<RawCredential> for SmppServerCredentials {
     type Error = EngineError;
 
-    fn try_from(value: Credential) -> Result<Self, Self::Error> {
+    fn try_from(value: RawCredential) -> Result<Self, Self::Error> {
         let url = String::from("smpp://") + &value.value;
         let url = Url::parse(&url).map_err(|_| EngineError::InvalidCredentialFormat)?;
         Ok(Self {
