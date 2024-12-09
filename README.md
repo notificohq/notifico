@@ -21,6 +21,12 @@ configuration instructions.
 The documentation includes guides on setting up the server, configuring different transports, and managing
 notifications effectively.
 
+## Notificox
+
+**Notificox** (*Notifico eXecute*) is a command-line tool for interacting with Notifico and running notification pipelines locally or using remote
+Notifico instance.
+It is designed to be small and self-contained. It can be used to send notifications, using simple URL-like credentials to popular services.
+
 ## 🎯 Roadmap:
 
 - [x] Admin panel
@@ -36,18 +42,15 @@ notifications effectively.
 - [ ] Auto-retry for sending failed messages
 - [ ] Template and Pipeline versioning
 
-## 🚆 Transports:
+## 🚆 Available Transports:
 
-- [x] SMTP (email)
-- [x] SMPP (SMS)
-- [x] Slack
-- [x] Telegram
-- [x] WhatsApp Business
-- [x] Pushover
-- [x] Gotify
-- [x] Ntfy
-- [ ] Apprise API
-- [ ] Microsoft Teams
-- [ ] Discord
-- [ ] Mattermost
-- [ ] Twilio
+| Transport                                                | Transport ID |
+|----------------------------------------------------------|--------------|
+| [SMTP (email)](https://notifico.tech/plugins/smtp/)      | smtp         |
+| [SMPP (SMS)](https://notifico.tech/plugins/smpp/)        | smpp         |
+| [Gotify](https://notifico.tech/plugins/gotify/)          | gotify       |
+| [Ntfy](https://notifico.tech/plugins/ntfy/)              | ntfy         |
+| [Pushover](https://notifico.tech/plugins/pushover/)      | pushover     |
+| [Slack](https://notifico.tech/plugins/slack/)            | slack        |
+| [Telegram](https://notifico.tech/plugins/telegram/)      | telegram     |
+| [WhatsApp Business](https://notifico.tech/plugins/waba/) | waba         |
