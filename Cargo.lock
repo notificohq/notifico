@@ -2102,6 +2102,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "notifico-ntfy"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "notifico-core",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "url",
+]
+
+[[package]]
 name = "notifico-project"
 version = "0.1.0"
 dependencies = [
@@ -2244,6 +2256,7 @@ version = "0.1.0"
 dependencies = [
  "notifico-core",
  "notifico-gotify",
+ "notifico-ntfy",
  "notifico-pushover",
  "notifico-slack",
  "notifico-smpp",

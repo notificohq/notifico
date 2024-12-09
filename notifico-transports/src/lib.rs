@@ -4,6 +4,7 @@ use notifico_core::recorder::Recorder;
 use notifico_core::simpletransport::SimpleTransportWrapper;
 use notifico_core::transport::Transport;
 use notifico_gotify::GotifyTransport;
+use notifico_ntfy::NtfyTransport;
 use notifico_pushover::PushoverTransport;
 use notifico_slack::SlackTransport;
 use notifico_smpp::SmppPlugin;
@@ -66,6 +67,14 @@ pub fn all_transports(
         recorder.clone(),
     ));
     plugins.push((gotify_plugin.clone(), gotify_plugin.clone()));
+
+    let ntfy_transport = Arc::new(NtfyTransport::new(reqwest::Client::new()));
+    let ntfy_plugin = Arc::new(SimpleTransportWrapper::new(
+        ntfy_transport,
+        credentials.clone(),
+        recorder.clone(),
+    ));
+    plugins.push((ntfy_plugin.clone(), ntfy_plugin.clone()));
 
     // Add more transports here...
 

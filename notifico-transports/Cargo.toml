@@ -13,5 +13,6 @@ notifico-smpp = { path = "../transports/notifico-smpp" }
 notifico-slack = { path = "../transports/notifico-slack" }
 notifico-pushover = { path = "../transports/notifico-pushover" }
 notifico-gotify = { path = "../transports/notifico-gotify" }
+notifico-ntfy = { path = "../transports/notifico-ntfy" }
 
 reqwest = { workspace = true }
