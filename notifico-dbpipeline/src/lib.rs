@@ -105,7 +105,6 @@ impl PipelineStorage for DbPipelineStorage {
         let pipeline_am = entity::pipeline::ActiveModel {
             id: Set(pipeline.id),
             project_id: Set(pipeline.project_id),
-            channel: Set(pipeline.channel.clone()),
             steps: Set(serde_json::to_value(pipeline.steps.clone()).unwrap()),
         };
 
@@ -118,7 +117,6 @@ impl PipelineStorage for DbPipelineStorage {
         let pipeline_am = entity::pipeline::ActiveModel {
             id: Set(pipeline.id),
             project_id: Set(pipeline.project_id),
-            channel: Set(pipeline.channel),
             steps: Set(serde_json::to_value(pipeline.steps).unwrap()),
         };
 
@@ -254,7 +252,6 @@ impl TryFrom<entity::pipeline::Model> for Pipeline {
         Ok(Self {
             id: value.id,
             project_id: value.project_id,
-            channel: value.channel,
             steps: Vec::deserialize(value.steps).map_err(EngineError::InvalidStep)?,
         })
     }

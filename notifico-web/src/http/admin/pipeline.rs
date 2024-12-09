@@ -17,7 +17,6 @@ pub struct PipelineItem {
     pub project_id: Uuid,
     pub event_ids: Vec<Uuid>,
     pub steps: String,
-    pub channel: String,
 }
 
 impl From<PipelineResult> for PipelineItem {
@@ -26,7 +25,6 @@ impl From<PipelineResult> for PipelineItem {
             id: value.pipeline.id,
             project_id: value.pipeline.project_id,
             steps: serde_json::to_string_pretty(&value.pipeline.steps).unwrap(),
-            channel: value.pipeline.channel,
 
             event_ids: value.event_ids,
         }
@@ -41,7 +39,6 @@ pub async fn create(
     let pipeline = Pipeline {
         id,
         project_id: item.project_id,
-        channel: item.channel,
         steps: serde_json::from_str(&item.steps).unwrap(),
     };
     let _pipeline = pipeline_storage
@@ -101,7 +98,6 @@ pub async fn update(
     let pipeline = Pipeline {
         id,
         project_id: update.project_id,
-        channel: update.channel,
         steps: serde_json::from_str(&update.steps).unwrap(),
     };
     pipeline_storage.update_pipeline(pipeline).await.unwrap();

@@ -86,15 +86,7 @@ impl EnginePlugin for Templater {
                     // Template
                     let template = match template {
                         TemplateSelector::Inline(t) => t,
-                        sel => {
-                            self.source
-                                .get_template(
-                                    context.project_id,
-                                    context.pipeline.channel.as_str(),
-                                    sel,
-                                )
-                                .await?
-                        }
+                        sel => self.source.get_template(context.project_id, sel).await?,
                     };
 
                     // Context

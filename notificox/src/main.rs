@@ -38,9 +38,6 @@ enum Command {
         /// Recipient(s), can be an email, phone number, or any other unique identifier
         /// in following format: "TYPE:VALUE"
         contacts: Vec<String>,
-        /// Channel (email, sms, slack, ...)
-        #[arg(short, long)]
-        channel: String,
         /// Template object in JSON5 format (can be used without escaping)
         #[arg(short, long, required = true)]
         template: Vec<String>,
@@ -82,7 +79,6 @@ async fn main() {
         Command::Send {
             credential,
             contacts,
-            channel,
             template,
         } => {
             let mut engine = Engine::new();
@@ -109,10 +105,7 @@ async fn main() {
             }
 
             let pipeline = {
-                let mut pipeline = Pipeline {
-                    channel,
-                    ..Default::default()
-                };
+                let mut pipeline = Pipeline::default();
 
                 if !template.is_empty() {
                     let templates: Vec<Map<String, Value>> = template

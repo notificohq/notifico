@@ -32,7 +32,6 @@ pub trait TemplateSource: Send + Sync + 'static {
     async fn get_template(
         &self,
         project_id: Uuid,
-        channel: &str,
         template: TemplateSelector,
     ) -> Result<PreRenderedTemplate, TemplaterError>;
 
@@ -58,7 +57,6 @@ impl TemplateSource for DummyTemplateSource {
     async fn get_template(
         &self,
         _project_id: Uuid,
-        _channel: &str,
         _template: TemplateSelector,
     ) -> Result<PreRenderedTemplate, TemplaterError> {
         Err(TemplaterError::TemplateNotFound)

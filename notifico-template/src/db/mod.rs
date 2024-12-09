@@ -30,14 +30,12 @@ impl TemplateSource for DbTemplateSource {
     async fn get_template(
         &self,
         project_id: Uuid,
-        channel: &str,
         template: TemplateSelector,
     ) -> Result<PreRenderedTemplate, TemplaterError> {
         Ok(match template {
             TemplateSelector::ByName(name) => entity::template::Entity::find()
                 .filter(entity::template::Column::ProjectId.eq(project_id))
                 .filter(entity::template::Column::Name.eq(name))
-                .filter(entity::template::Column::Channel.eq(channel))
                 .one(&self.db)
                 .await?
                 .ok_or(TemplaterError::TemplateNotFound)?,

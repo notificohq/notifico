@@ -17,6 +17,5 @@ pub struct Event {
 pub struct Pipeline {
     pub id: Uuid,
     pub project_id: Uuid,
-    pub channel: String,
     pub steps: Vec<SerializedStep>,
 }
