@@ -8,7 +8,6 @@ use crate::ingest::http::HttpIngestExtensions;
 use crate::public::http::HttpUserapiExtensions;
 use crate::ui::http::HttpWebExtensions;
 use clap::{Parser, Subcommand};
-use log::debug;
 use notifico_core::credentials::env::EnvCredentialStorage;
 use notifico_core::engine::plugin::core::CorePlugin;
 use notifico_core::engine::Engine;
@@ -29,21 +28,22 @@ use std::collections::HashSet;
 use std::fs::OpenOptions;
 use std::net::SocketAddr;
 use std::sync::Arc;
-use tracing::info;
+use tracing::{debug, error, info};
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 use url::Url;
 
-const COMPONENT_STANDALONE: &str = "standalone";
 const COMPONENT_WORKER: &str = "worker";
 const COMPONENT_UI: &str = "ui";
 const COMPONENT_INGEST: &str = "ingest";
 const COMPONENT_PUBLIC: &str = "public";
 
+const WEAK_SECRET_KEY: &str = "weak-secret-key";
+
 #[derive(Parser, Debug)]
 struct Args {
     #[clap(long, env = "NOTIFICO_DB")]
     db: Url,
-    #[clap(long, env = "NOTIFICO_SECRET_KEY")]
+    #[clap(long, env = "NOTIFICO_SECRET_KEY", default_value = WEAK_SECRET_KEY)]
     secret_key: String,
     #[clap(long, env = "NOTIFICO_USERAPI_URL")]
     userapi_url: Url,
@@ -87,6 +87,10 @@ async fn main() {
 
     match args.command {
         Commands::Run { components } => {
+            if args.secret_key == WEAK_SECRET_KEY {
+                error!("Weak secret key is not recommended for production environments. Please set NOTIFICO_SECRET_KEY to a stronger key.");
+            }
+
             let components: HashSet<String> = components.into_iter().collect();
 
             // Initialize channels
@@ -155,14 +159,14 @@ async fn main() {
             projects.setup().await.unwrap();
 
             // Spawn HTTP servers
-            if components.contains(COMPONENT_STANDALONE) || components.contains(COMPONENT_INGEST) {
+            if components.is_empty() || components.contains(COMPONENT_INGEST) {
                 info!("Starting HTTP ingest server on {}", args.ingest);
                 let ext = HttpIngestExtensions { sender: events_tx };
 
                 ingest::http::start(args.ingest, ext).await;
             }
 
-            if components.contains(COMPONENT_STANDALONE) || components.contains(COMPONENT_PUBLIC) {
+            if components.is_empty() || components.contains(COMPONENT_PUBLIC) {
                 info!("Starting HTTP public server on {}", args.public);
                 let ext = HttpUserapiExtensions {
                     subman: subman.clone(),
@@ -171,7 +175,7 @@ async fn main() {
                 public::http::start(args.public, ext).await;
             }
 
-            if components.contains(COMPONENT_STANDALONE) || components.contains(COMPONENT_UI) {
+            if components.is_empty() || components.contains(COMPONENT_UI) {
                 info!("Starting HTTP UI server on {}", args.ui);
                 let ext = HttpWebExtensions {
                     projects_controller: projects,
@@ -183,7 +187,7 @@ async fn main() {
                 ui::http::start(args.ui, ext).await;
             }
 
-            if components.contains(COMPONENT_STANDALONE) || components.contains(COMPONENT_WORKER) {
+            if components.is_empty() || components.contains(COMPONENT_WORKER) {
                 // Create Engine with plugins
                 let mut engine = Some(Engine::new());
                 if let Some(engine) = engine.as_mut() {
@@ -221,9 +225,9 @@ async fn main() {
                         }
                     }
                 });
-
-                let _ = tokio::signal::ctrl_c().await;
             }
+
+            let _ = tokio::signal::ctrl_c().await;
         }
     }
 }

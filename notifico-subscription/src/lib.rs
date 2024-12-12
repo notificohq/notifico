@@ -32,15 +32,15 @@ use uuid::Uuid;
 pub struct SubscriptionManager {
     db: DatabaseConnection,
     secret_key: Vec<u8>,
-    subscriber_url: Url,
+    public_url: Url,
 }
 
 impl SubscriptionManager {
-    pub fn new(db: DatabaseConnection, secret_key: Vec<u8>, subscriber_url: Url) -> Self {
+    pub fn new(db: DatabaseConnection, secret_key: Vec<u8>, public_url: Url) -> Self {
         Self {
             db,
             secret_key,
-            subscriber_url,
+            public_url,
         }
     }
 
@@ -178,7 +178,7 @@ impl EnginePlugin for SubscriptionManager {
                         "<{}>",
                         create_self_unsubscribe_url(
                             self.secret_key.clone(),
-                            self.subscriber_url.clone(),
+                            self.public_url.clone(),
                             context.project_id,
                             &context.event_name,
                             recipient.id,
