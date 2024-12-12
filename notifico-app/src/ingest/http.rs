@@ -2,11 +2,12 @@ use axum::extract::Query;
 use axum::http::StatusCode;
 use axum::routing::post;
 use axum::{Extension, Json, Router};
-use flume::Sender;
 use notifico_core::engine::EventContext;
 use notifico_core::pipeline::event::ProcessEventRequest;
+use notifico_core::queue::SenderChannel;
 use serde::Deserialize;
 use std::net::SocketAddr;
+use std::sync::Arc;
 use tokio::net::TcpListener;
 use utoipa::{IntoParams, OpenApi};
 use utoipa_redoc::Redoc;
@@ -15,15 +16,15 @@ use utoipa_swagger_ui::SwaggerUi;
 use uuid::Uuid;
 
 #[derive(Clone)]
-pub(crate) struct HttpExtensions {
-    pub sender: Sender<ProcessEventRequest>,
+pub struct HttpIngestExtensions {
+    pub(crate) sender: Arc<dyn SenderChannel>,
 }
 
 #[derive(OpenApi)]
 #[openapi(info(description = "Notifico Ingest API"), paths(send, send_webhook))]
 struct ApiDoc;
 
-pub(crate) async fn start(serviceapi_bind: SocketAddr, ext: HttpExtensions) {
+pub async fn start(serviceapi_bind: SocketAddr, ext: HttpIngestExtensions) {
     // Bind everything now to catch any errors before spinning up the coroutines
     let listener = TcpListener::bind(serviceapi_bind).await.unwrap();
 
@@ -31,7 +32,7 @@ pub(crate) async fn start(serviceapi_bind: SocketAddr, ext: HttpExtensions) {
     let app = Router::new()
         .route("/v1/send", post(send))
         .route("/v1/send_webhook", post(send_webhook))
-        .layer(Extension(ext.sender));
+        .layer(Extension(ext));
 
     let app =
         app.merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()));
@@ -46,10 +47,13 @@ pub(crate) async fn start(serviceapi_bind: SocketAddr, ext: HttpExtensions) {
     description = "Send an event to the AMQP event bus. Available worker will then run the pipelines for the corresponding event"
 )]
 async fn send(
-    Extension(sender): Extension<Sender<ProcessEventRequest>>,
+    Extension(ext): Extension<HttpIngestExtensions>,
     Json(payload): Json<ProcessEventRequest>,
 ) -> StatusCode {
-    sender.send_async(payload).await.unwrap();
+    ext.sender
+        .send(serde_json::to_string(&payload).unwrap())
+        .await
+        .unwrap();
 
     StatusCode::ACCEPTED
 }
@@ -72,7 +76,7 @@ Recipients must be set in Pipeline, using `core.set_recipients` step. This metho
 so you can create notifications for arbitrary webhooks."
 )]
 async fn send_webhook(
-    Extension(sender): Extension<Sender<ProcessEventRequest>>,
+    Extension(ext): Extension<HttpIngestExtensions>,
     parameters: Query<WebhookParameters>,
     Json(context): Json<EventContext>,
 ) -> StatusCode {
@@ -84,7 +88,10 @@ async fn send_webhook(
         context,
     };
 
-    sender.send_async(process_event_request).await.unwrap();
+    ext.sender
+        .send(serde_json::to_string(&process_event_request).unwrap())
+        .await
+        .unwrap();
 
     StatusCode::ACCEPTED
 }

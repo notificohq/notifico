@@ -6,6 +6,7 @@ use crate::queue::SenderChannel;
 use crate::recipient::Recipient;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use tracing::warn;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -56,6 +57,13 @@ impl EventHandler {
             .pipeline_storage
             .get_pipelines_for_event(msg.project_id, &msg.event)
             .await?;
+
+        if pipelines.is_empty() {
+            warn!(
+                "No pipelines found for project: {}, event: {}",
+                msg.project_id, msg.event
+            );
+        }
 
         // Execute each pipeline in a separate task in parallel
         for pipeline in pipelines {

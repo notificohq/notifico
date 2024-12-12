@@ -8,7 +8,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
-use tracing::instrument;
+use tracing::{debug, instrument};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -53,21 +53,24 @@ impl PipelineContext {
 
 /// Engine is used to run steps in the pipeline.
 /// Can be cloned and shared across tasks.
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct Engine {
     steps: HashMap<Cow<'static, str>, Arc<dyn EnginePlugin>>,
 }
 
 impl Debug for Engine {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let steps = self.steps.keys().cloned().collect::<Vec<_>>();
-        f.write_fmt(format_args!("Engine {{ steps: [{:?}] }}", steps))
+        f.write_fmt(format_args!("Engine"))
     }
 }
 
 impl Engine {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
-        Self::default()
+        debug!("Creating new Engine instance");
+        Self {
+            steps: HashMap::new(),
+        }
     }
 
     pub fn add_plugin(&mut self, plugin: Arc<dyn EnginePlugin + 'static>) {
@@ -79,7 +82,7 @@ impl Engine {
         );
     }
 
-    #[instrument]
+    #[instrument(skip_all)]
     pub async fn execute_step(
         &self,
         context: &mut PipelineContext,

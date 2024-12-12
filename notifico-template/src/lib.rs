@@ -16,7 +16,7 @@ use source::TemplateSource;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::sync::Arc;
-use tracing::{debug, info};
+use tracing::debug;
 use uuid::Uuid;
 
 #[derive(Default, Clone, Serialize, Deserialize)]
@@ -108,7 +108,6 @@ impl EnginePlugin for Templater {
                     // Render
                     let rendered_template =
                         self.render_template(template, &template_context).await?;
-                    info!("{:?}", rendered_template);
                     context.messages.push(Message {
                         id: message_id,
                         content: rendered_template,

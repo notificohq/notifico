@@ -13,7 +13,7 @@ use utoipa_redoc::Servable;
 use utoipa_swagger_ui::SwaggerUi;
 
 #[derive(Clone)]
-pub(crate) struct HttpExtensions {
+pub(crate) struct HttpUserapiExtensions {
     pub subman: Arc<SubscriptionManager>,
     pub secret_key: Arc<SecretKey>,
 }
@@ -22,7 +22,7 @@ pub(crate) struct HttpExtensions {
 #[openapi(info(description = "Notifico User API"))]
 struct ApiDoc;
 
-pub(crate) async fn start(bind: SocketAddr, ext: HttpExtensions) {
+pub(crate) async fn start(bind: SocketAddr, ext: HttpUserapiExtensions) {
     // Bind everything now to catch any errors before spinning up the coroutines
     let listener = TcpListener::bind(bind).await.unwrap();
 

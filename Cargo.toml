@@ -12,18 +12,15 @@ members = [
     "transports/notifico-ntfy",
     "notifico-template",
     "notifico-template/migration",
-    "notifico-worker",
-    "notifico-userapi",
     "notifico-subscription",
     "notifico-subscription/migration",
     "notifico-dbpipeline",
     "notifico-dbpipeline/migration",
     "notifico-project",
     "notifico-project/migration",
-    "notifico-web",
-    "notifico-ingest",
     "notificox",
     "notifico-transports",
+    "notifico-app",
 ]
 
 [workspace.dependencies]

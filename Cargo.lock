@@ -2025,6 +2025,41 @@ dependencies = [
 ]
 
 [[package]]
+name = "notifico-app"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "axum",
+ "backoff",
+ "clap",
+ "dotenvy",
+ "fe2o3-amqp",
+ "flume",
+ "jsonwebtoken",
+ "log",
+ "notifico-core",
+ "notifico-dbpipeline",
+ "notifico-project",
+ "notifico-subscription",
+ "notifico-template",
+ "notifico-transports",
+ "rust-embed",
+ "sea-orm",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
+ "url",
+ "utoipa",
+ "utoipa-redoc",
+ "utoipa-swagger-ui",
+ "uuid",
+]
+
+[[package]]
 name = "notifico-core"
 version = "0.1.0"
 dependencies = [
@@ -2076,29 +2111,6 @@ dependencies = [
  "serde",
  "serde_json",
  "url",
-]
-
-[[package]]
-name = "notifico-ingest"
-version = "0.1.0"
-dependencies = [
- "axum",
- "backoff",
- "clap",
- "dotenvy",
- "fe2o3-amqp",
- "flume",
- "notifico-core",
- "serde",
- "serde_json",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "url",
- "utoipa",
- "utoipa-redoc",
- "utoipa-swagger-ui",
- "uuid",
 ]
 
 [[package]]
@@ -2267,54 +2279,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "notifico-userapi"
-version = "0.1.0"
-dependencies = [
- "axum",
- "clap",
- "dotenvy",
- "jsonwebtoken",
- "log",
- "notifico-core",
- "notifico-subscription",
- "sea-orm",
- "serde",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "url",
- "utoipa",
- "utoipa-redoc",
- "utoipa-swagger-ui",
- "uuid",
-]
-
-[[package]]
-name = "notifico-web"
-version = "0.1.0"
-dependencies = [
- "axum",
- "clap",
- "dotenvy",
- "log",
- "notifico-core",
- "notifico-dbpipeline",
- "notifico-project",
- "notifico-subscription",
- "notifico-template",
- "rust-embed",
- "sea-orm",
- "serde",
- "serde_json",
- "tokio",
- "tower-http",
- "tracing",
- "tracing-subscriber",
- "url",
- "uuid",
-]
-
-[[package]]
 name = "notifico-whatsapp"
 version = "0.1.0"
 dependencies = [
@@ -2326,31 +2290,6 @@ dependencies = [
  "serde_json",
  "tracing",
  "uuid",
-]
-
-[[package]]
-name = "notifico-worker"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "backoff",
- "clap",
- "dotenvy",
- "fe2o3-amqp",
- "log",
- "notifico-core",
- "notifico-dbpipeline",
- "notifico-subscription",
- "notifico-template",
- "notifico-transports",
- "sea-orm",
- "serde",
- "serde_json",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "url",
 ]
 
 [[package]]
