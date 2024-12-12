@@ -67,13 +67,7 @@ async fn main() {
 
     env_logger::init();
 
-    // tracing_subscriber::registry()
-    //     .with(fmt::layer())
-    //     .with(EnvFilter::from_default_env())
-    //     .init();
-
     let cli = Cli::parse();
-    // println!("{cli:?}");
 
     match cli.command {
         Command::Send {

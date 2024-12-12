@@ -10,10 +10,7 @@ jobs:
     strategy:
       matrix:
         image:
-          - "notifico-ingest"
-          - "notifico-userapi"
-          - "notifico-web"
-          - "notifico-worker"
+          - "notifico"
     permissions:
       packages: write
     steps:
