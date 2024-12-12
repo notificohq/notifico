@@ -15,4 +15,4 @@ COPY --from=builder /app/target/release/notifico-app /
 VOLUME /var/lib/notifico
 
 ENTRYPOINT ["/notifico-app"]
-CMD ["run", "standalone"]
+CMD ["run"]

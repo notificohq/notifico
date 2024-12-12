@@ -30,6 +30,8 @@ pub enum EngineError {
     InvalidStep(serde_json::Error),
     #[error("Missing credential")]
     MissingCredential,
+    #[error("Invalid configuration: {0}")]
+    InvalidConfiguration(String),
 }
 
 impl From<DbErr> for EngineError {

@@ -28,7 +28,7 @@ use std::collections::HashSet;
 use std::fs::OpenOptions;
 use std::net::SocketAddr;
 use std::sync::Arc;
-use tracing::{debug, error, info};
+use tracing::{debug, info, warn};
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 use url::Url;
 
@@ -45,8 +45,8 @@ struct Args {
     db: Url,
     #[clap(long, env = "NOTIFICO_SECRET_KEY", default_value = WEAK_SECRET_KEY)]
     secret_key: String,
-    #[clap(long, env = "NOTIFICO_USERAPI_URL")]
-    userapi_url: Url,
+    #[clap(long, env = "NOTIFICO_PUBLIC_URL")]
+    public_url: Option<Url>,
     #[clap(long, env = "NOTIFICO_AMQP")]
     amqp: Option<Url>,
     #[clap(long, env = "NOTIFICO_AMQP_PREFIX", default_value = "notifico_")]
@@ -88,7 +88,10 @@ async fn main() {
     match args.command {
         Commands::Run { components } => {
             if args.secret_key == WEAK_SECRET_KEY {
-                error!("Weak secret key is not recommended for production environments. Please set NOTIFICO_SECRET_KEY to a stronger key.");
+                warn!("Weak secret key is not recommended for production environments. Please set NOTIFICO_SECRET_KEY to a stronger key.");
+            }
+            if args.public_url.is_none() {
+                warn!("NOTIFICO_PUBLIC_URL is not provided. Some features may not work: List-Unsubscribe");
             }
 
             let components: HashSet<String> = components.into_iter().collect();
@@ -147,7 +150,7 @@ async fn main() {
             let subman = Arc::new(SubscriptionManager::new(
                 db_connection.clone(),
                 args.secret_key.as_bytes().to_vec(),
-                args.userapi_url,
+                args.public_url,
             ));
 
             let projects = Arc::new(ProjectController::new(db_connection.clone()));

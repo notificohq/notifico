@@ -32,11 +32,11 @@ use uuid::Uuid;
 pub struct SubscriptionManager {
     db: DatabaseConnection,
     secret_key: Vec<u8>,
-    public_url: Url,
+    public_url: Option<Url>,
 }
 
 impl SubscriptionManager {
-    pub fn new(db: DatabaseConnection, secret_key: Vec<u8>, public_url: Url) -> Self {
+    pub fn new(db: DatabaseConnection, secret_key: Vec<u8>, public_url: Option<Url>) -> Self {
         Self {
             db,
             secret_key,
@@ -172,13 +172,19 @@ impl EnginePlugin for SubscriptionManager {
                 }
             }
             Step::ListUnsubscribe { .. } => {
+                let Some(public_url) = self.public_url.clone() else {
+                    return Err(EngineError::InvalidConfiguration(
+                        "NOTIFICO_PUBLIC_URL is not set".to_string(),
+                    ));
+                };
+
                 context.plugin_contexts.insert(
                     EMAIL_LIST_UNSUBSCRIBE.into(),
                     Value::String(format!(
                         "<{}>",
                         create_self_unsubscribe_url(
                             self.secret_key.clone(),
-                            self.public_url.clone(),
+                            public_url,
                             context.project_id,
                             &context.event_name,
                             recipient.id,

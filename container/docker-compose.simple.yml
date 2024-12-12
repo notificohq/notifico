@@ -1,0 +1,33 @@
+version: "3"
+services:
+  notifico:
+    image: notificohq/notifico
+    environment: &environment
+      NOTIFICO_SECRET_KEY: weak-secret-key
+      NOTIFICO_DB: sqlite:///var/lib/notifico/db.sqlite3
+      NOTIFICO_PUBLIC_URL: http://localhost:8002/
+
+      NOTIFICO_CRED_MAIL1: smtp:YOUR_SMTP_USERNAME:YOUR_SMTP_PASSWORD@YOUR_SMTP_SERVER:587?tls=true
+      NOTIFICO_CRED_SMS1: smpp:YOUR_SMPP_SYSTEM_ID:YOUR_SMPP_PASSWORD@YOUR_SMPP_SERVER:2775
+      NOTIFICO_CRED_TELEGRAM1: telegram:YOUR_TELEGRAM_TOKEN
+      NOTIFICO_CRED_WHATSAPP1: waba:PHONE_ID:YOUR_WHATSAPP_TOKEN
+      NOTIFICO_CRED_SLACK1: slack:xoxb-YOUR_SLACK_BOT_TOKEN
+    ports:
+      - "8000:8000" # Admin UI
+      - "8001:8001" # Ingest API
+      - "8002:8002" # Public API
+    restart: unless-stopped
+    volumes:
+      - data:/var/lib/notifico
+
+  # Other services
+  rabbitmq:
+    image: rabbitmq:4.0
+    ports:
+      - "5672:5672"
+    volumes:
+      - rabbitmq:/var/lib/rabbitmq
+
+volumes:
+  data:
+  rabbitmq:
