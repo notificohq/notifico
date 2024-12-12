@@ -1,7 +1,12 @@
 [workspace]
 resolver = "2"
 members = [
-    "notifico-core",
+    # Binaries
+    "notifico-app",
+    "notificox",
+    # Libs
+    ## Transports
+    "notifico-transports",
     "transports/notifico-smtp",
     "transports/notifico-telegram",
     "transports/notifico-whatsapp",
@@ -10,6 +15,8 @@ members = [
     "transports/notifico-pushover",
     "transports/notifico-gotify",
     "transports/notifico-ntfy",
+    ## Other
+    "notifico-core",
     "notifico-template",
     "notifico-template/migration",
     "notifico-subscription",
@@ -18,9 +25,6 @@ members = [
     "notifico-dbpipeline/migration",
     "notifico-project",
     "notifico-project/migration",
-    "notificox",
-    "notifico-transports",
-    "notifico-app",
 ]
 
 [workspace.dependencies]

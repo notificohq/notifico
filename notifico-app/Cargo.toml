@@ -34,5 +34,5 @@ tower-http = { version = "0.6.2", features = ["cors"] }
 
 utoipa = { version = "5.2.0", features = ["axum_extras"] }
 utoipa-redoc = { version = "5.0.0", features = ["axum"] }
-utoipa-swagger-ui = { version = "8", features = ["axum"] }
+utoipa-swagger-ui = { version = "8", features = ["axum", "vendored"] }
 uuid = { workspace = true }
