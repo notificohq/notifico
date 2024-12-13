@@ -2,7 +2,7 @@ version: "3"
 services:
   notifico:
     image: notificohq/notifico
-    environment: &environment
+    environment:
       NOTIFICO_SECRET_KEY: weak-secret-key
       NOTIFICO_DB: sqlite:///var/lib/notifico/db.sqlite3
       NOTIFICO_PUBLIC_URL: http://localhost:8002/
@@ -20,14 +20,5 @@ services:
     volumes:
       - data:/var/lib/notifico
 
-  # Other services
-  rabbitmq:
-    image: rabbitmq:4.0
-    ports:
-      - "5672:5672"
-    volumes:
-      - rabbitmq:/var/lib/rabbitmq
-
 volumes:
   data:
-  rabbitmq:
