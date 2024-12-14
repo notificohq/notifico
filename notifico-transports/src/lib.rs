@@ -9,7 +9,7 @@ use notifico_ntfy::NtfyTransport;
 use notifico_pushover::PushoverTransport;
 use notifico_slack::SlackTransport;
 use notifico_smpp::SmppPlugin;
-use notifico_smtp::EmailPlugin;
+use notifico_smtp::EmailTransport;
 use notifico_telegram::TelegramTransport;
 use notifico_whatsapp::WabaTransport;
 use std::sync::Arc;
@@ -23,13 +23,18 @@ pub fn all_transports(
     let http = reqwest::Client::builder().build().unwrap();
 
     // Complicated transports
-    let email_plugin = Arc::new(EmailPlugin::new(credentials.clone(), recorder.clone()));
-    plugins.push((email_plugin.clone(), email_plugin.clone()));
-
     let smpp_plugin = Arc::new(SmppPlugin::new(credentials.clone()));
     plugins.push((smpp_plugin.clone(), smpp_plugin.clone()));
 
     // Simple transports
+    let email_transport = Arc::new(EmailTransport::new());
+    let email_plugin = Arc::new(SimpleTransportWrapper::new(
+        email_transport,
+        credentials.clone(),
+        recorder.clone(),
+    ));
+    plugins.push((email_plugin.clone(), email_plugin.clone()));
+
     let telegram_transport = Arc::new(TelegramTransport::new(http.clone(), attachments.clone()));
     let telegram_plugin = Arc::new(SimpleTransportWrapper::new(
         telegram_transport,

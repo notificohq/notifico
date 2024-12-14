@@ -2,7 +2,7 @@ use crate::credentials::GotifyCredentials;
 use async_trait::async_trait;
 use notifico_core::contact::RawContact;
 use notifico_core::credentials::RawCredential;
-use notifico_core::engine::Message;
+use notifico_core::engine::{Message, PipelineContext};
 use notifico_core::error::EngineError;
 use notifico_core::simpletransport::SimpleTransport;
 use notifico_core::templater::RenderedTemplate;
@@ -37,6 +37,7 @@ impl SimpleTransport for GotifyTransport {
         credential: RawCredential,
         _contact: RawContact,
         message: Message,
+        _context: &mut PipelineContext,
     ) -> Result<(), EngineError> {
         let credential: GotifyCredentials = credential.try_into()?;
         let content: Content = message.content.try_into()?;

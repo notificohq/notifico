@@ -16,6 +16,7 @@ pub trait SimpleTransport: Send + Sync {
         credential: RawCredential,
         contact: RawContact,
         message: Message,
+        context: &mut PipelineContext,
     ) -> Result<(), EngineError>;
 
     fn name(&self) -> &'static str;
@@ -91,10 +92,15 @@ impl EnginePlugin for SimpleTransportWrapper {
             if !self.inner.supports_contact(&contact.r#type) {
                 continue;
             }
-            for message in &context.messages {
+            for message in &context.messages.clone() {
                 let result = self
                     .inner
-                    .send_message(credential.clone(), contact.clone(), message.clone())
+                    .send_message(
+                        credential.clone(),
+                        contact.clone(),
+                        message.clone(),
+                        context,
+                    )
                     .await;
 
                 match result {

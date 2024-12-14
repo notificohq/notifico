@@ -3,7 +3,7 @@ use contact::TelegramContact;
 use notifico_attachment::AttachmentPlugin;
 use notifico_core::contact::RawContact;
 use notifico_core::credentials::RawCredential;
-use notifico_core::engine::Message;
+use notifico_core::engine::{Message, PipelineContext};
 use notifico_core::simpletransport::SimpleTransport;
 use notifico_core::{
     credentials::TypedCredential, error::EngineError, templater::RenderedTemplate,
@@ -60,6 +60,7 @@ impl SimpleTransport for TelegramTransport {
         credential: RawCredential,
         contact: RawContact,
         message: Message,
+        _context: &mut PipelineContext,
     ) -> Result<(), EngineError> {
         let credential: TelegramBotCredentials = credential.try_into()?;
         let contact: TelegramContact = contact.try_into()?;

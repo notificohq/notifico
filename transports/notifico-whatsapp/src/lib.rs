@@ -3,7 +3,7 @@ use crate::credentials::WhatsAppCredentials;
 use async_trait::async_trait;
 use notifico_core::contact::{MobilePhoneContact, RawContact};
 use notifico_core::credentials::RawCredential;
-use notifico_core::engine::Message;
+use notifico_core::engine::{Message, PipelineContext};
 use notifico_core::simpletransport::SimpleTransport;
 use notifico_core::{error::EngineError, templater::RenderedTemplate};
 use serde::{Deserialize, Serialize};
@@ -29,6 +29,7 @@ impl SimpleTransport for WabaTransport {
         credential: RawCredential,
         contact: RawContact,
         message: Message,
+        _context: &mut PipelineContext,
     ) -> Result<(), EngineError> {
         let credential: WhatsAppCredentials = credential.try_into()?;
         let contact: MobilePhoneContact = contact.try_into()?;

@@ -4,7 +4,7 @@ use base64::Engine;
 use notifico_attachment::AttachmentPlugin;
 use notifico_core::contact::RawContact;
 use notifico_core::credentials::{RawCredential, TypedCredential};
-use notifico_core::engine::Message;
+use notifico_core::engine::{Message, PipelineContext};
 use notifico_core::error::EngineError;
 use notifico_core::simpletransport::SimpleTransport;
 use notifico_core::templater::RenderedTemplate;
@@ -42,6 +42,7 @@ impl SimpleTransport for NtfyTransport {
         credential: RawCredential,
         contact: RawContact,
         message: Message,
+        _context: &mut PipelineContext,
     ) -> Result<(), EngineError> {
         let credential: Credential = credential.try_into()?;
         let content: Content = message.content.try_into()?;

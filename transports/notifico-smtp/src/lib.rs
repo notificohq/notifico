@@ -1,12 +1,10 @@
 mod context;
 mod credentials;
 mod headers;
-mod step;
 mod templater;
 
 use crate::context::PluginContext;
 use crate::headers::ListUnsubscribe;
-use crate::step::STEPS;
 use crate::templater::RenderedEmail;
 use async_trait::async_trait;
 use credentials::SmtpServerCredentials;
@@ -16,19 +14,12 @@ use lettre::{
 };
 use moka::future::Cache;
 use notifico_core::contact::{RawContact, TypedContact};
-use notifico_core::recorder::Recorder;
-use notifico_core::step::SerializedStep;
-use notifico_core::transport::Transport;
-use notifico_core::{
-    credentials::CredentialStorage,
-    engine::{EnginePlugin, PipelineContext, StepOutput},
-    error::EngineError,
-};
+use notifico_core::credentials::RawCredential;
+use notifico_core::engine::Message;
+use notifico_core::simpletransport::SimpleTransport;
+use notifico_core::{engine::PipelineContext, error::EngineError};
 use serde::Deserialize;
-use std::borrow::Cow;
 use std::str::FromStr;
-use std::sync::Arc;
-use step::Step;
 
 #[derive(Debug, Deserialize)]
 pub struct EmailContact {
@@ -50,17 +41,14 @@ impl TypedContact for EmailContact {
     const CONTACT_TYPE: &'static str = "email";
 }
 
-pub struct EmailPlugin {
-    credentials: Arc<dyn CredentialStorage>,
-    recorder: Arc<dyn Recorder>,
+pub struct EmailTransport {
     pools: Cache<String, AsyncSmtpTransport<Tokio1Executor>>,
 }
 
-impl EmailPlugin {
-    pub fn new(credentials: Arc<dyn CredentialStorage>, recorder: Arc<dyn Recorder>) -> Self {
+impl EmailTransport {
+    #[allow(clippy::new_without_default)]
+    pub fn new() -> Self {
         Self {
-            credentials,
-            recorder,
             pools: Cache::new(100),
         }
     }
@@ -82,89 +70,55 @@ impl EmailPlugin {
 }
 
 #[async_trait]
-impl EnginePlugin for EmailPlugin {
-    async fn execute_step(
+impl SimpleTransport for EmailTransport {
+    async fn send_message(
         &self,
+        credential: RawCredential,
+        contact: RawContact,
+        message: Message,
         context: &mut PipelineContext,
-        step: &SerializedStep,
-    ) -> Result<StepOutput, EngineError> {
-        let step: Step = step.clone().convert_step()?;
+    ) -> Result<(), EngineError> {
+        let credential: SmtpServerCredentials = credential.try_into()?;
+        let contact: EmailContact = contact.try_into()?;
+        let rendered: RenderedEmail = message.content.try_into()?;
 
-        match step {
-            Step::Send { credential } => {
-                let contacts: Vec<EmailContact> = context.get_recipient()?.get_contacts();
+        let plugin_context: PluginContext =
+            serde_json::from_value(context.plugin_contexts.clone().into()).unwrap();
 
-                let credential: SmtpServerCredentials = self
-                    .credentials
-                    .resolve(context.project_id, credential)
-                    .await?;
-
-                let transport = self.get_transport(credential).await;
-
-                let plugin_context: PluginContext =
-                    serde_json::from_value(context.plugin_contexts.clone().into()).unwrap();
-
-                for contact in contacts {
-                    for message in context.messages.iter().cloned() {
-                        let rendered: RenderedEmail = message.content.try_into()?;
-
-                        let email_message = {
-                            let mut builder = lettre::Message::builder();
-                            builder = builder.from(rendered.from);
-                            builder = builder.to(contact.address.clone());
-                            builder = builder.subject(rendered.subject);
-                            if let Some(list_unsubscribe) = plugin_context.list_unsubscribe.clone()
-                            {
-                                builder = builder.header(ListUnsubscribe::from(list_unsubscribe));
-                            }
-
-                            if rendered.body_html.is_empty()
-                                && !rendered.body.is_empty()
-                                && message.attachments.is_empty()
-                            {
-                                builder.body(rendered.body).unwrap()
-                            } else {
-                                let multipart = MultiPart::alternative_plain_html(
-                                    rendered.body,
-                                    rendered.body_html,
-                                );
-                                builder.multipart(multipart).unwrap()
-                            }
-                        };
-
-                        let result = transport.send(email_message).await;
-                        match result {
-                            Ok(_) => self.recorder.record_message_sent(
-                                context.event_id,
-                                context.notification_id,
-                                message.id,
-                            ),
-                            Err(e) => self.recorder.record_message_failed(
-                                context.event_id,
-                                context.notification_id,
-                                message.id,
-                                &e.to_string(),
-                            ),
-                        }
-                    }
-                }
+        let email_message = {
+            let mut builder = lettre::Message::builder();
+            builder = builder.from(rendered.from);
+            builder = builder.to(contact.address.clone());
+            builder = builder.subject(rendered.subject);
+            if let Some(list_unsubscribe) = plugin_context.list_unsubscribe.clone() {
+                builder = builder.header(ListUnsubscribe::from(list_unsubscribe));
             }
-        }
 
-        Ok(StepOutput::Continue)
+            if rendered.body_html.is_empty()
+                && !rendered.body.is_empty()
+                && message.attachments.is_empty()
+            {
+                builder.body(rendered.body).unwrap()
+            } else {
+                let multipart =
+                    MultiPart::alternative_plain_html(rendered.body, rendered.body_html);
+                builder.multipart(multipart).unwrap()
+            }
+        };
+
+        let transport = self.get_transport(credential).await;
+        let _result = transport
+            .send(email_message)
+            .await
+            .map_err(|e| EngineError::InternalError(e.into()))?;
+        Ok(())
     }
 
-    fn steps(&self) -> Vec<Cow<'static, str>> {
-        STEPS.iter().map(|&s| s.into()).collect()
-    }
-}
-
-impl Transport for EmailPlugin {
-    fn name(&self) -> Cow<'static, str> {
-        "smtp".into()
+    fn name(&self) -> &'static str {
+        "smtp"
     }
 
-    fn send_step(&self) -> Cow<'static, str> {
-        "smtp.send".into()
+    fn supports_contact(&self, r#type: &str) -> bool {
+        r#type == "email"
     }
 }
