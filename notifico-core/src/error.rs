@@ -32,6 +32,12 @@ pub enum EngineError {
     MissingCredential,
     #[error("Invalid configuration: {0}")]
     InvalidConfiguration(String),
+    #[error("IO error: {0}")]
+    IOError(#[from] std::io::Error),
+    #[error("Message not found: {0}")]
+    MessageNotFound(u16),
+    #[error("Invalid attachment schema: {0}")]
+    InvalidAttachmentSchema(String),
 }
 
 impl From<DbErr> for EngineError {

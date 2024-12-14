@@ -1,10 +1,9 @@
 use crate::contact::RawContact;
 use crate::credentials::{CredentialSelector, CredentialStorage, RawCredential};
-use crate::engine::{EnginePlugin, PipelineContext, StepOutput};
+use crate::engine::{EnginePlugin, Message, PipelineContext, StepOutput};
 use crate::error::EngineError;
 use crate::recorder::Recorder;
 use crate::step::SerializedStep;
-use crate::templater::RenderedTemplate;
 use crate::transport::Transport;
 use async_trait::async_trait;
 use std::borrow::Cow;
@@ -16,7 +15,7 @@ pub trait SimpleTransport: Send + Sync {
         &self,
         credential: RawCredential,
         contact: RawContact,
-        message: RenderedTemplate,
+        message: Message,
     ) -> Result<(), EngineError>;
 
     fn name(&self) -> &'static str;
@@ -95,7 +94,7 @@ impl EnginePlugin for SimpleTransportWrapper {
             for message in &context.messages {
                 let result = self
                     .inner
-                    .send_message(credential.clone(), contact.clone(), message.content.clone())
+                    .send_message(credential.clone(), contact.clone(), message.clone())
                     .await;
 
                 match result {

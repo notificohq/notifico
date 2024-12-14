@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use notifico_core::contact::{RawContact, TypedContact};
 use notifico_core::credentials::{RawCredential, TypedCredential};
+use notifico_core::engine::Message;
 use notifico_core::error::EngineError;
 use notifico_core::simpletransport::SimpleTransport;
 use notifico_core::templater::RenderedTemplate;
@@ -60,11 +61,11 @@ impl SimpleTransport for PushoverTransport {
         &self,
         credential: RawCredential,
         contact: RawContact,
-        message: RenderedTemplate,
+        message: Message,
     ) -> Result<(), EngineError> {
         let credential: PushoverCredentials = credential.try_into()?;
         let contact: PushoverContact = contact.try_into()?;
-        let message: Message = message.try_into()?;
+        let message: PushoverMessage = message.content.try_into()?;
 
         let request = PushoverMessageRequest {
             token: credential.token.clone(),
@@ -119,12 +120,12 @@ impl TypedContact for PushoverContact {
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-pub struct Message {
+pub struct PushoverMessage {
     pub body: String,
     pub title: String,
 }
 
-impl TryFrom<RenderedTemplate> for Message {
+impl TryFrom<RenderedTemplate> for PushoverMessage {
     type Error = EngineError;
 
     fn try_from(value: RenderedTemplate) -> Result<Self, Self::Error> {

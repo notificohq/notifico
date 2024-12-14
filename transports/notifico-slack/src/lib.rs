@@ -5,6 +5,7 @@ use async_trait::async_trait;
 use credentials::SlackCredentials;
 use notifico_core::contact::{RawContact, TypedContact};
 use notifico_core::credentials::RawCredential;
+use notifico_core::engine::Message;
 use notifico_core::error::EngineError;
 use notifico_core::simpletransport::SimpleTransport;
 use notifico_core::templater::RenderedTemplate;
@@ -28,11 +29,11 @@ impl SimpleTransport for SlackTransport {
         &self,
         credential: RawCredential,
         contact: RawContact,
-        message: RenderedTemplate,
+        message: Message,
     ) -> Result<(), EngineError> {
         let credential: SlackCredentials = credential.try_into()?;
         let contact: SlackContact = contact.try_into()?;
-        let content: SlackMessage = message.try_into()?;
+        let content: SlackMessage = message.content.try_into()?;
 
         let slack_message = slackapi::SlackMessage::Text {
             channel: contact.channel_id.clone(),

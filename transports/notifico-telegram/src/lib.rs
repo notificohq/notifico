@@ -1,13 +1,16 @@
 use async_trait::async_trait;
 use contact::TelegramContact;
+use notifico_attachment::AttachmentPlugin;
 use notifico_core::contact::RawContact;
 use notifico_core::credentials::RawCredential;
+use notifico_core::engine::Message;
 use notifico_core::simpletransport::SimpleTransport;
 use notifico_core::{
     credentials::TypedCredential, error::EngineError, templater::RenderedTemplate,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::sync::Arc;
 
 const API_URL: &str = "https://api.telegram.org/bot";
 
@@ -38,11 +41,15 @@ impl TypedCredential for TelegramBotCredentials {
 
 pub struct TelegramTransport {
     client: reqwest::Client,
+    attachments: Arc<AttachmentPlugin>,
 }
 
 impl TelegramTransport {
-    pub fn new(client: reqwest::Client) -> Self {
-        Self { client }
+    pub fn new(client: reqwest::Client, attachments: Arc<AttachmentPlugin>) -> Self {
+        Self {
+            client,
+            attachments,
+        }
     }
 }
 
@@ -52,25 +59,50 @@ impl SimpleTransport for TelegramTransport {
         &self,
         credential: RawCredential,
         contact: RawContact,
-        message: RenderedTemplate,
+        message: Message,
     ) -> Result<(), EngineError> {
         let credential: TelegramBotCredentials = credential.try_into()?;
         let contact: TelegramContact = contact.try_into()?;
-        let content: TelegramContent = message.try_into()?;
+        let content: TelegramContent = message.content.try_into()?;
 
-        let request = SendMessageRequest {
-            chat_id: contact.chat_id,
-            text: content.body,
-        };
+        if message.attachments.is_empty() {
+            let request = SendMessageRequest {
+                chat_id: contact.chat_id,
+                text: content.body,
+            };
 
-        let url = format!("{}{}/sendMessage", API_URL, credential.token);
+            let url = format!("{}{}/sendMessage", API_URL, credential.token);
 
-        self.client
-            .post(url)
-            .json(&request)
-            .send()
-            .await
-            .map_err(|e| EngineError::InternalError(e.into()))?;
+            self.client
+                .post(url)
+                .json(&request)
+                .send()
+                .await
+                .map_err(|e| EngineError::InternalError(e.into()))?;
+        } else {
+            // Consider sending attachments using sendMediaGroup
+            let url = format!("{}{}/sendDocument", API_URL, credential.token);
+
+            let attach = self
+                .attachments
+                .get_attachment(&message.attachments[0])
+                .await?;
+
+            let form = reqwest::multipart::Form::new()
+                .text("chat_id", contact.chat_id.to_string())
+                .text("caption", content.body)
+                .part(
+                    "document",
+                    reqwest::multipart::Part::stream(attach.file)
+                        .file_name(attach.file_name.clone()),
+                );
+            self.client
+                .post(url)
+                .multipart(form)
+                .send()
+                .await
+                .map_err(|e| EngineError::InternalError(e.into()))?;
+        }
         Ok(())
     }
 

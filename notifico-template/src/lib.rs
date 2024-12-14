@@ -111,6 +111,7 @@ impl EnginePlugin for Templater {
                     context.messages.push(Message {
                         id: message_id,
                         content: rendered_template,
+                        attachments: vec![],
                     });
                 }
 

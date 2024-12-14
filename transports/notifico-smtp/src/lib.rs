@@ -118,15 +118,17 @@ impl EnginePlugin for EmailPlugin {
                                 builder = builder.header(ListUnsubscribe::from(list_unsubscribe));
                             }
 
-                            if rendered.body_html.is_empty() && !rendered.body.is_empty() {
+                            if rendered.body_html.is_empty()
+                                && !rendered.body.is_empty()
+                                && message.attachments.is_empty()
+                            {
                                 builder.body(rendered.body).unwrap()
                             } else {
-                                builder
-                                    .multipart(MultiPart::alternative_plain_html(
-                                        rendered.body,
-                                        rendered.body_html,
-                                    ))
-                                    .unwrap()
+                                let multipart = MultiPart::alternative_plain_html(
+                                    rendered.body,
+                                    rendered.body_html,
+                                );
+                                builder.multipart(multipart).unwrap()
                             }
                         };
 

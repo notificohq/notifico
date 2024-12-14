@@ -8,6 +8,7 @@ use crate::ingest::http::HttpIngestExtensions;
 use crate::public::http::HttpUserapiExtensions;
 use crate::ui::http::HttpWebExtensions;
 use clap::{Parser, Subcommand};
+use notifico_attachment::AttachmentPlugin;
 use notifico_core::credentials::env::EnvCredentialStorage;
 use notifico_core::engine::plugin::core::CorePlugin;
 use notifico_core::engine::Engine;
@@ -198,10 +199,15 @@ async fn main() {
                     engine.add_plugin(Arc::new(Templater::new(templater_source.clone())));
                     engine.add_plugin(subman.clone());
 
+                    let attachment_plugin = Arc::new(AttachmentPlugin::new(false));
+                    engine.add_plugin(attachment_plugin.clone());
+
                     let mut transport_registry = TransportRegistry::new();
-                    for (engine_plugin, transport_plugin) in
-                        all_transports(credentials.clone(), recorder.clone())
-                    {
+                    for (engine_plugin, transport_plugin) in all_transports(
+                        credentials.clone(),
+                        recorder.clone(),
+                        attachment_plugin.clone(),
+                    ) {
                         engine.add_plugin(engine_plugin);
                         transport_registry.register(transport_plugin);
                     }

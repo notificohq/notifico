@@ -1,3 +1,4 @@
+use notifico_attachment::AttachmentPlugin;
 use notifico_core::credentials::CredentialStorage;
 use notifico_core::engine::EnginePlugin;
 use notifico_core::recorder::Recorder;
@@ -16,6 +17,7 @@ use std::sync::Arc;
 pub fn all_transports(
     credentials: Arc<dyn CredentialStorage>,
     recorder: Arc<dyn Recorder>,
+    attachments: Arc<AttachmentPlugin>,
 ) -> Vec<(Arc<dyn EnginePlugin>, Arc<dyn Transport>)> {
     let mut plugins: Vec<(Arc<dyn EnginePlugin>, Arc<dyn Transport>)> = vec![];
     let http = reqwest::Client::builder().build().unwrap();
@@ -28,7 +30,7 @@ pub fn all_transports(
     plugins.push((smpp_plugin.clone(), smpp_plugin.clone()));
 
     // Simple transports
-    let telegram_transport = Arc::new(TelegramTransport::new(http.clone()));
+    let telegram_transport = Arc::new(TelegramTransport::new(http.clone(), attachments.clone()));
     let telegram_plugin = Arc::new(SimpleTransportWrapper::new(
         telegram_transport,
         credentials.clone(),
@@ -68,7 +70,7 @@ pub fn all_transports(
     ));
     plugins.push((gotify_plugin.clone(), gotify_plugin.clone()));
 
-    let ntfy_transport = Arc::new(NtfyTransport::new(reqwest::Client::new()));
+    let ntfy_transport = Arc::new(NtfyTransport::new(http.clone(), attachments.clone()));
     let ntfy_plugin = Arc::new(SimpleTransportWrapper::new(
         ntfy_transport,
         credentials.clone(),

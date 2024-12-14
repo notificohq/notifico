@@ -11,6 +11,7 @@ notifico-template = { path = "../notifico-template" }
 notifico-subscription = { path = "../notifico-subscription" }
 notifico-dbpipeline = { path = "../notifico-dbpipeline" }
 notifico-project = { path = "../notifico-project" }
+notifico-attachment = { path = "../notifico-attachment" }
 
 anyhow = "1.0.94"
 async-trait = "0.1.83"

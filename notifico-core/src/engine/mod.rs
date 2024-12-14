@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 use tracing::{debug, instrument};
+use url::Url;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -22,10 +23,17 @@ pub use plugin::{EnginePlugin, StepOutput};
 /// Event context contains all variables, that will be passed to templating engine.
 pub struct EventContext(pub Map<String, Value>);
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct AttachmentMetadata {
+    pub url: Url,
+    pub file_name: Option<String>,
+}
+
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct Message {
     pub id: Uuid,
     pub content: RenderedTemplate,
+    pub attachments: Vec<AttachmentMetadata>,
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]

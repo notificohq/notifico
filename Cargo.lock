@@ -2038,6 +2038,7 @@ dependencies = [
  "flume",
  "jsonwebtoken",
  "log",
+ "notifico-attachment",
  "notifico-core",
  "notifico-dbpipeline",
  "notifico-project",
@@ -2057,6 +2058,16 @@ dependencies = [
  "utoipa-redoc",
  "utoipa-swagger-ui",
  "uuid",
+]
+
+[[package]]
+name = "notifico-attachment"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "notifico-core",
+ "serde",
+ "tokio",
 ]
 
 [[package]]
@@ -2118,10 +2129,13 @@ name = "notifico-ntfy"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "base64 0.22.1",
+ "notifico-attachment",
  "notifico-core",
  "reqwest",
  "serde",
  "serde_json",
+ "tokio",
  "url",
 ]
 
@@ -2231,6 +2245,7 @@ name = "notifico-telegram"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "notifico-attachment",
  "notifico-core",
  "reqwest",
  "serde",
@@ -2266,6 +2281,7 @@ dependencies = [
 name = "notifico-transports"
 version = "0.1.0"
 dependencies = [
+ "notifico-attachment",
  "notifico-core",
  "notifico-gotify",
  "notifico-ntfy",
@@ -2302,6 +2318,7 @@ dependencies = [
  "flume",
  "json5",
  "log",
+ "notifico-attachment",
  "notifico-core",
  "notifico-template",
  "notifico-transports",
@@ -2959,6 +2976,7 @@ dependencies = [
  "js-sys",
  "log",
  "mime",
+ "mime_guess",
  "native-tls",
  "once_cell",
  "percent-encoding",
@@ -2970,10 +2988,12 @@ dependencies = [
  "sync_wrapper 1.0.2",
  "tokio",
  "tokio-native-tls",
+ "tokio-util",
  "tower-service",
  "url",
  "wasm-bindgen",
  "wasm-bindgen-futures",
+ "wasm-streams",
  "web-sys",
  "windows-registry",
 ]
@@ -3402,9 +3422,9 @@ checksum = "61697e0a1c7e512e84a621326239844a24d8207b4669b41bc18b32ea5cbf988b"
 
 [[package]]
 name = "serde"
-version = "1.0.215"
+version = "1.0.216"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6513c1ad0b11a9376da888e3e0baa0077f1aed55c17f50e7b2397136129fb88f"
+checksum = "0b9781016e935a97e8beecf0c933758c97a5520d32930e460142b4cd80c6338e"
 dependencies = [
  "serde_derive",
 ]
@@ -3448,9 +3468,9 @@ dependencies = [
 
 [[package]]
 name = "serde_derive"
-version = "1.0.215"
+version = "1.0.216"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ad1e866f866923f252f05c889987993144fb74e722403468a4ebd70c3cd756c0"
+checksum = "46f859dbbf73865c6627ed570e78961cd3ac92407a2d117204c49232485da55e"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4616,6 +4636,19 @@ name = "wasm-bindgen-shared"
 version = "0.2.99"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "943aab3fdaaa029a6e0271b35ea10b72b943135afe9bffca82384098ad0e06a6"
+
+[[package]]
+name = "wasm-streams"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "15053d8d85c7eccdbefef60f06769760a563c7f0a9d6902a13d35c7800b0ad65"
+dependencies = [
+ "futures-util",
+ "js-sys",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+]
 
 [[package]]
 name = "web-sys"

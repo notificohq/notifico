@@ -25,11 +25,12 @@ members = [
     "notifico-dbpipeline/migration",
     "notifico-project",
     "notifico-project/migration",
+    "notifico-attachment",
 ]
 
 [workspace.dependencies]
 sea-orm = { version = "1.1.2", features = ["sqlx-sqlite", "sqlx-postgres", "sqlx-mysql", "runtime-tokio-native-tls", "macros"] }
-reqwest = { version = "0.12.9", default-features = false, features = ["json", "native-tls", "native-tls-alpn", "charset", "http2"] }
+reqwest = { version = "0.12.9", default-features = false, features = ["json", "native-tls", "native-tls-alpn", "charset", "http2", "multipart", "stream"] }
 axum = { version = "0.7.9", features = ["macros"] }
 clap = { version = "4.5.23", features = ["derive", "color", "usage", "env"] }
 url = { version = "2.5.4", features = ["serde"] }

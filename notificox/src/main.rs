@@ -1,10 +1,11 @@
 use clap::{Parser, Subcommand};
 use log::info;
+use notifico_attachment::AttachmentPlugin;
 use notifico_core::contact::RawContact;
 use notifico_core::credentials::memory::MemoryCredentialStorage;
 use notifico_core::credentials::RawCredential;
 use notifico_core::engine::plugin::core::CorePlugin;
-use notifico_core::engine::Engine;
+use notifico_core::engine::{AttachmentMetadata, Engine};
 use notifico_core::pipeline::event::{EventHandler, ProcessEventRequest, RecipientSelector};
 use notifico_core::pipeline::executor::PipelineExecutor;
 use notifico_core::pipeline::storage::SinglePipelineStorage;
@@ -17,6 +18,7 @@ use notifico_template::source::DummyTemplateSource;
 use notifico_template::Templater;
 use notifico_transports::all_transports;
 use serde_json::{json, Map, Value};
+use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
 use tokio::task::JoinSet;
@@ -41,6 +43,8 @@ enum Command {
         /// Template object in JSON5 format (can be used without escaping)
         #[arg(short, long, required = true)]
         template: Vec<String>,
+        #[arg(short, long)]
+        attach: Vec<String>,
     },
     /// Send an event to remote Notifico Ingest API
     SendEvent {
@@ -74,6 +78,7 @@ async fn main() {
             credential,
             contacts,
             template,
+            attach,
         } => {
             let mut engine = Engine::new();
             let mut transport_registry = TransportRegistry::new();
@@ -91,9 +96,14 @@ async fn main() {
                 Arc::new(credentials)
             };
 
-            for (engine_plugin, transport_plugin) in
-                all_transports(credentials.clone(), recorder.clone())
-            {
+            let attachment_plugin = Arc::new(AttachmentPlugin::new(true));
+            engine.add_plugin(attachment_plugin.clone());
+
+            for (engine_plugin, transport_plugin) in all_transports(
+                credentials.clone(),
+                recorder.clone(),
+                attachment_plugin.clone(),
+            ) {
                 engine.add_plugin(engine_plugin);
                 transport_registry.register(transport_plugin);
             }
@@ -115,6 +125,29 @@ async fn main() {
                     let step = SerializedStep(step.as_object().cloned().unwrap());
                     pipeline.steps.push(step);
                 }
+
+                if !attach.is_empty() {
+                    let mut attachments: Vec<AttachmentMetadata> = vec![];
+
+                    for attachment in attach {
+                        let path = PathBuf::from_str(&attachment).unwrap();
+                        let abspath = path.canonicalize().unwrap();
+
+                        attachments.push(AttachmentMetadata {
+                            url: Url::from_file_path(abspath).unwrap(),
+                            file_name: None,
+                        })
+                    }
+
+                    let step = json!({
+                        "step": "attachment.attach",
+                        "attachments": attachments,
+                    });
+
+                    let step = SerializedStep(step.as_object().cloned().unwrap());
+                    pipeline.steps.push(step);
+                }
+
                 let transport_name = credential.transport;
                 let step = SerializedStep(
                     json!({ "step": transport_registry.get_step(&transport_name).unwrap(), "credential": "notificox" })

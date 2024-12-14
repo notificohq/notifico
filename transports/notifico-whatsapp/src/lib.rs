@@ -3,6 +3,7 @@ use crate::credentials::WhatsAppCredentials;
 use async_trait::async_trait;
 use notifico_core::contact::{MobilePhoneContact, RawContact};
 use notifico_core::credentials::RawCredential;
+use notifico_core::engine::Message;
 use notifico_core::simpletransport::SimpleTransport;
 use notifico_core::{error::EngineError, templater::RenderedTemplate};
 use serde::{Deserialize, Serialize};
@@ -27,11 +28,11 @@ impl SimpleTransport for WabaTransport {
         &self,
         credential: RawCredential,
         contact: RawContact,
-        message: RenderedTemplate,
+        message: Message,
     ) -> Result<(), EngineError> {
         let credential: WhatsAppCredentials = credential.try_into()?;
         let contact: MobilePhoneContact = contact.try_into()?;
-        let message: WhatsAppContent = message.try_into()?;
+        let message: WhatsAppContent = message.content.try_into()?;
 
         let url = format!(
             "https://graph.facebook.com/v20.0/{}/messages",
