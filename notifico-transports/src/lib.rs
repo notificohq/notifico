@@ -27,7 +27,7 @@ pub fn all_transports(
     plugins.push((smpp_plugin.clone(), smpp_plugin.clone()));
 
     // Simple transports
-    let email_transport = Arc::new(EmailTransport::new());
+    let email_transport = Arc::new(EmailTransport::new(attachments.clone()));
     let email_plugin = Arc::new(SimpleTransportWrapper::new(
         email_transport,
         credentials.clone(),

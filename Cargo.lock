@@ -2207,7 +2207,9 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "lettre",
+ "mime",
  "moka",
+ "notifico-attachment",
  "notifico-core",
  "serde",
  "serde_json",

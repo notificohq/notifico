@@ -15,5 +15,7 @@ serde = { version = "1.0.215", features = ["derive"] }
 uuid = { workspace = true }
 url = "2.5.4"
 moka = { version = "0.12.8", features = ["future"] }
+mime = "0.3.17"
 
 notifico-core = { path = "../../notifico-core" }
+notifico-attachment = { path = "../../notifico-attachment" }
