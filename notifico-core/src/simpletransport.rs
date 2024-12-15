@@ -89,7 +89,7 @@ impl EnginePlugin for SimpleTransportWrapper {
         };
 
         for contact in contacts {
-            if !self.inner.supports_contact(&contact.r#type) {
+            if self.inner.has_contacts() && !self.inner.supports_contact(&contact.r#type) {
                 continue;
             }
             for message in &context.messages.clone() {

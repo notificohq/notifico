@@ -49,8 +49,12 @@ impl SimpleTransport for GotifyTransport {
             extras: None,
         };
 
+        let url = format!("{}message?token={}", credential.base_url, credential.token);
+
+        println!("Sending message to Gotify: {}", url);
+
         self.client
-            .post(credential.url.clone())
+            .post(url)
             .json(&request)
             .send()
             .await
