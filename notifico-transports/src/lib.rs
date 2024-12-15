@@ -59,7 +59,7 @@ pub fn all_transports(
     ));
     plugins.push((slack_plugin.clone(), slack_plugin.clone()));
 
-    let pushover_transport = Arc::new(PushoverTransport::new(http.clone()));
+    let pushover_transport = Arc::new(PushoverTransport::new(http.clone(), attachments.clone()));
     let pushover_plugin = Arc::new(SimpleTransportWrapper::new(
         pushover_transport,
         credentials.clone(),

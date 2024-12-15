@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use notifico_attachment::AttachmentPlugin;
 use notifico_core::contact::{RawContact, TypedContact};
 use notifico_core::credentials::{RawCredential, TypedCredential};
 use notifico_core::engine::{Message, PipelineContext};
@@ -6,6 +7,7 @@ use notifico_core::error::EngineError;
 use notifico_core::simpletransport::SimpleTransport;
 use notifico_core::templater::RenderedTemplate;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 use url::Url;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -47,11 +49,15 @@ struct PushoverMessageRequest {
 
 pub struct PushoverTransport {
     client: reqwest::Client,
+    attachments: Arc<AttachmentPlugin>,
 }
 
 impl PushoverTransport {
-    pub fn new(client: reqwest::Client) -> Self {
-        Self { client }
+    pub fn new(client: reqwest::Client, attachments: Arc<AttachmentPlugin>) -> Self {
+        Self {
+            client,
+            attachments,
+        }
     }
 }
 
@@ -66,31 +72,60 @@ impl SimpleTransport for PushoverTransport {
     ) -> Result<(), EngineError> {
         let credential: PushoverCredentials = credential.try_into()?;
         let contact: PushoverContact = contact.try_into()?;
-        let message: PushoverMessage = message.content.try_into()?;
+        let content: PushoverMessage = message.content.try_into()?;
 
-        let request = PushoverMessageRequest {
-            token: credential.token.clone(),
-            user: contact.user.clone(),
-            message: message.body,
-            attachment_base64: None,
-            attachment_type: None,
-            device: None,
-            html: Some(1),
-            priority: None,
-            sound: None,
-            timestamp: None,
-            title: Some(message.title),
-            ttl: None,
-            url: None,
-            url_title: None,
-        };
+        const API_URL: &str = "https://api.pushover.net/1/messages.json";
 
-        self.client
-            .post("https://api.pushover.net/1/messages.json")
-            .body(serde_urlencoded::to_string(request).unwrap_or_default())
-            .send()
-            .await
-            .map_err(|e| EngineError::InternalError(e.into()))?;
+        if message.attachments.is_empty() {
+            let request = PushoverMessageRequest {
+                token: credential.token.clone(),
+                user: contact.user.clone(),
+                message: content.body,
+                attachment_base64: None,
+                attachment_type: None,
+                device: None,
+                html: Some(1),
+                priority: None,
+                sound: None,
+                timestamp: None,
+                title: Some(content.title),
+                ttl: None,
+                url: None,
+                url_title: None,
+            };
+
+            self.client
+                .post(API_URL)
+                .json(&request)
+                .send()
+                .await
+                .map_err(|e| EngineError::InternalError(e.into()))?;
+        } else {
+            let attach = self
+                .attachments
+                .get_attachment(&message.attachments[0])
+                .await?;
+
+            let form = reqwest::multipart::Form::new()
+                .text("token", credential.token.clone())
+                .text("user", contact.user.clone())
+                .text("message", content.body)
+                .text("html", "1")
+                .text("title", content.title)
+                .part(
+                    "attachment",
+                    reqwest::multipart::Part::stream(attach.file)
+                        .file_name(attach.file_name.clone())
+                        .mime_str(attach.mime_type.as_ref())
+                        .unwrap(),
+                );
+            self.client
+                .post(API_URL)
+                .multipart(form)
+                .send()
+                .await
+                .map_err(|e| EngineError::InternalError(e.into()))?;
+        }
         Ok(())
     }
 

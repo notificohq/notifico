@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use mime_guess::{mime, Mime};
 use notifico_core::engine::{AttachmentMetadata, EnginePlugin, PipelineContext, StepOutput};
 use notifico_core::error::EngineError;
 use notifico_core::step::SerializedStep;
@@ -48,9 +49,7 @@ impl EnginePlugin for AttachmentPlugin {
             } => {
                 for info in attachments {
                     if info.url.scheme() == "file" && !self.allow_file_scheme {
-                        return Err(EngineError::InvalidAttachmentSchema(
-                            info.url.scheme().to_string(),
-                        ));
+                        return Err(EngineError::InvalidAttachmentUrl(info.url));
                     }
 
                     let Some(message) = context.messages.get_mut(message as usize) else {
@@ -72,6 +71,7 @@ impl EnginePlugin for AttachmentPlugin {
 pub struct AttachedFile {
     pub file: File,
     pub file_name: String,
+    pub mime_type: Mime,
     pub plugin_values: HashMap<String, String>,
 }
 
@@ -89,13 +89,24 @@ impl AttachmentPlugin {
         info: &AttachmentMetadata,
     ) -> Result<AttachedFile, EngineError> {
         if info.url.scheme() == "file" && self.allow_file_scheme {
-            let file_path = info.url.to_file_path().unwrap(); // todo: handle errors
+            let Ok(file_path) = info.url.to_file_path() else {
+                return Err(EngineError::InvalidAttachmentUrl(info.url.clone()));
+            };
 
             let file = File::open(file_path.clone()).await?;
+            let file_name = match (info.file_name.clone(), file_path.file_name()) {
+                (Some(file_name), _) => file_name,
+                (None, Some(file_name)) => file_name.to_string_lossy().to_string(),
+                (None, None) => "attachment.bin".to_string(),
+            };
+
+            let guessed_mimes = mime_guess::from_path(&file_name);
+            let mime_type = guessed_mimes.first_or(mime::APPLICATION_OCTET_STREAM);
 
             return Ok(AttachedFile {
                 file,
-                file_name: file_path.file_name().unwrap().to_string_lossy().to_string(),
+                file_name,
+                mime_type,
                 plugin_values: HashMap::new(),
             });
         }

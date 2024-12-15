@@ -1,6 +1,7 @@
 use sea_orm::DbErr;
 use std::error::Error as StdError;
 use thiserror::Error;
+use url::Url;
 
 #[derive(Debug, Error)]
 pub enum EngineError {
@@ -36,8 +37,8 @@ pub enum EngineError {
     IOError(#[from] std::io::Error),
     #[error("Message not found: {0}")]
     MessageNotFound(u16),
-    #[error("Invalid attachment schema: {0}")]
-    InvalidAttachmentSchema(String),
+    #[error("Invalid attachment URL: {0}")]
+    InvalidAttachmentUrl(Url),
 }
 
 impl From<DbErr> for EngineError {

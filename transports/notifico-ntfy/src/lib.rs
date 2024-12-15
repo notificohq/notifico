@@ -11,7 +11,6 @@ use notifico_core::templater::RenderedTemplate;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::sync::Arc;
-use tokio::io::AsyncReadExt;
 use url::Url;
 
 pub struct NtfyTransport {
@@ -71,8 +70,7 @@ impl SimpleTransport for NtfyTransport {
                 );
             }
 
-            let mut filebody = vec![];
-            file.file.read_to_end(&mut filebody).await?;
+            let filebody = file.content().await?;
 
             self.client
                 .post(credential.url.clone().join(&contact.topic).unwrap())
