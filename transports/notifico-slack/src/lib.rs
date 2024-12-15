@@ -3,6 +3,7 @@ mod slackapi;
 
 use async_trait::async_trait;
 use credentials::SlackCredentials;
+use notifico_attachment::AttachmentPlugin;
 use notifico_core::contact::{RawContact, TypedContact};
 use notifico_core::credentials::RawCredential;
 use notifico_core::engine::{Message, PipelineContext};
@@ -10,15 +11,18 @@ use notifico_core::error::EngineError;
 use notifico_core::simpletransport::SimpleTransport;
 use notifico_core::templater::RenderedTemplate;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 pub struct SlackTransport {
     client: slackapi::SlackApi,
+    attachments: Arc<AttachmentPlugin>,
 }
 
 impl SlackTransport {
-    pub fn new(client: reqwest::Client) -> Self {
+    pub fn new(client: reqwest::Client, attachments: Arc<AttachmentPlugin>) -> Self {
         SlackTransport {
             client: slackapi::SlackApi::new(client),
+            attachments,
         }
     }
 }
@@ -45,6 +49,22 @@ impl SimpleTransport for SlackTransport {
             .chat_post_message(&credential.token, slack_message)
             .await
             .map_err(|e| EngineError::InternalError(e.into()))?;
+
+        for attachment in message.attachments {
+            let file = self.attachments.get_attachment(&attachment).await?;
+
+            self.client
+                .upload_file(
+                    &credential.token,
+                    file.file,
+                    &file.file_name,
+                    file.size,
+                    &contact.channel_id,
+                )
+                .await
+                .map_err(|e| EngineError::InternalError(e.into()))?;
+        }
+
         Ok(())
     }
 

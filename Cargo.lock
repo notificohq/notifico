@@ -2178,11 +2178,18 @@ name = "notifico-slack"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "log",
+ "notifico-attachment",
  "notifico-core",
  "reqwest",
  "serde",
  "serde_json",
+ "serde_urlencoded",
  "thiserror 2.0.7",
+ "tokio",
+ "tokio-util",
+ "tracing",
+ "url",
 ]
 
 [[package]]

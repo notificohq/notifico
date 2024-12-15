@@ -51,7 +51,7 @@ pub fn all_transports(
     ));
     plugins.push((waba_plugin.clone(), waba_plugin.clone()));
 
-    let slack_transport = Arc::new(SlackTransport::new(http.clone()));
+    let slack_transport = Arc::new(SlackTransport::new(http.clone(), attachments.clone()));
     let slack_plugin = Arc::new(SimpleTransportWrapper::new(
         slack_transport,
         credentials.clone(),

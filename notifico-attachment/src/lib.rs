@@ -72,6 +72,7 @@ pub struct AttachedFile {
     pub file: File,
     pub file_name: String,
     pub mime_type: Mime,
+    pub size: u64,
     pub plugin_values: HashMap<String, String>,
 }
 
@@ -103,10 +104,13 @@ impl AttachmentPlugin {
             let guessed_mimes = mime_guess::from_path(&file_name);
             let mime_type = guessed_mimes.first_or(mime::APPLICATION_OCTET_STREAM);
 
+            let size = file.metadata().await?.len();
+
             return Ok(AttachedFile {
                 file,
                 file_name,
                 mime_type,
+                size,
                 plugin_values: HashMap::new(),
             });
         }
