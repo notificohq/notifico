@@ -164,8 +164,7 @@ impl EmailTransport {
                 for mut attachment in attachments_inline {
                     let cid = attachment.plugin_values.get("email.cid").unwrap().clone();
 
-                    let content_type =
-                        ContentType::parse(mime::APPLICATION_OCTET_STREAM.as_ref()).unwrap();
+                    let content_type = ContentType::parse(attachment.mime_type.as_ref()).unwrap();
                     let attach =
                         Attachment::new_inline(cid).body(attachment.content().await?, content_type);
                     mp_related = mp_related.singlepart(attach);
@@ -176,7 +175,7 @@ impl EmailTransport {
         }
 
         for mut attachment in attachments_mixed {
-            let content_type = ContentType::parse(mime::APPLICATION_OCTET_STREAM.as_ref()).unwrap();
+            let content_type = ContentType::parse(attachment.mime_type.as_ref()).unwrap();
             let attach = Attachment::new(attachment.file_name.clone())
                 .body(attachment.content().await?, content_type);
             mp_mixed = mp_mixed.singlepart(attach)
