@@ -1,5 +1,4 @@
 use clap::{Parser, Subcommand};
-use log::info;
 use notifico_attachment::AttachmentPlugin;
 use notifico_core::contact::RawContact;
 use notifico_core::credentials::memory::MemoryCredentialStorage;
@@ -22,8 +21,14 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
 use tokio::task::JoinSet;
+use tracing::info;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
+use tracing_subscriber::{fmt, EnvFilter};
 use url::Url;
 use uuid::Uuid;
+
+const SINGLETON_CREDENTIAL_NAME: &str = "default";
 
 #[derive(Parser, Debug)]
 struct Cli {
@@ -66,10 +71,13 @@ async fn main() {
     let _ = dotenvy::dotenv();
 
     if std::env::var("RUST_LOG").is_err() {
-        std::env::set_var("RUST_LOG", "notificox=info,warn");
+        std::env::set_var("RUST_LOG", "notificox=info,notifico_core=info,warn");
     }
 
-    env_logger::init();
+    tracing_subscriber::registry()
+        .with(fmt::layer())
+        .with(EnvFilter::from_default_env())
+        .init();
 
     let cli = Cli::parse();
 
@@ -90,7 +98,7 @@ async fn main() {
                 let mut credentials = MemoryCredentialStorage::default();
                 credentials.add_credential(
                     Uuid::nil(),
-                    "notificox".to_string(),
+                    SINGLETON_CREDENTIAL_NAME.to_string(),
                     credential.clone(),
                 );
                 Arc::new(credentials)
@@ -149,15 +157,20 @@ async fn main() {
                 }
 
                 let transport_name = credential.transport;
-                let step = SerializedStep(
-                    json!({ "step": transport_registry.get_step(&transport_name).unwrap(), "credential": "notificox" })
-                        .as_object()
-                        .cloned()
-                        .unwrap(),
-                );
+                let step = json!({
+                    "step": transport_registry.get_step(&transport_name).unwrap(),
+                    "credential": SINGLETON_CREDENTIAL_NAME
+                });
+                let step = SerializedStep(step.as_object().cloned().unwrap());
                 pipeline.steps.push(step);
+
                 pipeline
             };
+
+            info!(
+                "Running pipeline: {}",
+                serde_json::to_string_pretty(&pipeline).unwrap()
+            );
 
             let contacts: Vec<RawContact> = contacts.iter().map(|s| s.parse().unwrap()).collect();
 
@@ -173,11 +186,6 @@ async fn main() {
                 recipients: vec![RecipientSelector::Recipient(recipient)],
                 context: Default::default(),
             };
-
-            info!(
-                "Running pipeline: {}",
-                serde_json::to_string_pretty(&pipeline).unwrap()
-            );
 
             let (pipelines_tx, pipelines_rx) = flume::unbounded();
             let pipelines_tx = Arc::new(pipelines_tx);

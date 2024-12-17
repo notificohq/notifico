@@ -3,6 +3,7 @@ use crate::error::EngineError;
 use async_trait::async_trait;
 use std::borrow::Cow;
 use std::collections::HashMap;
+use tracing::info;
 use uuid::Uuid;
 
 #[derive(Eq, PartialEq, Hash, Debug)]
@@ -16,6 +17,11 @@ pub struct MemoryCredentialStorage(HashMap<CredentialKey<'static>, RawCredential
 
 impl MemoryCredentialStorage {
     pub fn add_credential(&mut self, project: Uuid, name: String, credential: RawCredential) {
+        info!(
+            credential.project = project.to_string(),
+            credential.name = name,
+            "Added credential"
+        );
         self.0.insert(
             CredentialKey {
                 project,
