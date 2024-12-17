@@ -15,3 +15,5 @@ sea-orm = { workspace = true }
 uuid = { workspace = true }
 anyhow = "1.0.94"
 thiserror = "2.0.6"
+tokio = { version = "1.42.0", features = ["fs"] }
+toml = "0.8.19"

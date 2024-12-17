@@ -8,7 +8,6 @@ use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
     Set,
 };
-use std::collections::HashMap;
 use uuid::Uuid;
 
 pub struct DbTemplateSource {
@@ -33,13 +32,13 @@ impl TemplateSource for DbTemplateSource {
         template: TemplateSelector,
     ) -> Result<PreRenderedTemplate, TemplaterError> {
         Ok(match template {
-            TemplateSelector::ByName(name) => entity::template::Entity::find()
+            TemplateSelector::Name(name) => entity::template::Entity::find()
                 .filter(entity::template::Column::ProjectId.eq(project_id))
                 .filter(entity::template::Column::Name.eq(name))
                 .one(&self.db)
                 .await?
                 .ok_or(TemplaterError::TemplateNotFound)?,
-            TemplateSelector::Inline(_) => unimplemented!(),
+            _ => return Err(TemplaterError::TemplateNotFound),
         }
         .into())
     }
@@ -119,6 +118,6 @@ impl TemplateSource for DbTemplateSource {
 
 impl From<entity::template::Model> for PreRenderedTemplate {
     fn from(value: entity::template::Model) -> Self {
-        PreRenderedTemplate(serde_json::from_value(value.template).unwrap_or(HashMap::new()))
+        serde_json::from_value(value.template).unwrap_or_default()
     }
 }

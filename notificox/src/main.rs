@@ -4,7 +4,7 @@ use notifico_core::contact::RawContact;
 use notifico_core::credentials::memory::MemoryCredentialStorage;
 use notifico_core::credentials::RawCredential;
 use notifico_core::engine::plugin::core::CorePlugin;
-use notifico_core::engine::{AttachmentMetadata, Engine};
+use notifico_core::engine::{AttachmentMetadata, Engine, EventContext};
 use notifico_core::pipeline::event::{EventHandler, ProcessEventRequest, RecipientSelector};
 use notifico_core::pipeline::executor::PipelineExecutor;
 use notifico_core::pipeline::storage::SinglePipelineStorage;
@@ -13,15 +13,15 @@ use notifico_core::recipient::Recipient;
 use notifico_core::recorder::BaseRecorder;
 use notifico_core::step::SerializedStep;
 use notifico_core::transport::TransportRegistry;
-use notifico_template::source::DummyTemplateSource;
-use notifico_template::Templater;
+use notifico_template::source::fs::FilesystemSource;
+use notifico_template::{PreRenderedTemplate, TemplateSelector, Templater};
 use notifico_transports::all_transports;
-use serde_json::{json, Map, Value};
+use serde_json::json;
 use std::path::PathBuf;
 use std::str::FromStr;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 use tokio::task::JoinSet;
-use tracing::info;
+use tracing::{debug, info};
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{fmt, EnvFilter};
@@ -29,6 +29,9 @@ use url::Url;
 use uuid::Uuid;
 
 const SINGLETON_CREDENTIAL_NAME: &str = "default";
+const SINGLETON_EVENT_NAME: &str = "default";
+
+static DEFAULT_TEMPLATE_DIR: OnceLock<PathBuf> = OnceLock::new();
 
 #[derive(Parser, Debug)]
 struct Cli {
@@ -48,8 +51,12 @@ enum Command {
         /// Template object in JSON5 format (can be used without escaping)
         #[arg(short, long, required = true)]
         template: Vec<String>,
+        #[arg(long, default_value_os_t = DEFAULT_TEMPLATE_DIR.get().unwrap().clone(), env = "NOTIFICO_TEMPLATE_DIR")]
+        template_dir: PathBuf,
         #[arg(short, long)]
         attach: Vec<String>,
+        #[arg(short, long)]
+        context: Option<String>,
     },
     /// Send an event to remote Notifico Ingest API
     SendEvent {
@@ -70,6 +77,12 @@ enum Command {
 async fn main() {
     let _ = dotenvy::dotenv();
 
+    let project_dirs = directories::ProjectDirs::from("tech", "Notifico", "Notifico").unwrap();
+
+    DEFAULT_TEMPLATE_DIR
+        .set(project_dirs.data_dir().join("templates"))
+        .unwrap();
+
     if std::env::var("RUST_LOG").is_err() {
         std::env::set_var("RUST_LOG", "notificox=info,notifico_core=info,warn");
     }
@@ -87,7 +100,11 @@ async fn main() {
             contacts,
             template,
             attach,
+            template_dir,
+            context,
         } => {
+            std::fs::create_dir_all(&template_dir).unwrap();
+
             let mut engine = Engine::new();
             let mut transport_registry = TransportRegistry::new();
             let recorder = Arc::new(BaseRecorder::new());
@@ -119,12 +136,25 @@ async fn main() {
             let pipeline = {
                 let mut pipeline = Pipeline::default();
 
-                if !template.is_empty() {
-                    let templates: Vec<Map<String, Value>> = template
-                        .iter()
-                        .map(|s| json5::from_str(s).unwrap())
-                        .collect();
+                // templates.load
+                let mut templates: Vec<TemplateSelector> = vec![];
+                for template in template {
+                    match json5::from_str(&template) {
+                        Ok(parts) => templates.push(TemplateSelector::Inline {
+                            inline: PreRenderedTemplate { parts },
+                        }),
+                        Err(e) => {
+                            debug!(
+                                "Failed to parse inline template: {e}, trying to parse as a name"
+                            );
+                            templates.push(TemplateSelector::File {
+                                file: template.clone(),
+                            })
+                        }
+                    }
+                }
 
+                if !templates.is_empty() {
                     let step = json!({
                         "step": "templates.load",
                         "templates": templates,
@@ -134,6 +164,7 @@ async fn main() {
                     pipeline.steps.push(step);
                 }
 
+                // attachment.attach
                 if !attach.is_empty() {
                     let mut attachments: Vec<AttachmentMetadata> = vec![];
 
@@ -156,6 +187,7 @@ async fn main() {
                     pipeline.steps.push(step);
                 }
 
+                // <TRANSPORT>.send or similar
                 let transport_name = credential.transport;
                 let step = json!({
                     "step": transport_registry.get_step(&transport_name).unwrap(),
@@ -179,12 +211,16 @@ async fn main() {
                 contacts,
             };
 
+            let context: EventContext = context
+                .map(|context| json5::from_str(&context).unwrap())
+                .unwrap_or_default();
+
             let process_event_request = ProcessEventRequest {
                 id: Uuid::nil(),
                 project_id: Uuid::nil(),
-                event: "notificox".to_string(),
+                event: SINGLETON_EVENT_NAME.to_string(),
                 recipients: vec![RecipientSelector::Recipient(recipient)],
-                context: Default::default(),
+                context,
             };
 
             let (pipelines_tx, pipelines_rx) = flume::unbounded();
@@ -192,7 +228,7 @@ async fn main() {
 
             engine.add_plugin(Arc::new(CorePlugin::new(pipelines_tx.clone())));
 
-            let templater_source = Arc::new(DummyTemplateSource);
+            let templater_source = Arc::new(FilesystemSource::new(template_dir));
             engine.add_plugin(Arc::new(Templater::new(templater_source.clone())));
 
             // Create PipelineExecutor

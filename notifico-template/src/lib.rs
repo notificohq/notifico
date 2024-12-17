@@ -1,4 +1,3 @@
-pub mod db;
 pub mod entity;
 pub mod error;
 pub mod source;
@@ -20,8 +19,11 @@ use tracing::debug;
 use uuid::Uuid;
 
 #[derive(Default, Clone, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct PreRenderedTemplate(pub HashMap<String, String>);
+pub struct PreRenderedTemplate {
+    pub parts: HashMap<String, String>,
+    // attachments: Vec<String>,
+    // extras: HashMap<String, String>,
+}
 
 pub struct Templater {
     source: Arc<dyn TemplateSource>,
@@ -55,7 +57,7 @@ impl Templater {
         context: &Map<String, Value>,
     ) -> Result<RenderedTemplate, TemplaterError> {
         let mut data = HashMap::new();
-        for (part_name, part_content) in template.0 {
+        for (part_name, part_content) in template.parts {
             // Render the template using the minijinja environment and the event context
             let rendered_tpl = self.env.render_str(&part_content, context)?;
 
@@ -85,7 +87,7 @@ impl EnginePlugin for Templater {
 
                     // Template
                     let template = match template {
-                        TemplateSelector::Inline(t) => t,
+                        TemplateSelector::Inline { inline } => inline,
                         sel => self.source.get_template(context.project_id, sel).await?,
                     };
 
@@ -128,8 +130,9 @@ impl EnginePlugin for Templater {
 #[derive(Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum TemplateSelector {
-    Inline(PreRenderedTemplate),
-    ByName(String),
+    Name(String),
+    Inline { inline: PreRenderedTemplate },
+    File { file: String },
 }
 
 /// Represents a step in the notification pipeline.

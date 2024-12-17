@@ -14,6 +14,8 @@ pub enum TemplaterError {
     Db(DbErr),
     #[error("Jinja error: {0}")]
     JinjaError(#[from] minijinja::Error),
+    #[error("Invalid template format")]
+    InvalidTemplateFormat,
 }
 
 impl From<TemplaterError> for EngineError {

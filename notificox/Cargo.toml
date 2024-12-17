@@ -10,7 +10,7 @@ notifico-transports = { path = "../notifico-transports" }
 notifico-attachment = { path = "../notifico-attachment" }
 # Other deps
 serde = { version = "1.0.215", features = ["derive"] }
-serde_json = "1.0.133"
+serde_json = { version = "1.0.133", features = ["preserve_order"] }
 tokio = { version = "1.42.0", features = ["rt"] }
 clap = { workspace = true }
 json5 = "0.4.1"
@@ -21,3 +21,4 @@ url = { workspace = true }
 reqwest = { workspace = true }
 tracing-subscriber = "0.3.19"
 tracing = "0.1.41"
+directories = "5.0.1"

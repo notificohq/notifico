@@ -21,7 +21,7 @@ use notifico_core::transport::TransportRegistry;
 use notifico_dbpipeline::DbPipelineStorage;
 use notifico_project::ProjectController;
 use notifico_subscription::SubscriptionManager;
-use notifico_template::db::DbTemplateSource;
+use notifico_template::source::db::DbTemplateSource;
 use notifico_template::Templater;
 use notifico_transports::all_transports;
 use sea_orm::{ConnectOptions, Database};
