@@ -33,11 +33,11 @@ pub trait TypedContact: TryFrom<RawContact, Error = EngineError> {
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-pub struct MobilePhoneContact {
+pub struct PhoneContact {
     pub number: String,
 }
 
-impl TryFrom<RawContact> for MobilePhoneContact {
+impl TryFrom<RawContact> for PhoneContact {
     type Error = EngineError;
 
     fn try_from(value: RawContact) -> Result<Self, Self::Error> {
@@ -47,11 +47,11 @@ impl TryFrom<RawContact> for MobilePhoneContact {
     }
 }
 
-impl TypedContact for MobilePhoneContact {
-    const CONTACT_TYPE: &'static str = "mobile_phone";
+impl TypedContact for PhoneContact {
+    const CONTACT_TYPE: &'static str = "tel";
 }
 
-impl MobilePhoneContact {
+impl PhoneContact {
     pub fn msisdn(&self) -> &str {
         self.number.strip_prefix("+").unwrap_or(&self.number)
     }

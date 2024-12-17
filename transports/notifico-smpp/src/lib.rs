@@ -6,7 +6,7 @@ use crate::step::{Step, STEPS};
 use async_trait::async_trait;
 use futures_util::sink::SinkExt;
 use futures_util::StreamExt;
-use notifico_core::contact::MobilePhoneContact;
+use notifico_core::contact::PhoneContact;
 use notifico_core::credentials::CredentialStorage;
 use notifico_core::engine::{EnginePlugin, PipelineContext, StepOutput};
 use notifico_core::error::EngineError;
@@ -102,7 +102,7 @@ impl EnginePlugin for SmppPlugin {
                     }
                 }
 
-                let contact: Vec<MobilePhoneContact> = context.get_recipient()?.get_contacts();
+                let contact: Vec<PhoneContact> = context.get_recipient()?.get_contacts();
 
                 for contact in contact {
                     for message in context.messages.iter().cloned() {
