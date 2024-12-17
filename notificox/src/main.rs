@@ -49,7 +49,7 @@ enum Command {
         /// in following format: "TYPE:VALUE"
         contacts: Vec<String>,
         /// Template object in JSON5 format (can be used without escaping)
-        #[arg(short, long, required = true)]
+        #[arg(short, long)]
         template: Vec<String>,
         #[arg(long, default_value_os_t = DEFAULT_TEMPLATE_DIR.get().unwrap().clone(), env = "NOTIFICO_TEMPLATE_DIR")]
         template_dir: PathBuf,
@@ -154,15 +154,18 @@ async fn main() {
                     }
                 }
 
-                if !templates.is_empty() {
-                    let step = json!({
+                let step = if !templates.is_empty() {
+                    json!({
                         "step": "templates.load",
                         "templates": templates,
-                    });
-
-                    let step = SerializedStep(step.as_object().cloned().unwrap());
-                    pipeline.steps.push(step);
-                }
+                    })
+                } else {
+                    json!({
+                        "step": "templates.load-context",
+                    })
+                };
+                let step = SerializedStep(step.as_object().cloned().unwrap());
+                pipeline.steps.push(step);
 
                 // attachment.attach
                 if !attach.is_empty() {

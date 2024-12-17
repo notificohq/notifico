@@ -119,11 +119,38 @@ impl EnginePlugin for Templater {
 
                 Ok(StepOutput::Continue)
             }
+            Step::LoadContext => {
+                let message_id = Uuid::now_v7();
+                debug!("Assigned Message ID: {:?}", message_id);
+
+                // Stringify parts
+                let mut rendered_parts: HashMap<String, String> = HashMap::new();
+                for (part, value) in context.event_context.0.iter() {
+                    let value = match value.as_str() {
+                        None => {
+                            debug!("Value for part '{part}' is not a string");
+                            value.to_string()
+                        }
+                        Some(value) => value.to_string(),
+                    };
+                    rendered_parts.insert(part.clone(), value);
+                }
+
+                // Set context as a rendered template
+                let rendered_template: RenderedTemplate = RenderedTemplate(rendered_parts);
+                context.messages.push(Message {
+                    id: message_id,
+                    content: rendered_template,
+                    attachments: vec![],
+                });
+
+                Ok(StepOutput::Continue)
+            }
         }
     }
 
     fn steps(&self) -> Vec<Cow<'static, str>> {
-        vec!["templates.load".into()]
+        vec!["templates.load".into(), "templates.load-context".into()]
     }
 }
 
@@ -146,4 +173,8 @@ enum Step {
     /// * `templates` - A vector of `TemplateSelector` specifying the templates to be loaded.
     #[serde(rename = "templates.load")]
     Load { templates: Vec<TemplateSelector> },
+    /// Loads context as already rendered template, effectively bypassing templating process.
+    /// Useful for passing pre-rendered data into the notification pipeline.
+    #[serde(rename = "templates.load-context")]
+    LoadContext,
 }
