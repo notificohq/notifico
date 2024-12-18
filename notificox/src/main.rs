@@ -48,15 +48,22 @@ enum Command {
         /// Recipient(s), can be an email, phone number, or any other unique identifier
         /// in following format: "TYPE:VALUE"
         contacts: Vec<String>,
-        /// Template object in JSON5 format (can be used without escaping)
+        /// Templating context in JSON5 format. These values will be passed to templating engine if '--template' option is provided.
+        /// If not provided, these values will be used as the template itself, bypassing the templating engine.
+        #[arg(short, long, default_value = "{}")]
+        context: String,
+        /// Template object in JSON5 format OR template file location.
+        /// The location can be relative to '--template-dir' or absolute path.
+        /// Template file should be in TOML format.
+        /// Can be used multiple times to send multiple messages with different templates.
         #[arg(short, long)]
         template: Vec<String>,
         #[arg(long, default_value_os_t = DEFAULT_TEMPLATE_DIR.get().unwrap().clone(), env = "NOTIFICO_TEMPLATE_DIR")]
         template_dir: PathBuf,
+        /// Attachment file(s) to be attached to the notification.
+        /// These attachments will be attached will be attached to the first message sent.
         #[arg(short, long)]
         attach: Vec<String>,
-        #[arg(short, long)]
-        context: Option<String>,
     },
     /// Send an event to remote Notifico Ingest API
     SendEvent {
@@ -214,9 +221,7 @@ async fn main() {
                 contacts,
             };
 
-            let context: EventContext = context
-                .map(|context| json5::from_str(&context).unwrap())
-                .unwrap_or_default();
+            let context: EventContext = json5::from_str(&context).unwrap();
 
             let process_event_request = ProcessEventRequest {
                 id: Uuid::nil(),

@@ -48,7 +48,15 @@ impl TemplateSource for FilesystemSource {
                 } else {
                     self.base_path.join(project_id.to_string())
                 };
+
+                // TODO: `file` can be absolute path, so it can "escape" template directory
+                // Ensure, that we are ok with this in server environments.
                 let template_path = base_path.join(file);
+
+                let base_path = std::path::absolute(template_path.clone())?
+                    .parent()
+                    .unwrap()
+                    .to_path_buf();
 
                 let content = tokio::fs::read_to_string(template_path).await?;
                 let template: Descriptor =
@@ -60,6 +68,7 @@ impl TemplateSource for FilesystemSource {
                     let content = match sel {
                         PartSelector::Inline(content) => content,
                         PartSelector::File { file } => {
+                            // TODO: `file` can be absolute path, so it can "escape" template directory
                             tokio::fs::read_to_string(base_path.join(file)).await?
                         }
                     };

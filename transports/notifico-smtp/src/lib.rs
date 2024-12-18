@@ -148,10 +148,12 @@ impl EmailTransport {
             }
         }
 
+        // multipart/mixed
         let mut mp_mixed = MultiPart::mixed().build();
         if rendered.body_html.is_empty() {
             mp_mixed = mp_mixed.singlepart(SinglePart::plain(rendered.body))
         } else {
+            // multipart/alternative
             let mut mp_alternative = MultiPart::alternative().build();
             if attachments_inline.is_empty() {
                 mp_alternative = mp_alternative.singlepart(SinglePart::plain(rendered.body));
@@ -159,6 +161,7 @@ impl EmailTransport {
             } else {
                 mp_alternative = mp_alternative.singlepart(SinglePart::plain(rendered.body));
 
+                // multipart/related
                 let mut mp_related = MultiPart::related().build();
                 mp_related = mp_related.singlepart(SinglePart::html(rendered.body_html));
                 for mut attachment in attachments_inline {

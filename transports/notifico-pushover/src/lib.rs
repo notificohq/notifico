@@ -88,7 +88,7 @@ impl SimpleTransport for PushoverTransport {
                 priority: None,
                 sound: None,
                 timestamp: None,
-                title: Some(content.title),
+                title: content.title,
                 ttl: None,
                 url: None,
                 url_title: None,
@@ -106,19 +106,21 @@ impl SimpleTransport for PushoverTransport {
                 .get_attachment(&message.attachments[0])
                 .await?;
 
-            let form = reqwest::multipart::Form::new()
+            let mut form = reqwest::multipart::Form::new()
                 .text("token", credential.token.clone())
                 .text("user", contact.user.clone())
                 .text("message", content.body)
-                .text("html", "1")
-                .text("title", content.title)
-                .part(
-                    "attachment",
-                    reqwest::multipart::Part::stream(attach.file)
-                        .file_name(attach.file_name.clone())
-                        .mime_str(attach.mime_type.as_ref())
-                        .unwrap(),
-                );
+                .text("html", "1");
+            if let Some(title) = content.title {
+                form = form.text("title", title);
+            }
+            form = form.part(
+                "attachment",
+                reqwest::multipart::Part::stream(attach.file)
+                    .file_name(attach.file_name.clone())
+                    .mime_str(attach.mime_type.as_ref())
+                    .unwrap(),
+            );
             self.client
                 .post(API_URL)
                 .multipart(form)
@@ -158,7 +160,7 @@ impl TypedContact for PushoverContact {
 #[derive(Serialize, Deserialize, Clone)]
 pub struct PushoverMessage {
     pub body: String,
-    pub title: String,
+    pub title: Option<String>,
 }
 
 impl TryFrom<RenderedTemplate> for PushoverMessage {
@@ -167,7 +169,7 @@ impl TryFrom<RenderedTemplate> for PushoverMessage {
     fn try_from(value: RenderedTemplate) -> Result<Self, Self::Error> {
         Ok(Self {
             body: value.get("body")?.to_string(),
-            title: value.get("title")?.to_string(),
+            title: value.0.get("title").cloned(),
         })
     }
 }
