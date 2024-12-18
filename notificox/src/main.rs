@@ -59,7 +59,7 @@ enum Command {
         #[arg(long, default_value_os_t = std::env::current_dir().unwrap().clone(), env = "NOTIFICO_TEMPLATE_DIR")]
         template_dir: PathBuf,
         /// Attachment file(s) to be attached to the notification.
-        /// These attachments will be attached will be attached to the first message sent.
+        /// These attachments will be attached to the first message sent.
         #[arg(short, long)]
         attach: Vec<String>,
     },
