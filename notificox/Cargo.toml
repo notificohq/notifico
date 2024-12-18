@@ -21,4 +21,3 @@ url = { workspace = true }
 reqwest = { workspace = true }
 tracing-subscriber = "0.3.19"
 tracing = "0.1.41"
-directories = "5.0.1"

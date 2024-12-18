@@ -19,7 +19,7 @@ use notifico_transports::all_transports;
 use serde_json::json;
 use std::path::PathBuf;
 use std::str::FromStr;
-use std::sync::{Arc, OnceLock};
+use std::sync::Arc;
 use tokio::task::JoinSet;
 use tracing::{debug, info};
 use tracing_subscriber::layer::SubscriberExt;
@@ -30,8 +30,6 @@ use uuid::Uuid;
 
 const SINGLETON_CREDENTIAL_NAME: &str = "default";
 const SINGLETON_EVENT_NAME: &str = "default";
-
-static DEFAULT_TEMPLATE_DIR: OnceLock<PathBuf> = OnceLock::new();
 
 #[derive(Parser, Debug)]
 struct Cli {
@@ -58,7 +56,7 @@ enum Command {
         /// Can be used multiple times to send multiple messages with different templates.
         #[arg(short, long)]
         template: Vec<String>,
-        #[arg(long, default_value_os_t = DEFAULT_TEMPLATE_DIR.get().unwrap().clone(), env = "NOTIFICO_TEMPLATE_DIR")]
+        #[arg(long, default_value_os_t = std::env::current_dir().unwrap().clone(), env = "NOTIFICO_TEMPLATE_DIR")]
         template_dir: PathBuf,
         /// Attachment file(s) to be attached to the notification.
         /// These attachments will be attached will be attached to the first message sent.
@@ -83,12 +81,6 @@ enum Command {
 #[tokio::main]
 async fn main() {
     let _ = dotenvy::dotenv();
-
-    let project_dirs = directories::ProjectDirs::from("tech", "Notifico", "Notifico").unwrap();
-
-    DEFAULT_TEMPLATE_DIR
-        .set(project_dirs.data_dir().join("templates"))
-        .unwrap();
 
     if std::env::var("RUST_LOG").is_err() {
         std::env::set_var("RUST_LOG", "notificox=info,notifico_core=info,warn");
