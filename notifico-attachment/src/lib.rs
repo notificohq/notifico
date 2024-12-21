@@ -73,7 +73,7 @@ pub struct AttachedFile {
     pub file_name: String,
     pub mime_type: Mime,
     pub size: u64,
-    pub plugin_values: HashMap<String, String>,
+    pub extras: HashMap<String, String>,
 }
 
 impl AttachedFile {
@@ -111,7 +111,7 @@ impl AttachmentPlugin {
                 file_name,
                 mime_type,
                 size,
-                plugin_values: HashMap::new(),
+                extras: info.extras.clone(),
             });
         }
         unimplemented!()

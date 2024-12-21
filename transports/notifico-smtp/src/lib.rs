@@ -141,7 +141,7 @@ impl EmailTransport {
         let mut attachments_inline = vec![];
 
         for attachment in attachments {
-            if attachment.plugin_values.contains_key("email.cid") {
+            if attachment.extras.contains_key("email.cid") {
                 attachments_inline.push(attachment);
             } else {
                 attachments_mixed.push(attachment);
@@ -165,7 +165,7 @@ impl EmailTransport {
                 let mut mp_related = MultiPart::related().build();
                 mp_related = mp_related.singlepart(SinglePart::html(rendered.body_html));
                 for mut attachment in attachments_inline {
-                    let cid = attachment.plugin_values.get("email.cid").unwrap().clone();
+                    let cid = attachment.extras.get("email.cid").unwrap().clone();
 
                     let content_type = ContentType::parse(attachment.mime_type.as_ref()).unwrap();
                     let attach =

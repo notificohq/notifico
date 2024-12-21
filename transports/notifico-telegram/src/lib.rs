@@ -53,6 +53,41 @@ impl TelegramTransport {
     }
 }
 
+struct AttachmentStrategy {
+    method: &'static str,
+    key: &'static str,
+}
+
+impl AttachmentStrategy {
+    fn get_strategy(telegram_type: &str) -> Result<AttachmentStrategy, EngineError> {
+        match telegram_type {
+            "document" => Ok(AttachmentStrategy {
+                method: "sendDocument",
+                key: "document",
+            }),
+            "photo" => Ok(AttachmentStrategy {
+                method: "sendPhoto",
+                key: "photo",
+            }),
+            "video" => Ok(AttachmentStrategy {
+                method: "sendVideo",
+                key: "video",
+            }),
+            "audio" => Ok(AttachmentStrategy {
+                method: "sendAudio",
+                key: "audio",
+            }),
+            "voice" => Ok(AttachmentStrategy {
+                method: "sendVoice",
+                key: "voice",
+            }),
+            _ => Err(EngineError::InvalidConfiguration(
+                "Invalid attachment type".into(),
+            )),
+        }
+    }
+}
+
 #[async_trait]
 impl SimpleTransport for TelegramTransport {
     async fn send_message(
@@ -66,34 +101,39 @@ impl SimpleTransport for TelegramTransport {
         let contact: TelegramContact = contact.try_into()?;
         let content: TelegramContent = message.content.try_into()?;
 
-        if message.attachments.is_empty() {
-            let request = SendMessageRequest {
-                chat_id: contact.chat_id,
-                text: content.body,
-            };
+        let request = SendMessageRequest {
+            chat_id: contact.chat_id,
+            text: content.body.clone(),
+        };
 
-            let url = format!("{}{}/sendMessage", API_URL, credential.token);
+        let url = format!("{}{}/sendMessage", API_URL, credential.token);
 
-            self.client
-                .post(url)
-                .json(&request)
-                .send()
-                .await
-                .map_err(|e| EngineError::InternalError(e.into()))?;
-        } else {
+        self.client
+            .post(url)
+            .json(&request)
+            .send()
+            .await
+            .map_err(|e| EngineError::InternalError(e.into()))?;
+
+        // Send attachments as separate messages
+        for attachment in &message.attachments {
             // Consider sending attachments using sendMediaGroup
-            let url = format!("{}{}/sendDocument", API_URL, credential.token);
+            let attach = self.attachments.get_attachment(attachment).await?;
 
-            let attach = self
-                .attachments
-                .get_attachment(&message.attachments[0])
-                .await?;
+            let attachment_type = attach
+                .extras
+                .get("telegram.type")
+                .map(|s| s.as_str())
+                .unwrap_or("document");
+
+            let strategy = AttachmentStrategy::get_strategy(attachment_type)?;
+
+            let url = format!("{}{}/{}", API_URL, credential.token, strategy.method);
 
             let form = reqwest::multipart::Form::new()
                 .text("chat_id", contact.chat_id.to_string())
-                .text("caption", content.body)
                 .part(
-                    "document",
+                    strategy.key,
                     reqwest::multipart::Part::stream(attach.file)
                         .file_name(attach.file_name.clone()),
                 );

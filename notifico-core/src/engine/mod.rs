@@ -27,6 +27,7 @@ pub struct EventContext(pub Map<String, Value>);
 pub struct AttachmentMetadata {
     pub url: Url,
     pub file_name: Option<String>,
+    pub extras: HashMap<String, String>,
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]

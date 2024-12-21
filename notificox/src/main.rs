@@ -17,6 +17,7 @@ use notifico_template::source::fs::FilesystemSource;
 use notifico_template::{PreRenderedTemplate, TemplateSelector, Templater};
 use notifico_transports::all_transports;
 use serde_json::json;
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -177,6 +178,7 @@ async fn main() {
                         attachments.push(AttachmentMetadata {
                             url: Url::from_file_path(abspath).unwrap(),
                             file_name: None,
+                            extras: HashMap::new(),
                         })
                     }
 
