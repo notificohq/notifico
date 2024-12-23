@@ -14,5 +14,5 @@ sea-orm = { workspace = true }
 tracing = "0.1.41"
 serde = { version = "1.0.215", features = ["derive"] }
 jsonwebtoken = "9.3.0"
-anyhow = "1.0.94"
+anyhow = "1.0.95"
 

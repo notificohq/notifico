@@ -13,7 +13,7 @@ notifico-dbpipeline = { path = "../notifico-dbpipeline" }
 notifico-project = { path = "../notifico-project" }
 notifico-attachment = { path = "../notifico-attachment" }
 
-anyhow = "1.0.94"
+anyhow = "1.0.95"
 async-trait = "0.1.83"
 axum = { workspace = true }
 backoff = { version = "0.4.0", features = ["tokio"] }

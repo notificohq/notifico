@@ -13,7 +13,7 @@ tokio = "1.42.0"
 axum = { workspace = true }
 url = { workspace = true }
 sea-orm = { workspace = true }
-anyhow = "1.0.94"
+anyhow = "1.0.95"
 utoipa = { version = "5", features = ["uuid"] }
 flume = "0.11.1"
 thiserror = "2.0.6"
