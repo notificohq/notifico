@@ -10,7 +10,7 @@ notifico-attachment = { path = "../../notifico-attachment" }
 reqwest = { workspace = true }
 serde = "1.0.215"
 async-trait = "0.1.83"
-thiserror = "2.0.6"
+thiserror = "2.0.9"
 tokio = { version = "1.42.0", features = ["fs"] }
 tokio-util = "0.7.13"
 url = { workspace = true }
