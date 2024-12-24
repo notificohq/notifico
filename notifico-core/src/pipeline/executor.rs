@@ -1,6 +1,6 @@
 use crate::engine::{Engine, PipelineContext, StepOutput};
 use serde::{Deserialize, Serialize};
-use tracing::error;
+use tracing::{debug, error, instrument};
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug)]
 pub struct PipelineTask {
@@ -16,7 +16,13 @@ impl PipelineExecutor {
         Self { engine }
     }
 
+    #[instrument(skip_all)]
     pub async fn execute_pipeline(&self, mut task: PipelineTask) {
+        debug!(
+            "Executing pipeline: {}",
+            serde_json::to_string_pretty(&task.context.pipeline).unwrap()
+        );
+
         let steps = task.context.pipeline.steps.clone();
         for (step_number, step) in steps.iter().enumerate() {
             if step_number < task.context.step_number {

@@ -8,6 +8,7 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::sync::Arc;
+use tracing::debug;
 use uuid::Uuid;
 
 pub struct CorePlugin {
@@ -30,35 +31,34 @@ impl EnginePlugin for CorePlugin {
         let step: Step = step.clone().convert_step()?;
 
         match step {
-            Step::SetRecipients { recipients } => {
-                if recipients.is_empty() {
-                    return Ok(StepOutput::Continue);
-                }
-
-                // Special case: if there's only one recipient with single contact, use it directly in current pipeline.
-                if recipients.len() == 1 {
+            Step::SetRecipients { recipients } => match recipients.len() {
+                0 => Ok(StepOutput::Continue),
+                1 => {
+                    debug!("Single recipient; no fork");
                     let recipient = &recipients[0].clone().resolve();
                     context.recipient = Some(recipient.clone());
-                    return Ok(StepOutput::Continue);
+                    Ok(StepOutput::Continue)
                 }
+                _ => {
+                    debug!("Multiple recipients; fork");
+                    for recipient in recipients {
+                        let recipient = recipient.resolve();
 
-                for recipient in recipients {
-                    let recipient = recipient.resolve();
+                        let mut context = context.clone();
 
-                    let mut context = context.clone();
+                        context.step_number += 1;
+                        context.recipient = Some(recipient.clone());
 
-                    context.step_number += 1;
-                    context.recipient = Some(recipient.clone());
+                        context.notification_id = Uuid::now_v7();
 
-                    context.notification_id = Uuid::now_v7();
+                        let task = serde_json::to_string(&PipelineTask { context }).unwrap();
 
-                    let task = serde_json::to_string(&PipelineTask { context }).unwrap();
+                        self.pipeline_sender.send(task).await.unwrap();
+                    }
 
-                    self.pipeline_sender.send(task).await.unwrap();
+                    Ok(StepOutput::Interrupt)
                 }
-
-                Ok(StepOutput::Interrupt)
-            }
+            },
         }
     }
 

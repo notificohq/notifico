@@ -4,7 +4,9 @@ use crate::pipeline::executor::PipelineTask;
 use crate::pipeline::storage::PipelineStorage;
 use crate::queue::SenderChannel;
 use crate::recipient::Recipient;
+use crate::step::SerializedStep;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use std::sync::Arc;
 use tracing::warn;
 use utoipa::ToSchema;
@@ -66,7 +68,17 @@ impl EventHandler {
         }
 
         // Execute each pipeline in a separate task in parallel
-        for pipeline in pipelines {
+        for mut pipeline in pipelines {
+            if !msg.recipients.is_empty() {
+                let step = json!({
+                    "step": "core.set_recipients",
+                    "recipients": msg.recipients.clone(),
+                });
+                pipeline
+                    .steps
+                    .insert(0, SerializedStep(step.as_object().cloned().unwrap()));
+            }
+
             let context = PipelineContext {
                 pipeline: pipeline.clone(),
                 step_number: 0,
@@ -81,21 +93,8 @@ impl EventHandler {
                 event_id: msg.id,
             };
 
-            if msg.recipients.is_empty() {
-                let task = serde_json::to_string(&PipelineTask { context }).unwrap();
-                self.task_tx.send(task).await.unwrap();
-                return Ok(());
-            }
-
-            for recipient in &msg.recipients {
-                let recipient = recipient.clone().resolve();
-                let mut context = context.clone();
-                context.recipient = Some(recipient.clone());
-
-                let task = serde_json::to_string(&PipelineTask { context }).unwrap();
-
-                self.task_tx.send(task).await.unwrap();
-            }
+            let task = serde_json::to_string(&PipelineTask { context }).unwrap();
+            self.task_tx.send(task).await.unwrap();
         }
         Ok(())
     }

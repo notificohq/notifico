@@ -8,7 +8,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
-use tracing::{debug, instrument};
+use tracing::{debug, debug_span, instrument, Instrument};
 use url::Url;
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -103,6 +103,15 @@ impl Engine {
             return Err(EngineError::PluginNotFound(step_type.into()));
         };
 
-        plugin.execute_step(context, step).await
+        let span = debug_span!("execute_step", step = %step_type);
+
+        async move {
+            debug!("Starting step");
+            let result = plugin.execute_step(context, step).await;
+            debug!("Finished step");
+            result
+        }
+        .instrument(span)
+        .await
     }
 }
