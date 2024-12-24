@@ -54,7 +54,7 @@ impl EnginePlugin for SmppPlugin {
         context: &mut PipelineContext,
         step: &SerializedStep,
     ) -> Result<StepOutput, EngineError> {
-        let step: Step = step.clone().convert_step()?;
+        let step: Step = step.convert_step()?;
 
         match step {
             Step::Send { credential } => {

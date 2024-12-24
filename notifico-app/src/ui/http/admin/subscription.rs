@@ -3,7 +3,7 @@ use axum::http::header::CONTENT_RANGE;
 use axum::http::HeaderMap;
 use axum::{Extension, Json};
 use notifico_core::http::admin::ListQueryParams;
-use notifico_subscription::SubscriptionManager;
+use notifico_subscription::SubscriptionController;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::sync::Arc;
@@ -34,7 +34,7 @@ impl From<notifico_subscription::entity::subscription::Model> for SubscriptionIt
 
 pub async fn list(
     Query(params): Query<ListQueryParams>,
-    Extension(subman): Extension<Arc<SubscriptionManager>>,
+    Extension(subman): Extension<Arc<SubscriptionController>>,
 ) -> (HeaderMap, Json<Vec<SubscriptionItem>>) {
     let (query_result, count) = subman.list_subscriptions(params).await.unwrap();
 
@@ -51,7 +51,7 @@ pub async fn list(
 
 pub async fn get(
     Path((params,)): Path<(Uuid,)>,
-    Extension(subman): Extension<Arc<SubscriptionManager>>,
+    Extension(subman): Extension<Arc<SubscriptionController>>,
 ) -> Json<Value> {
     let result = subman.get_by_id(params).await.unwrap();
 
@@ -68,7 +68,7 @@ pub struct SubscriptionUpdate {
 
 pub async fn update(
     Path((id,)): Path<(Uuid,)>,
-    Extension(subman): Extension<Arc<SubscriptionManager>>,
+    Extension(subman): Extension<Arc<SubscriptionController>>,
     Json(update): Json<SubscriptionUpdate>,
 ) -> Json<SubscriptionItem> {
     subman

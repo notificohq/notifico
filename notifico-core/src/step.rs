@@ -11,10 +11,10 @@ impl SerializedStep {
         self.0["step"].as_str().expect("Step type must be a string")
     }
 
-    pub fn convert_step<T>(self) -> Result<T, EngineError>
+    pub fn convert_step<T>(&self) -> Result<T, EngineError>
     where
         T: for<'de> Deserialize<'de>,
     {
-        T::deserialize(self.0).map_err(EngineError::InvalidStep)
+        T::deserialize(&self.0).map_err(EngineError::InvalidStep)
     }
 }

@@ -28,7 +28,7 @@ impl EnginePlugin for CorePlugin {
         context: &mut PipelineContext,
         step: &SerializedStep,
     ) -> Result<StepOutput, EngineError> {
-        let step: Step = step.clone().convert_step()?;
+        let step: Step = step.convert_step()?;
 
         match step {
             Step::SetRecipients { recipients } => match recipients.len() {
@@ -39,8 +39,8 @@ impl EnginePlugin for CorePlugin {
                     context.recipient = Some(recipient.clone());
                     Ok(StepOutput::Continue)
                 }
-                _ => {
-                    debug!("Multiple recipients; fork");
+                n => {
+                    debug!("Multiple recipients: {n}; fork");
                     for recipient in recipients {
                         let recipient = recipient.resolve();
 

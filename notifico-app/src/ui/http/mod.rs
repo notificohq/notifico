@@ -6,7 +6,7 @@ use axum::response::{Html, IntoResponse, Response};
 use axum::Router;
 use notifico_core::pipeline::storage::PipelineStorage;
 use notifico_project::ProjectController;
-use notifico_subscription::SubscriptionManager;
+use notifico_subscription::SubscriptionController;
 use notifico_template::source::TemplateSource;
 use rust_embed::Embed;
 use std::net::SocketAddr;
@@ -14,8 +14,8 @@ use std::sync::Arc;
 use tokio::net::TcpListener;
 
 #[derive(Clone)]
-pub(crate) struct HttpWebExtensions {
-    pub subman: Arc<SubscriptionManager>,
+pub(crate) struct HttpUiExtensions {
+    pub subscription_controller: Arc<SubscriptionController>,
     pub pipeline_storage: Arc<dyn PipelineStorage>,
     pub projects_controller: Arc<ProjectController>,
     pub templates_controller: Arc<dyn TemplateSource>,
@@ -25,7 +25,7 @@ pub(crate) struct HttpWebExtensions {
 #[folder = "assets/"]
 struct Assets;
 
-pub(crate) async fn start(bind: SocketAddr, ext: HttpWebExtensions) {
+pub(crate) async fn start(bind: SocketAddr, ext: HttpUiExtensions) {
     // Bind everything now to catch any errors before spinning up the coroutines
     let service_listener = TcpListener::bind(bind).await.unwrap();
 

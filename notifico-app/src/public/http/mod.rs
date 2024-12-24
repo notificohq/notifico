@@ -3,7 +3,7 @@ mod recipient;
 
 use axum::{Extension, Router};
 use notifico_core::http::SecretKey;
-use notifico_subscription::SubscriptionManager;
+use notifico_subscription::SubscriptionController;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::TcpListener;
@@ -13,8 +13,8 @@ use utoipa_redoc::Servable;
 use utoipa_swagger_ui::SwaggerUi;
 
 #[derive(Clone)]
-pub(crate) struct HttpUserapiExtensions {
-    pub subman: Arc<SubscriptionManager>,
+pub(crate) struct HttpPublicExtensions {
+    pub subscription_controller: Arc<SubscriptionController>,
     pub secret_key: Arc<SecretKey>,
 }
 
@@ -22,7 +22,7 @@ pub(crate) struct HttpUserapiExtensions {
 #[openapi(info(description = "Notifico User API"))]
 struct ApiDoc;
 
-pub(crate) async fn start(bind: SocketAddr, ext: HttpUserapiExtensions) {
+pub(crate) async fn start(bind: SocketAddr, ext: HttpPublicExtensions) {
     // Bind everything now to catch any errors before spinning up the coroutines
     let listener = TcpListener::bind(bind).await.unwrap();
 

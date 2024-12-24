@@ -1,4 +1,3 @@
-use crate::SubscriptionManager;
 use axum::extract::Query;
 use axum::http::StatusCode;
 use axum::routing::get;
@@ -6,10 +5,11 @@ use axum::{Extension, Router};
 use jsonwebtoken::{DecodingKey, Validation};
 use notifico_core::http::auth::Claims;
 use notifico_core::http::SecretKey;
+use notifico_subscription::SubscriptionController;
 use serde::Deserialize;
 use std::sync::Arc;
 
-pub fn get_router(sub_manager: Arc<SubscriptionManager>) -> Router {
+pub fn get_router(sub_manager: Arc<SubscriptionController>) -> Router {
     Router::new()
         .route(
             "/v1/list_unsubscribe",
@@ -26,7 +26,7 @@ struct QueryParams {
 #[allow(private_interfaces)]
 pub(crate) async fn list_unsubscribe(
     Query(params): Query<QueryParams>,
-    Extension(sub_manager): Extension<Arc<SubscriptionManager>>,
+    Extension(sub_manager): Extension<Arc<SubscriptionController>>,
     Extension(secret_key): Extension<Arc<SecretKey>>,
 ) -> StatusCode {
     let token = jsonwebtoken::decode::<Claims>(

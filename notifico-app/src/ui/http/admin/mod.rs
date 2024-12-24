@@ -1,4 +1,4 @@
-use crate::ui::http::HttpWebExtensions;
+use crate::ui::http::HttpUiExtensions;
 use axum::routing::get;
 use axum::{Extension, Router};
 use tower_http::cors::CorsLayer;
@@ -9,7 +9,7 @@ mod project;
 pub mod subscription;
 mod template;
 
-pub(crate) fn get_router(ext: HttpWebExtensions) -> Router {
+pub(crate) fn get_router(ext: HttpUiExtensions) -> Router {
     Router::new()
         // Subscriptions
         .route("/v1/subscriptions", get(subscription::list))
@@ -53,7 +53,7 @@ pub(crate) fn get_router(ext: HttpWebExtensions) -> Router {
                 .delete(template::delete),
         )
         // Layers
-        .layer(Extension(ext.subman))
+        .layer(Extension(ext.subscription_controller))
         .layer(Extension(ext.pipeline_storage))
         .layer(Extension(ext.projects_controller))
         .layer(Extension(ext.templates_controller))

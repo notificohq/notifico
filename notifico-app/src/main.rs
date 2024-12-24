@@ -5,8 +5,8 @@ mod ui;
 
 use crate::amqp::AmqpClient;
 use crate::ingest::http::HttpIngestExtensions;
-use crate::public::http::HttpUserapiExtensions;
-use crate::ui::http::HttpWebExtensions;
+use crate::public::http::HttpPublicExtensions;
+use crate::ui::http::HttpUiExtensions;
 use clap::{Parser, Subcommand};
 use notifico_attachment::AttachmentPlugin;
 use notifico_core::credentials::env::EnvCredentialStorage;
@@ -20,7 +20,8 @@ use notifico_core::recorder::BaseRecorder;
 use notifico_core::transport::TransportRegistry;
 use notifico_dbpipeline::DbPipelineStorage;
 use notifico_project::ProjectController;
-use notifico_subscription::SubscriptionManager;
+use notifico_subscription::plugins::SubscriptionPlugin;
+use notifico_subscription::SubscriptionController;
 use notifico_template::source::db::DbTemplateSource;
 use notifico_template::Templater;
 use notifico_transports::all_transports;
@@ -148,8 +149,11 @@ async fn main() {
             let recorder = Arc::new(BaseRecorder::new());
             let templater_source = Arc::new(DbTemplateSource::new(db_connection.clone()));
 
-            let subman = Arc::new(SubscriptionManager::new(
-                db_connection.clone(),
+            let subscription_controller =
+                Arc::new(SubscriptionController::new(db_connection.clone()));
+
+            let subman = Arc::new(SubscriptionPlugin::new(
+                subscription_controller.clone(),
                 args.secret_key.as_bytes().to_vec(),
                 args.public_url,
             ));
@@ -159,7 +163,7 @@ async fn main() {
             // Setup stateful plugins
             pipelines.setup().await.unwrap();
             templater_source.setup().await.unwrap();
-            subman.setup().await.unwrap();
+            subscription_controller.setup().await.unwrap();
             projects.setup().await.unwrap();
 
             // Spawn HTTP servers
@@ -172,8 +176,8 @@ async fn main() {
 
             if components.is_empty() || components.contains(COMPONENT_PUBLIC) {
                 info!("Starting HTTP public server on {}", args.public);
-                let ext = HttpUserapiExtensions {
-                    subman: subman.clone(),
+                let ext = HttpPublicExtensions {
+                    subscription_controller: subscription_controller.clone(),
                     secret_key: Arc::new(SecretKey(args.secret_key.as_bytes().to_vec())),
                 };
                 public::http::start(args.public, ext).await;
@@ -181,9 +185,9 @@ async fn main() {
 
             if components.is_empty() || components.contains(COMPONENT_UI) {
                 info!("Starting HTTP UI server on {}", args.ui);
-                let ext = HttpWebExtensions {
+                let ext = HttpUiExtensions {
                     projects_controller: projects,
-                    subman: subman.clone(),
+                    subscription_controller: subscription_controller.clone(),
                     pipeline_storage: pipelines.clone(),
                     templates_controller: templater_source.clone(),
                 };
