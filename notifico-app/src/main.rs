@@ -16,6 +16,7 @@ use notifico_core::http::SecretKey;
 use notifico_core::pipeline::event::EventHandler;
 use notifico_core::pipeline::executor::PipelineExecutor;
 use notifico_core::queue::{ReceiverChannel, SenderChannel};
+use notifico_core::recipient::RecipientInlineController;
 use notifico_core::recorder::BaseRecorder;
 use notifico_core::transport::TransportRegistry;
 use notifico_dbpipeline::DbPipelineStorage;
@@ -197,28 +198,29 @@ async fn main() {
 
             if components.is_empty() || components.contains(COMPONENT_WORKER) {
                 // Create Engine with plugins
-                let mut engine = Some(Engine::new());
-                if let Some(engine) = engine.as_mut() {
-                    engine.add_plugin(Arc::new(CorePlugin::new(pipelines_tx.clone())));
-                    engine.add_plugin(Arc::new(Templater::new(templater_source.clone())));
-                    engine.add_plugin(subman.clone());
+                let mut engine = Engine::new();
+                engine.add_plugin(Arc::new(CorePlugin::new(
+                    pipelines_tx.clone(),
+                    Arc::new(RecipientInlineController),
+                )));
+                engine.add_plugin(Arc::new(Templater::new(templater_source.clone())));
+                engine.add_plugin(subman.clone());
 
-                    let attachment_plugin = Arc::new(AttachmentPlugin::new(false));
-                    engine.add_plugin(attachment_plugin.clone());
+                let attachment_plugin = Arc::new(AttachmentPlugin::new(false));
+                engine.add_plugin(attachment_plugin.clone());
 
-                    let mut transport_registry = TransportRegistry::new();
-                    for (engine_plugin, transport_plugin) in all_transports(
-                        credentials.clone(),
-                        recorder.clone(),
-                        attachment_plugin.clone(),
-                    ) {
-                        engine.add_plugin(engine_plugin);
-                        transport_registry.register(transport_plugin);
-                    }
+                let mut transport_registry = TransportRegistry::new();
+                for (engine_plugin, transport_plugin) in all_transports(
+                    credentials.clone(),
+                    recorder.clone(),
+                    attachment_plugin.clone(),
+                ) {
+                    engine.add_plugin(engine_plugin);
+                    transport_registry.register(transport_plugin);
                 }
 
                 // Main loop
-                let executor = Arc::new(PipelineExecutor::new(engine.unwrap()));
+                let executor = Arc::new(PipelineExecutor::new(engine));
                 let event_handler =
                     Arc::new(EventHandler::new(pipelines.clone(), pipelines_tx.clone()));
 

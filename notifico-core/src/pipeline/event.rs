@@ -26,15 +26,8 @@ pub struct ProcessEventRequest {
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "snake_case", untagged)]
 pub enum RecipientSelector {
+    Id(Uuid),
     Recipient(Recipient),
-}
-
-impl RecipientSelector {
-    pub fn resolve(self) -> Recipient {
-        match self {
-            RecipientSelector::Recipient(recipient) => recipient,
-        }
-    }
 }
 
 pub struct EventHandler {

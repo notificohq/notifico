@@ -1,5 +1,5 @@
-use notifico_core::contact::{RawContact, TypedContact};
 use notifico_core::error::EngineError;
+use notifico_core::recipient::{RawContact, TypedContact};
 use serde::Deserialize;
 
 #[derive(Debug, Clone, Deserialize)]

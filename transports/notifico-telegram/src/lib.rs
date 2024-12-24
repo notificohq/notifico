@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 use contact::TelegramContact;
 use notifico_attachment::AttachmentPlugin;
-use notifico_core::contact::RawContact;
 use notifico_core::credentials::RawCredential;
 use notifico_core::engine::{Message, PipelineContext};
+use notifico_core::recipient::RawContact;
 use notifico_core::simpletransport::SimpleTransport;
 use notifico_core::{
     credentials::TypedCredential, error::EngineError, templater::RenderedTemplate,

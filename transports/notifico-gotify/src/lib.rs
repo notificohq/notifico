@@ -1,9 +1,9 @@
 use crate::credentials::GotifyCredentials;
 use async_trait::async_trait;
-use notifico_core::contact::RawContact;
 use notifico_core::credentials::RawCredential;
 use notifico_core::engine::{Message, PipelineContext};
 use notifico_core::error::EngineError;
+use notifico_core::recipient::RawContact;
 use notifico_core::simpletransport::SimpleTransport;
 use notifico_core::templater::RenderedTemplate;
 use serde::{Deserialize, Serialize};

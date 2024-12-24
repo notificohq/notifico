@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 use notifico_attachment::AttachmentPlugin;
-use notifico_core::contact::{RawContact, TypedContact};
 use notifico_core::credentials::{RawCredential, TypedCredential};
 use notifico_core::engine::{Message, PipelineContext};
 use notifico_core::error::EngineError;
+use notifico_core::recipient::{RawContact, TypedContact};
 use notifico_core::simpletransport::SimpleTransport;
 use notifico_core::templater::RenderedTemplate;
 use serde::{Deserialize, Serialize};

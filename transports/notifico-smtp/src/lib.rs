@@ -16,9 +16,9 @@ use lettre::{
 };
 use moka::future::Cache;
 use notifico_attachment::AttachmentPlugin;
-use notifico_core::contact::{RawContact, TypedContact};
 use notifico_core::credentials::RawCredential;
 use notifico_core::engine::Message;
+use notifico_core::recipient::{RawContact, TypedContact};
 use notifico_core::simpletransport::SimpleTransport;
 use notifico_core::{engine::PipelineContext, error::EngineError};
 use serde::Deserialize;

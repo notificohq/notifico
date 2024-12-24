@@ -2050,6 +2050,7 @@ dependencies = [
  "async-trait",
  "axum",
  "flume",
+ "futures",
  "regex",
  "sea-orm",
  "serde",

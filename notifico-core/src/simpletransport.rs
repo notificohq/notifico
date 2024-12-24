@@ -1,7 +1,7 @@
-use crate::contact::RawContact;
 use crate::credentials::{CredentialSelector, CredentialStorage, RawCredential};
 use crate::engine::{EnginePlugin, Message, PipelineContext, StepOutput};
 use crate::error::EngineError;
+use crate::recipient::RawContact;
 use crate::recorder::Recorder;
 use crate::step::SerializedStep;
 use crate::transport::Transport;

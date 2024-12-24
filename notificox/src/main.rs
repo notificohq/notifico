@@ -1,6 +1,5 @@
 use clap::{Parser, Subcommand};
 use notifico_attachment::AttachmentPlugin;
-use notifico_core::contact::RawContact;
 use notifico_core::credentials::memory::MemoryCredentialStorage;
 use notifico_core::credentials::RawCredential;
 use notifico_core::engine::plugin::core::CorePlugin;
@@ -9,7 +8,7 @@ use notifico_core::pipeline::event::{EventHandler, ProcessEventRequest, Recipien
 use notifico_core::pipeline::executor::PipelineExecutor;
 use notifico_core::pipeline::storage::SinglePipelineStorage;
 use notifico_core::pipeline::Pipeline;
-use notifico_core::recipient::Recipient;
+use notifico_core::recipient::{RawContact, Recipient, RecipientInlineController};
 use notifico_core::recorder::BaseRecorder;
 use notifico_core::step::SerializedStep;
 use notifico_core::transport::TransportRegistry;
@@ -228,7 +227,10 @@ async fn main() {
             let (pipelines_tx, pipelines_rx) = flume::unbounded();
             let pipelines_tx = Arc::new(pipelines_tx);
 
-            engine.add_plugin(Arc::new(CorePlugin::new(pipelines_tx.clone())));
+            engine.add_plugin(Arc::new(CorePlugin::new(
+                pipelines_tx.clone(),
+                Arc::new(RecipientInlineController),
+            )));
 
             let templater_source = Arc::new(FilesystemSource::new(template_dir));
             engine.add_plugin(Arc::new(Templater::new(templater_source.clone())));

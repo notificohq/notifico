@@ -1,9 +1,9 @@
 use crate::cloudapi::{MessageType, MessagingProduct};
 use crate::credentials::WhatsAppCredentials;
 use async_trait::async_trait;
-use notifico_core::contact::{PhoneContact, RawContact};
 use notifico_core::credentials::RawCredential;
 use notifico_core::engine::{Message, PipelineContext};
+use notifico_core::recipient::{PhoneContact, RawContact};
 use notifico_core::simpletransport::SimpleTransport;
 use notifico_core::{error::EngineError, templater::RenderedTemplate};
 use serde::{Deserialize, Serialize};

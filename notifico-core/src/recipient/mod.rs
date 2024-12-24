@@ -1,4 +1,8 @@
-use crate::contact::{RawContact, TypedContact};
+mod contact;
+mod controller;
+
+pub use contact::*;
+pub use controller::*;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
