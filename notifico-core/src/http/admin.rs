@@ -1,4 +1,6 @@
+use crate::error::EngineError;
 use anyhow::bail;
+use async_trait::async_trait;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect, Select};
 use serde::Deserialize;
 use serde_json::Value;
@@ -89,4 +91,18 @@ pub struct ListQueryParams {
 pub struct PaginatedResult<T> {
     pub items: Vec<T>,
     pub total_count: u64,
+}
+
+#[async_trait]
+pub trait AdminCrudTable {
+    type Entity;
+
+    async fn get_by_id(&self, id: Uuid) -> Result<Option<Self::Entity>, EngineError>;
+    async fn list(
+        &self,
+        params: ListQueryParams,
+    ) -> Result<PaginatedResult<(Uuid, Self::Entity)>, EngineError>;
+    async fn create(&self, entity: Self::Entity) -> Result<(Uuid, Self::Entity), EngineError>;
+    async fn update(&self, id: Uuid, entity: Self::Entity) -> Result<Self::Entity, EngineError>;
+    async fn delete(&self, id: Uuid) -> Result<(), EngineError>;
 }

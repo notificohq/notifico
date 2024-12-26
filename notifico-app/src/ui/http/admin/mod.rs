@@ -13,10 +13,7 @@ pub(crate) fn get_router(ext: HttpUiExtensions) -> Router {
     Router::new()
         // Subscriptions
         .route("/v1/subscriptions", get(subscription::list))
-        .route(
-            "/v1/subscriptions/:id",
-            get(subscription::get).put(subscription::update),
-        )
+        .route("/v1/subscriptions/:id", get(subscription::get))
         // Pipelines
         .route("/v1/pipelines", get(pipeline::list).post(pipeline::create))
         .route(

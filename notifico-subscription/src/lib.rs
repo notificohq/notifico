@@ -4,14 +4,16 @@ pub mod plugins;
 mod step;
 
 use crate::entity::subscription;
+use async_trait::async_trait;
 use entity::prelude::*;
 use migration::{Migrator, MigratorTrait};
 use notifico_core::error::EngineError;
-use notifico_core::http::admin::{ListQueryParams, ListableTrait};
+use notifico_core::http::admin::{AdminCrudTable, ListQueryParams, ListableTrait, PaginatedResult};
 use sea_orm::sea_query::OnConflict;
 use sea_orm::ActiveValue::Set;
 use sea_orm::{ColumnTrait, EntityTrait, PaginatorTrait};
 use sea_orm::{DatabaseConnection, EntityOrSelect, QueryFilter};
+use serde::Serialize;
 use tracing::error;
 use uuid::Uuid;
 
@@ -84,11 +86,47 @@ impl SubscriptionController {
             }
         }
     }
+}
 
-    pub async fn list_subscriptions(
+#[derive(Clone, Serialize)]
+pub struct SubscriptionItem {
+    pub id: Uuid,
+    pub project_id: Uuid,
+    pub recipient_id: Uuid,
+    pub event: String,
+    pub channel: String,
+    pub is_subscribed: bool,
+}
+
+impl From<subscription::Model> for SubscriptionItem {
+    fn from(value: subscription::Model) -> Self {
+        SubscriptionItem {
+            id: value.id,
+            project_id: value.project_id,
+            recipient_id: value.recipient_id,
+            event: value.event,
+            channel: value.channel,
+            is_subscribed: value.is_subscribed,
+        }
+    }
+}
+
+#[async_trait]
+impl AdminCrudTable for SubscriptionController {
+    type Entity = SubscriptionItem;
+
+    async fn get_by_id(&self, id: Uuid) -> Result<Option<Self::Entity>, EngineError> {
+        let query = Subscription::find_by_id(id)
+            .one(&self.db)
+            .await?
+            .map(|m| m.into());
+        Ok(query)
+    }
+
+    async fn list(
         &self,
         params: ListQueryParams,
-    ) -> Result<(Vec<subscription::Model>, u64), EngineError> {
+    ) -> Result<PaginatedResult<(Uuid, Self::Entity)>, EngineError> {
         let mut query_count = Subscription::find();
         query_count = query_count.apply_params(&params).unwrap();
         let count = query_count.count(&self.db).await?;
@@ -97,25 +135,24 @@ impl SubscriptionController {
         query = query.apply_params(&params).unwrap();
 
         let results = query.all(&self.db).await?;
-        Ok((results, count))
+        Ok(PaginatedResult {
+            items: results
+                .into_iter()
+                .map(|model| (model.id, model.into()))
+                .collect(),
+            total_count: count,
+        })
     }
 
-    pub async fn get_by_id(&self, id: Uuid) -> Result<Option<subscription::Model>, EngineError> {
-        let query = Subscription::find_by_id(id).one(&self.db).await?;
-        Ok(query)
+    async fn create(&self, _entity: Self::Entity) -> Result<(Uuid, Self::Entity), EngineError> {
+        todo!()
     }
 
-    pub async fn update_subscription(
-        &self,
-        id: Uuid,
-        is_subscribed: bool,
-    ) -> Result<(), EngineError> {
-        let model = subscription::ActiveModel {
-            id: Set(id),
-            is_subscribed: Set(is_subscribed),
-            ..Default::default()
-        };
-        Subscription::update(model).exec(&self.db).await?;
-        Ok(())
+    async fn update(&self, _id: Uuid, _entity: Self::Entity) -> Result<Self::Entity, EngineError> {
+        todo!()
+    }
+
+    async fn delete(&self, _id: Uuid) -> Result<(), EngineError> {
+        todo!()
     }
 }

@@ -2,49 +2,22 @@ use axum::extract::{Path, Query};
 use axum::http::header::CONTENT_RANGE;
 use axum::http::HeaderMap;
 use axum::{Extension, Json};
-use notifico_core::http::admin::ListQueryParams;
-use notifico_subscription::SubscriptionController;
-use serde::{Deserialize, Serialize};
+use notifico_core::http::admin::{AdminCrudTable, ListQueryParams, PaginatedResult};
+use notifico_subscription::{SubscriptionController, SubscriptionItem};
 use serde_json::{json, Value};
 use std::sync::Arc;
 use uuid::Uuid;
-
-#[derive(Clone, Serialize)]
-pub struct SubscriptionItem {
-    pub id: Uuid,
-    pub project_id: Uuid,
-    pub recipient_id: Uuid,
-    pub event: String,
-    pub channel: String,
-    pub is_subscribed: bool,
-}
-
-impl From<notifico_subscription::entity::subscription::Model> for SubscriptionItem {
-    fn from(value: notifico_subscription::entity::subscription::Model) -> Self {
-        SubscriptionItem {
-            id: value.id,
-            project_id: value.project_id,
-            recipient_id: value.recipient_id,
-            event: value.event,
-            channel: value.channel,
-            is_subscribed: value.is_subscribed,
-        }
-    }
-}
 
 pub async fn list(
     Query(params): Query<ListQueryParams>,
     Extension(subman): Extension<Arc<SubscriptionController>>,
 ) -> (HeaderMap, Json<Vec<SubscriptionItem>>) {
-    let (query_result, count) = subman.list_subscriptions(params).await.unwrap();
+    let PaginatedResult { items, total_count } = subman.list(params).await.unwrap();
 
-    let subscriptions = query_result
-        .into_iter()
-        .map(SubscriptionItem::from)
-        .collect();
+    let subscriptions = items.into_iter().map(|(_, model)| model).collect();
 
     let mut headers = HeaderMap::new();
-    headers.insert(CONTENT_RANGE, count.into());
+    headers.insert(CONTENT_RANGE, total_count.into());
 
     (headers, Json(subscriptions))
 }
@@ -58,24 +31,5 @@ pub async fn get(
     let Some(result) = result else {
         return Json(json!({}));
     };
-    Json(serde_json::to_value(SubscriptionItem::from(result)).unwrap())
-}
-
-#[derive(Clone, Deserialize)]
-pub struct SubscriptionUpdate {
-    pub is_subscribed: Option<bool>,
-}
-
-pub async fn update(
-    Path((id,)): Path<(Uuid,)>,
-    Extension(subman): Extension<Arc<SubscriptionController>>,
-    Json(update): Json<SubscriptionUpdate>,
-) -> Json<SubscriptionItem> {
-    subman
-        .update_subscription(id, update.is_subscribed.unwrap())
-        .await
-        .unwrap();
-
-    let result = subman.get_by_id(id).await.unwrap().unwrap();
-    Json(result.into())
+    Json(serde_json::to_value(result).unwrap())
 }

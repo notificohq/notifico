@@ -2206,6 +2206,7 @@ name = "notifico-subscription"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "jsonwebtoken",
  "notifico-core",
  "notifico-subcription-migration",
