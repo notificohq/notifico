@@ -5,11 +5,13 @@ use async_trait::async_trait;
 use futures::stream::{self, BoxStream};
 use futures::StreamExt;
 use tracing::warn;
+use uuid::Uuid;
 
 #[async_trait]
 pub trait RecipientController: Send + Sync {
     async fn get_recipients(
         &self,
+        project: Uuid,
         sel: Vec<RecipientSelector>,
     ) -> Result<BoxStream<Recipient>, EngineError>;
 }
@@ -20,6 +22,7 @@ pub struct RecipientInlineController;
 impl RecipientController for RecipientInlineController {
     async fn get_recipients(
         &self,
+        _project: Uuid,
         sel: Vec<RecipientSelector>,
     ) -> Result<BoxStream<Recipient>, EngineError> {
         Ok(

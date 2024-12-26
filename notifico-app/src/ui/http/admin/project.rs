@@ -13,7 +13,8 @@ pub async fn list_projects(
     Query(params): Query<ListQueryParams>,
     Extension(controller): Extension<Arc<ProjectController>>,
 ) -> impl IntoResponse {
-    let PaginatedResult { items, total_count } = controller.list(params).await.unwrap();
+    let PaginatedResult { items, total_count } =
+        controller.list(params, Default::default()).await.unwrap();
 
     let mut headers = HeaderMap::new();
     headers.insert(CONTENT_RANGE, total_count.into());

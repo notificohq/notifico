@@ -1,6 +1,7 @@
 mod context;
 pub mod entity;
 pub mod plugins;
+// mod recipient_controller;
 mod step;
 
 use crate::entity::subscription;
@@ -8,12 +9,15 @@ use async_trait::async_trait;
 use entity::prelude::*;
 use migration::{Migrator, MigratorTrait};
 use notifico_core::error::EngineError;
-use notifico_core::http::admin::{AdminCrudTable, ListQueryParams, ListableTrait, PaginatedResult};
+use notifico_core::http::admin::{
+    AdminCrudTable, ItemWithId, ListQueryParams, ListableTrait, PaginatedResult,
+};
 use sea_orm::sea_query::OnConflict;
 use sea_orm::ActiveValue::Set;
 use sea_orm::{ColumnTrait, EntityTrait, PaginatorTrait};
 use sea_orm::{DatabaseConnection, EntityOrSelect, QueryFilter};
 use serde::Serialize;
+use std::collections::HashMap;
 use tracing::error;
 use uuid::Uuid;
 
@@ -113,9 +117,9 @@ impl From<subscription::Model> for SubscriptionItem {
 
 #[async_trait]
 impl AdminCrudTable for SubscriptionController {
-    type Entity = SubscriptionItem;
+    type Item = SubscriptionItem;
 
-    async fn get_by_id(&self, id: Uuid) -> Result<Option<Self::Entity>, EngineError> {
+    async fn get_by_id(&self, id: Uuid) -> Result<Option<Self::Item>, EngineError> {
         let query = Subscription::find_by_id(id)
             .one(&self.db)
             .await?
@@ -126,7 +130,8 @@ impl AdminCrudTable for SubscriptionController {
     async fn list(
         &self,
         params: ListQueryParams,
-    ) -> Result<PaginatedResult<(Uuid, Self::Entity)>, EngineError> {
+        _extras: HashMap<String, String>,
+    ) -> Result<PaginatedResult<ItemWithId<Self::Item>>, EngineError> {
         let mut query_count = Subscription::find();
         query_count = query_count.apply_params(&params).unwrap();
         let count = query_count.count(&self.db).await?;
@@ -138,17 +143,24 @@ impl AdminCrudTable for SubscriptionController {
         Ok(PaginatedResult {
             items: results
                 .into_iter()
-                .map(|model| (model.id, model.into()))
+                .map(|model| ItemWithId {
+                    id: model.id,
+                    item: model.into(),
+                })
                 .collect(),
             total_count: count,
         })
     }
 
-    async fn create(&self, _entity: Self::Entity) -> Result<(Uuid, Self::Entity), EngineError> {
+    async fn create(&self, _entity: Self::Item) -> Result<ItemWithId<Self::Item>, EngineError> {
         todo!()
     }
 
-    async fn update(&self, _id: Uuid, _entity: Self::Entity) -> Result<Self::Entity, EngineError> {
+    async fn update(
+        &self,
+        _id: Uuid,
+        _entity: Self::Item,
+    ) -> Result<ItemWithId<Self::Item>, EngineError> {
         todo!()
     }
 

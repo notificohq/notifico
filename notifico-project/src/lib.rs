@@ -1,9 +1,12 @@
 use async_trait::async_trait;
 use migration::{Migrator, MigratorTrait};
 use notifico_core::error::EngineError;
-use notifico_core::http::admin::{AdminCrudTable, ListQueryParams, ListableTrait, PaginatedResult};
+use notifico_core::http::admin::{
+    AdminCrudTable, ItemWithId, ListQueryParams, ListableTrait, PaginatedResult,
+};
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, PaginatorTrait, Set};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::error::Error;
 use uuid::Uuid;
 
@@ -37,9 +40,9 @@ impl From<entity::project::Model> for Project {
 
 #[async_trait]
 impl AdminCrudTable for ProjectController {
-    type Entity = Project;
+    type Item = Project;
 
-    async fn get_by_id(&self, id: Uuid) -> Result<Option<Self::Entity>, EngineError> {
+    async fn get_by_id(&self, id: Uuid) -> Result<Option<Self::Item>, EngineError> {
         let query = entity::project::Entity::find_by_id(id)
             .one(&self.db)
             .await?;
@@ -49,7 +52,8 @@ impl AdminCrudTable for ProjectController {
     async fn list(
         &self,
         params: ListQueryParams,
-    ) -> Result<PaginatedResult<(Uuid, Self::Entity)>, EngineError> {
+        _extras: HashMap<String, String>,
+    ) -> Result<PaginatedResult<ItemWithId<Self::Item>>, EngineError> {
         let query = entity::project::Entity::find()
             .apply_params(&params)
             .unwrap()
@@ -59,13 +63,16 @@ impl AdminCrudTable for ProjectController {
         Ok(PaginatedResult {
             items: query
                 .into_iter()
-                .map(|m| (m.id, Project::from(m)))
+                .map(|m| ItemWithId {
+                    id: m.id,
+                    item: Project::from(m),
+                })
                 .collect(),
             total_count: entity::project::Entity::find().count(&self.db).await?,
         })
     }
 
-    async fn create(&self, entity: Self::Entity) -> Result<(Uuid, Self::Entity), EngineError> {
+    async fn create(&self, entity: Self::Item) -> Result<ItemWithId<Self::Item>, EngineError> {
         let id = Uuid::now_v7();
 
         entity::project::ActiveModel {
@@ -75,23 +82,30 @@ impl AdminCrudTable for ProjectController {
         .insert(&self.db)
         .await?;
 
-        Ok((
+        Ok(ItemWithId {
             id,
-            Project {
+            item: Project {
                 name: entity.name.to_string(),
             },
-        ))
+        })
     }
 
-    async fn update(&self, id: Uuid, entity: Self::Entity) -> Result<Self::Entity, EngineError> {
+    async fn update(
+        &self,
+        id: Uuid,
+        entity: Self::Item,
+    ) -> Result<ItemWithId<Self::Item>, EngineError> {
         entity::project::ActiveModel {
             id: Set(id),
             name: Set(entity.name.to_string()),
         }
         .update(&self.db)
         .await?;
-        Ok(Project {
-            name: entity.name.to_string(),
+        Ok(ItemWithId {
+            id,
+            item: Project {
+                name: entity.name.to_string(),
+            },
         })
     }
 

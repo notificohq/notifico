@@ -41,7 +41,10 @@ impl EnginePlugin for CorePlugin {
 
         match step {
             Step::SetRecipients { recipients } => {
-                let mut recipients = self.recipient_controller.get_recipients(recipients).await?;
+                let mut recipients = self
+                    .recipient_controller
+                    .get_recipients(context.project_id, recipients)
+                    .await?;
                 let mut recipient_number = 0;
 
                 while let Some(recipient) = recipients.next().await {

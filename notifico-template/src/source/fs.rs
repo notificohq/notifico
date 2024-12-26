@@ -1,8 +1,7 @@
 use crate::error::TemplaterError;
-use crate::source::{TemplateItem, TemplateSource};
+use crate::source::TemplateSource;
 use crate::{PreRenderedTemplate, TemplateSelector};
 use async_trait::async_trait;
-use notifico_core::http::admin::{ListQueryParams, PaginatedResult};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -79,29 +78,5 @@ impl TemplateSource for FilesystemSource {
             }
             _ => Err(TemplaterError::TemplateNotFound),
         }
-    }
-
-    async fn get_template_by_id(&self, _id: Uuid) -> Result<TemplateItem, TemplaterError> {
-        unimplemented!()
-    }
-
-    async fn list_templates(
-        &self,
-        _channel: &str,
-        _params: ListQueryParams,
-    ) -> Result<PaginatedResult<TemplateItem>, TemplaterError> {
-        unimplemented!()
-    }
-
-    async fn create_template(&self, _item: TemplateItem) -> Result<TemplateItem, TemplaterError> {
-        unimplemented!()
-    }
-
-    async fn update_template(&self, _item: TemplateItem) -> Result<TemplateItem, TemplaterError> {
-        unimplemented!()
-    }
-
-    async fn delete_template(&self, _id: Uuid) -> Result<(), TemplaterError> {
-        unimplemented!()
     }
 }

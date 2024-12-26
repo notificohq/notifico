@@ -2,9 +2,9 @@ use crate::error::EngineError;
 use anyhow::bail;
 use async_trait::async_trait;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect, Select};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::error::Error;
 use std::str::FromStr;
 use uuid::Uuid;
@@ -93,16 +93,28 @@ pub struct PaginatedResult<T> {
     pub total_count: u64,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct ItemWithId<T> {
+    pub id: Uuid,
+    #[serde(flatten)]
+    pub item: T,
+}
+
 #[async_trait]
 pub trait AdminCrudTable {
-    type Entity;
+    type Item;
 
-    async fn get_by_id(&self, id: Uuid) -> Result<Option<Self::Entity>, EngineError>;
+    async fn get_by_id(&self, id: Uuid) -> Result<Option<Self::Item>, EngineError>;
     async fn list(
         &self,
         params: ListQueryParams,
-    ) -> Result<PaginatedResult<(Uuid, Self::Entity)>, EngineError>;
-    async fn create(&self, entity: Self::Entity) -> Result<(Uuid, Self::Entity), EngineError>;
-    async fn update(&self, id: Uuid, entity: Self::Entity) -> Result<Self::Entity, EngineError>;
+        extras: HashMap<String, String>,
+    ) -> Result<PaginatedResult<ItemWithId<Self::Item>>, EngineError>;
+    async fn create(&self, item: Self::Item) -> Result<ItemWithId<Self::Item>, EngineError>;
+    async fn update(
+        &self,
+        id: Uuid,
+        item: Self::Item,
+    ) -> Result<ItemWithId<Self::Item>, EngineError>;
     async fn delete(&self, id: Uuid) -> Result<(), EngineError>;
 }

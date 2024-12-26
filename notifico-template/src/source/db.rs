@@ -3,11 +3,15 @@ use crate::source::{TemplateItem, TemplateSource};
 use crate::{entity, PreRenderedTemplate, TemplateSelector};
 use async_trait::async_trait;
 use migration::{Migrator, MigratorTrait};
-use notifico_core::http::admin::{ListQueryParams, ListableTrait, PaginatedResult};
+use notifico_core::error::EngineError;
+use notifico_core::http::admin::{
+    AdminCrudTable, ItemWithId, ListQueryParams, ListableTrait, PaginatedResult,
+};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
     Set,
 };
+use std::collections::HashMap;
 use uuid::Uuid;
 
 pub struct DbTemplateSource {
@@ -42,46 +46,54 @@ impl TemplateSource for DbTemplateSource {
         }
         .into())
     }
+}
 
-    async fn get_template_by_id(&self, id: Uuid) -> Result<TemplateItem, TemplaterError> {
+impl From<entity::template::Model> for PreRenderedTemplate {
+    fn from(value: entity::template::Model) -> Self {
+        serde_json::from_value(value.template).unwrap_or_default()
+    }
+}
+
+#[async_trait]
+impl AdminCrudTable for DbTemplateSource {
+    type Item = TemplateItem;
+
+    async fn get_by_id(&self, id: Uuid) -> Result<Option<Self::Item>, EngineError> {
         Ok(entity::template::Entity::find_by_id(id)
             .one(&self.db)
             .await?
-            .ok_or(TemplaterError::TemplateNotFound)?
-            .into())
+            .map(|m| ItemWithId::from(m).item))
     }
 
-    async fn list_templates(
+    async fn list(
         &self,
-        channel: &str,
         params: ListQueryParams,
-    ) -> Result<PaginatedResult<TemplateItem>, TemplaterError> {
+        extras: HashMap<String, String>,
+    ) -> Result<PaginatedResult<ItemWithId<Self::Item>>, EngineError> {
+        let channel = extras.get("channel");
+
+        let mut items = entity::template::Entity::find();
+        if let Some(channel) = channel {
+            items = items.filter(entity::template::Column::Channel.eq(channel));
+        }
         Ok(PaginatedResult {
-            items: entity::template::Entity::find()
+            items: items
+                .clone()
                 .apply_params(&params)
                 .unwrap()
-                .filter(entity::template::Column::Channel.eq(channel))
                 .all(&self.db)
                 .await?
                 .into_iter()
-                .map(TemplateItem::from)
+                .map(|m| m.into())
                 .collect(),
-            total_count: entity::template::Entity::find()
-                .apply_filter(&params)
-                .unwrap()
-                .filter(entity::template::Column::Channel.eq(channel))
-                .count(&self.db)
-                .await?,
+            total_count: items.apply_filter(&params).unwrap().count(&self.db).await?,
         })
     }
 
-    async fn create_template(
-        &self,
-        mut item: TemplateItem,
-    ) -> Result<TemplateItem, TemplaterError> {
-        item.id = Uuid::now_v7();
+    async fn create(&self, item: Self::Item) -> Result<ItemWithId<Self::Item>, EngineError> {
+        let id = Uuid::now_v7();
         entity::template::ActiveModel {
-            id: Set(item.id),
+            id: Set(id),
             project_id: Set(item.project_id),
             name: Set(item.name.clone()),
             channel: Set(item.channel.clone()),
@@ -89,12 +101,16 @@ impl TemplateSource for DbTemplateSource {
         }
         .insert(&self.db)
         .await?;
-        Ok(item)
+        Ok(ItemWithId { id: id, item })
     }
 
-    async fn update_template(&self, item: TemplateItem) -> Result<TemplateItem, TemplaterError> {
+    async fn update(
+        &self,
+        id: Uuid,
+        item: Self::Item,
+    ) -> Result<ItemWithId<Self::Item>, EngineError> {
         entity::template::ActiveModel {
-            id: Set(item.id),
+            id: Set(id),
             project_id: Set(item.project_id),
             name: Set(item.name.clone()),
             channel: Set(item.channel.clone()),
@@ -102,10 +118,10 @@ impl TemplateSource for DbTemplateSource {
         }
         .update(&self.db)
         .await?;
-        Ok(item)
+        Ok(ItemWithId { id, item })
     }
 
-    async fn delete_template(&self, id: Uuid) -> Result<(), TemplaterError> {
+    async fn delete(&self, id: Uuid) -> Result<(), EngineError> {
         entity::template::ActiveModel {
             id: Set(id),
             ..Default::default()
@@ -113,11 +129,5 @@ impl TemplateSource for DbTemplateSource {
         .delete(&self.db)
         .await?;
         Ok(())
-    }
-}
-
-impl From<entity::template::Model> for PreRenderedTemplate {
-    fn from(value: entity::template::Model) -> Self {
-        serde_json::from_value(value.template).unwrap_or_default()
     }
 }
