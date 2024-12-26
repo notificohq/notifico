@@ -2115,6 +2115,7 @@ dependencies = [
 name = "notifico-project"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "notifico-core",
  "notifico-project-migration",
  "sea-orm",

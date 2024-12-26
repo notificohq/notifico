@@ -1,16 +1,17 @@
+use async_trait::async_trait;
 use migration::{Migrator, MigratorTrait};
-use notifico_core::http::admin::{ListQueryParams, ListableTrait, PaginatedResult};
+use notifico_core::error::EngineError;
+use notifico_core::http::admin::{AdminCrudTable, ListQueryParams, ListableTrait, PaginatedResult};
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, PaginatorTrait, Set};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::error::Error;
 use uuid::Uuid;
 
 #[allow(unused_imports)]
 mod entity;
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Project {
-    pub id: Uuid,
     pub name: String,
 }
 
@@ -26,59 +27,75 @@ impl ProjectController {
     pub async fn setup(&self) -> Result<(), Box<dyn Error>> {
         Ok(Migrator::up(&self.db, None).await?)
     }
+}
 
-    pub async fn create(&self, name: &str) -> Result<Project, Box<dyn Error>> {
-        let id = Uuid::now_v7();
-
-        entity::project::ActiveModel {
-            id: Set(id),
-            name: Set(name.to_string()),
-        }
-        .insert(&self.db)
-        .await?;
-
-        Ok(Project {
-            id,
-            name: name.to_string(),
-        })
+impl From<entity::project::Model> for Project {
+    fn from(value: entity::project::Model) -> Self {
+        Project { name: value.name }
     }
+}
 
-    pub async fn get_by_id(&self, id: Uuid) -> Result<Option<Project>, Box<dyn Error>> {
+#[async_trait]
+impl AdminCrudTable for ProjectController {
+    type Entity = Project;
+
+    async fn get_by_id(&self, id: Uuid) -> Result<Option<Self::Entity>, EngineError> {
         let query = entity::project::Entity::find_by_id(id)
             .one(&self.db)
             .await?;
         Ok(query.map(Project::from))
     }
 
-    pub async fn list(
+    async fn list(
         &self,
         params: ListQueryParams,
-    ) -> Result<PaginatedResult<Project>, Box<dyn Error>> {
+    ) -> Result<PaginatedResult<(Uuid, Self::Entity)>, EngineError> {
         let query = entity::project::Entity::find()
-            .apply_params(&params)?
+            .apply_params(&params)
+            .unwrap()
             .all(&self.db)
             .await?;
 
         Ok(PaginatedResult {
-            items: query.into_iter().map(Project::from).collect(),
+            items: query
+                .into_iter()
+                .map(|m| (m.id, Project::from(m)))
+                .collect(),
             total_count: entity::project::Entity::find().count(&self.db).await?,
         })
     }
 
-    pub async fn update(&self, id: Uuid, name: &str) -> Result<Project, Box<dyn Error>> {
+    async fn create(&self, entity: Self::Entity) -> Result<(Uuid, Self::Entity), EngineError> {
+        let id = Uuid::now_v7();
+
         entity::project::ActiveModel {
             id: Set(id),
-            name: Set(name.to_string()),
+            name: Set(entity.name.to_string()),
+        }
+        .insert(&self.db)
+        .await?;
+
+        Ok((
+            id,
+            Project {
+                name: entity.name.to_string(),
+            },
+        ))
+    }
+
+    async fn update(&self, id: Uuid, entity: Self::Entity) -> Result<Self::Entity, EngineError> {
+        entity::project::ActiveModel {
+            id: Set(id),
+            name: Set(entity.name.to_string()),
         }
         .update(&self.db)
         .await?;
         Ok(Project {
-            id,
-            name: name.to_string(),
+            name: entity.name.to_string(),
         })
     }
 
-    pub async fn delete(&self, id: Uuid) -> Result<(), Box<dyn Error>> {
+    async fn delete(&self, id: Uuid) -> Result<(), EngineError> {
         if id.is_nil() {
             return Ok(());
         }
@@ -90,14 +107,5 @@ impl ProjectController {
         .delete(&self.db)
         .await?;
         Ok(())
-    }
-}
-
-impl From<entity::project::Model> for Project {
-    fn from(value: entity::project::Model) -> Self {
-        Project {
-            id: value.id,
-            name: value.name,
-        }
     }
 }

@@ -3,9 +3,8 @@ use axum::http::header::CONTENT_RANGE;
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use axum::{Extension, Json};
-use notifico_core::http::admin::{ListQueryParams, PaginatedResult};
-use notifico_project::ProjectController;
-use serde::Deserialize;
+use notifico_core::http::admin::{AdminCrudTable, ListQueryParams, PaginatedResult};
+use notifico_project::{Project, ProjectController};
 use serde_json::json;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -34,16 +33,11 @@ pub async fn get(
     (StatusCode::OK, Json(Some(result)))
 }
 
-#[derive(Deserialize)]
-pub struct ProjectUpdate {
-    name: String,
-}
-
 pub async fn create(
     Extension(controller): Extension<Arc<ProjectController>>,
-    Json(update): Json<ProjectUpdate>,
+    Json(update): Json<Project>,
 ) -> impl IntoResponse {
-    let result = controller.create(&update.name).await.unwrap();
+    let result = controller.create(update).await.unwrap();
 
     (
         StatusCode::CREATED,
@@ -54,9 +48,9 @@ pub async fn create(
 pub async fn update(
     Extension(controller): Extension<Arc<ProjectController>>,
     Path((id,)): Path<(Uuid,)>,
-    Json(update): Json<ProjectUpdate>,
+    Json(update): Json<Project>,
 ) -> impl IntoResponse {
-    let result = controller.update(id, &update.name).await.unwrap();
+    let result = controller.update(id, update).await.unwrap();
 
     (
         StatusCode::ACCEPTED,
