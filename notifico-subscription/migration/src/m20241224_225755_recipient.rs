@@ -80,12 +80,29 @@ impl MigrationTrait for Migration {
             .await?;
 
         manager
-            .create_foreign_key(
-                ForeignKey::create()
-                    .from(Subscription::Table, Subscription::RecipientId)
-                    .to(Recipient::Table, Recipient::Id)
-                    .on_delete(ForeignKeyAction::Cascade)
-                    .on_update(ForeignKeyAction::Restrict)
+            .create_table(
+                Table::create()
+                    .table(Subscription::Table)
+                    .if_not_exists()
+                    .col(pk_uuid(Subscription::Id))
+                    .col(uuid(Subscription::RecipientId))
+                    .col(string(Subscription::Event))
+                    .col(string(Subscription::Channel))
+                    .col(boolean(Subscription::IsSubscribed))
+                    .foreign_key(
+                        ForeignKey::create()
+                            .from(Subscription::Table, Subscription::RecipientId)
+                            .to(Recipient::Table, Recipient::Id)
+                            .on_delete(ForeignKeyAction::Cascade)
+                            .on_update(ForeignKeyAction::Restrict),
+                    )
+                    .index(
+                        Index::create()
+                            .name("idx_subscription_project_id")
+                            .table(Subscription::Table)
+                            .col(Subscription::RecipientId)
+                            .unique(),
+                    )
                     .to_owned(),
             )
             .await?;
@@ -131,5 +148,9 @@ enum RecipientGroupJ {
 #[derive(DeriveIden)]
 enum Subscription {
     Table,
+    Id,
+    Event,
+    Channel,
     RecipientId,
+    IsSubscribed,
 }
