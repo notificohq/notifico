@@ -21,8 +21,10 @@ use notifico_core::recorder::BaseRecorder;
 use notifico_core::transport::TransportRegistry;
 use notifico_dbpipeline::DbPipelineStorage;
 use notifico_project::ProjectController;
+use notifico_subscription::controllers::contact::ContactDbController;
+use notifico_subscription::controllers::recipient::RecipientDbController;
+use notifico_subscription::controllers::subscription::SubscriptionDbController;
 use notifico_subscription::plugins::SubscriptionPlugin;
-use notifico_subscription::SubscriptionController;
 use notifico_template::source::db::DbTemplateSource;
 use notifico_template::Templater;
 use notifico_transports::all_transports;
@@ -151,13 +153,16 @@ async fn main() {
             let templater_source = Arc::new(DbTemplateSource::new(db_connection.clone()));
 
             let subscription_controller =
-                Arc::new(SubscriptionController::new(db_connection.clone()));
+                Arc::new(SubscriptionDbController::new(db_connection.clone()));
 
             let subman = Arc::new(SubscriptionPlugin::new(
                 subscription_controller.clone(),
                 args.secret_key.as_bytes().to_vec(),
                 args.public_url,
             ));
+
+            let recipient_controller = Arc::new(RecipientDbController::new(db_connection.clone()));
+            let contact_controller = Arc::new(ContactDbController::new(db_connection.clone()));
 
             let projects = Arc::new(ProjectController::new(db_connection.clone()));
 
@@ -187,6 +192,8 @@ async fn main() {
             if components.is_empty() || components.contains(COMPONENT_UI) {
                 info!("Starting HTTP UI server on {}", args.ui);
                 let ext = HttpUiExtensions {
+                    recipient_controller: recipient_controller.clone(),
+                    contact_controller: contact_controller.clone(),
                     projects_controller: projects,
                     subscription_controller: subscription_controller.clone(),
                     pipeline_storage: pipelines.clone(),

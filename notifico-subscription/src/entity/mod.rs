@@ -2,4 +2,8 @@
 
 pub mod prelude;
 
+pub mod contact;
+pub mod group;
+pub mod recipient;
+pub mod recipient_group_j;
 pub mod subscription;

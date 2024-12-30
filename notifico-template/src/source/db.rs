@@ -11,7 +11,6 @@ use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
     Set,
 };
-use std::collections::HashMap;
 use uuid::Uuid;
 
 pub struct DbTemplateSource {
@@ -68,14 +67,8 @@ impl AdminCrudTable for DbTemplateSource {
     async fn list(
         &self,
         params: ListQueryParams,
-        extras: HashMap<String, String>,
     ) -> Result<PaginatedResult<ItemWithId<Self::Item>>, EngineError> {
-        let channel = extras.get("channel");
-
-        let mut items = entity::template::Entity::find();
-        if let Some(channel) = channel {
-            items = items.filter(entity::template::Column::Channel.eq(channel));
-        }
+        let items = entity::template::Entity::find();
         Ok(PaginatedResult {
             items: items
                 .clone()
@@ -86,7 +79,7 @@ impl AdminCrudTable for DbTemplateSource {
                 .into_iter()
                 .map(|m| m.into())
                 .collect(),
-            total_count: items.apply_filter(&params).unwrap().count(&self.db).await?,
+            total: items.apply_filter(&params).unwrap().count(&self.db).await?,
         })
     }
 
@@ -101,7 +94,7 @@ impl AdminCrudTable for DbTemplateSource {
         }
         .insert(&self.db)
         .await?;
-        Ok(ItemWithId { id: id, item })
+        Ok(ItemWithId { id, item })
     }
 
     async fn update(

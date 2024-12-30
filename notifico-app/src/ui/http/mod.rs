@@ -6,8 +6,10 @@ use axum::response::{Html, IntoResponse, Response};
 use axum::Router;
 use notifico_core::pipeline::storage::PipelineStorage;
 use notifico_project::ProjectController;
-use notifico_subscription::SubscriptionController;
-use notifico_template::source::TemplateSource;
+use notifico_subscription::controllers::contact::ContactDbController;
+use notifico_subscription::controllers::recipient::RecipientDbController;
+use notifico_subscription::controllers::subscription::SubscriptionDbController;
+use notifico_template::source::db::DbTemplateSource;
 use rust_embed::Embed;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -15,10 +17,12 @@ use tokio::net::TcpListener;
 
 #[derive(Clone)]
 pub(crate) struct HttpUiExtensions {
-    pub subscription_controller: Arc<SubscriptionController>,
+    pub recipient_controller: Arc<RecipientDbController>,
+    pub contact_controller: Arc<ContactDbController>,
+    pub subscription_controller: Arc<SubscriptionDbController>,
     pub pipeline_storage: Arc<dyn PipelineStorage>,
     pub projects_controller: Arc<ProjectController>,
-    pub templates_controller: Arc<dyn TemplateSource>,
+    pub templates_controller: Arc<DbTemplateSource>,
 }
 
 #[derive(Embed)]

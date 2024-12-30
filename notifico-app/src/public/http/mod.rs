@@ -3,7 +3,7 @@ mod recipient;
 
 use axum::{Extension, Router};
 use notifico_core::http::SecretKey;
-use notifico_subscription::SubscriptionController;
+use notifico_subscription::controllers::subscription::SubscriptionDbController;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::TcpListener;
@@ -14,7 +14,7 @@ use utoipa_swagger_ui::SwaggerUi;
 
 #[derive(Clone)]
 pub(crate) struct HttpPublicExtensions {
-    pub subscription_controller: Arc<SubscriptionController>,
+    pub subscription_controller: Arc<SubscriptionDbController>,
     pub secret_key: Arc<SecretKey>,
 }
 

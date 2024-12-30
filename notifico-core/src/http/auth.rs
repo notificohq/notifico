@@ -18,8 +18,6 @@ pub enum Claims {
     ListUnsubscribe {
         #[serde(rename = "evt")]
         event: String,
-        #[serde(rename = "proj")]
-        project_id: Uuid,
         #[serde(rename = "sub")]
         recipient_id: Uuid,
         exp: u64,

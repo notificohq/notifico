@@ -5,11 +5,11 @@ use axum::{Extension, Router};
 use jsonwebtoken::{DecodingKey, Validation};
 use notifico_core::http::auth::Claims;
 use notifico_core::http::SecretKey;
-use notifico_subscription::SubscriptionController;
+use notifico_subscription::controllers::subscription::SubscriptionDbController;
 use serde::Deserialize;
 use std::sync::Arc;
 
-pub fn get_router(sub_manager: Arc<SubscriptionController>) -> Router {
+pub fn get_router(sub_manager: Arc<SubscriptionDbController>) -> Router {
     Router::new()
         .route(
             "/v1/list_unsubscribe",
@@ -26,7 +26,7 @@ struct QueryParams {
 #[allow(private_interfaces)]
 pub(crate) async fn list_unsubscribe(
     Query(params): Query<QueryParams>,
-    Extension(sub_manager): Extension<Arc<SubscriptionController>>,
+    Extension(sub_manager): Extension<Arc<SubscriptionDbController>>,
     Extension(secret_key): Extension<Arc<SecretKey>>,
 ) -> StatusCode {
     let token = jsonwebtoken::decode::<Claims>(
@@ -43,12 +43,11 @@ pub(crate) async fn list_unsubscribe(
     match token.claims {
         Claims::ListUnsubscribe {
             event,
-            project_id,
             recipient_id,
             ..
         } => {
             sub_manager
-                .set_subscribed(project_id, recipient_id, &event, "email", false)
+                .set_subscribed(recipient_id, &event, "email", false)
                 .await
         }
     };

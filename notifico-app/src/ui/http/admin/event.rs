@@ -1,32 +1,25 @@
 use axum::extract::{Path, Query};
-use axum::http::header::CONTENT_RANGE;
-use axum::http::{HeaderMap, StatusCode};
+use axum::http::StatusCode;
+use axum::response::IntoResponse;
 use axum::{Extension, Json};
-use notifico_core::http::admin::{ListQueryParams, PaginatedResult};
+use notifico_core::http::admin::ListQueryParams;
 use notifico_core::pipeline::storage::PipelineStorage;
-use notifico_core::pipeline::Event;
 use serde::Deserialize;
-use serde_json::{json, Value};
+use serde_json::json;
 use std::sync::Arc;
 use uuid::Uuid;
 
 pub async fn list(
     Query(params): Query<ListQueryParams>,
     Extension(pipeline_storage): Extension<Arc<dyn PipelineStorage>>,
-) -> (HeaderMap, Json<Vec<Event>>) {
-    let PaginatedResult { items, total_count } =
-        pipeline_storage.list_events(params).await.unwrap();
-
-    let mut headers = HeaderMap::new();
-    headers.insert(CONTENT_RANGE, total_count.into());
-
-    (headers, Json(items))
+) -> impl IntoResponse {
+    pipeline_storage.list_events(params).await.unwrap()
 }
 
 pub async fn get(
     Path((id,)): Path<(Uuid,)>,
     Extension(pipeline_storage): Extension<Arc<dyn PipelineStorage>>,
-) -> (StatusCode, Json<Option<Event>>) {
+) -> impl IntoResponse {
     let result = pipeline_storage.get_event_by_id(id).await.unwrap();
 
     let Some(result) = result else {
@@ -44,7 +37,7 @@ pub struct EventCreate {
 pub async fn create(
     Extension(pipeline_storage): Extension<Arc<dyn PipelineStorage>>,
     Json(create): Json<EventCreate>,
-) -> (StatusCode, Json<Value>) {
+) -> impl IntoResponse {
     let result = pipeline_storage
         .create_event(create.project_id, &create.name)
         .await
@@ -65,7 +58,7 @@ pub async fn update(
     Extension(pipeline_storage): Extension<Arc<dyn PipelineStorage>>,
     Path((id,)): Path<(Uuid,)>,
     Json(update): Json<EventUpdate>,
-) -> (StatusCode, Json<Value>) {
+) -> impl IntoResponse {
     let result = pipeline_storage
         .update_event(id, &update.name)
         .await
@@ -80,7 +73,7 @@ pub async fn update(
 pub async fn delete(
     Extension(pipeline_storage): Extension<Arc<dyn PipelineStorage>>,
     Path((id,)): Path<(Uuid,)>,
-) -> (StatusCode, Json<Value>) {
+) -> impl IntoResponse {
     pipeline_storage.delete_event(id).await.unwrap();
 
     (StatusCode::NO_CONTENT, Json(json!({})))

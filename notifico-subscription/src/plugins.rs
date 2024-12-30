@@ -1,6 +1,6 @@
 use crate::context::EMAIL_LIST_UNSUBSCRIBE;
+use crate::controllers::subscription::SubscriptionDbController;
 use crate::step::{Step, STEPS};
-use crate::SubscriptionController;
 use jsonwebtoken::{EncodingKey, Header};
 use migration::async_trait::async_trait;
 use notifico_core::engine::{EnginePlugin, PipelineContext, StepOutput};
@@ -15,14 +15,14 @@ use url::Url;
 use uuid::Uuid;
 
 pub struct SubscriptionPlugin {
-    controller: Arc<SubscriptionController>,
+    controller: Arc<SubscriptionDbController>,
     secret_key: Vec<u8>,
     public_url: Option<Url>,
 }
 
 impl SubscriptionPlugin {
     pub fn new(
-        controller: Arc<SubscriptionController>,
+        controller: Arc<SubscriptionDbController>,
         secret_key: Vec<u8>,
         public_url: Option<Url>,
     ) -> Self {
@@ -51,12 +51,7 @@ impl EnginePlugin for SubscriptionPlugin {
             Step::Check { channel } => {
                 if self
                     .controller
-                    .is_subscribed(
-                        context.project_id,
-                        recipient.id,
-                        &context.event_name,
-                        &channel,
-                    )
+                    .is_subscribed(recipient.id, &context.event_name, &channel)
                     .await
                 {
                     Ok(StepOutput::Continue)
@@ -78,7 +73,6 @@ impl EnginePlugin for SubscriptionPlugin {
                         create_self_unsubscribe_url(
                             self.secret_key.clone(),
                             public_url,
-                            context.project_id,
                             &context.event_name,
                             recipient.id,
                         )
@@ -98,12 +92,10 @@ impl EnginePlugin for SubscriptionPlugin {
 pub fn create_self_unsubscribe_url(
     key: Vec<u8>,
     subscriber_url: Url,
-    project_id: Uuid,
     event: &str,
     recipient_id: Uuid,
 ) -> Url {
     let claims = Claims::ListUnsubscribe {
-        project_id,
         recipient_id,
         event: event.to_string(),
         exp: SystemTime::now()

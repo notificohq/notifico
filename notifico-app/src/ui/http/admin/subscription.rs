@@ -1,35 +1,26 @@
 use axum::extract::{Path, Query};
-use axum::http::header::CONTENT_RANGE;
-use axum::http::HeaderMap;
+use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::{Extension, Json};
-use notifico_core::http::admin::{AdminCrudTable, ListQueryParams, PaginatedResult};
-use notifico_subscription::SubscriptionController;
-use serde_json::json;
+use notifico_core::http::admin::{AdminCrudTable, ItemWithId, ListQueryParams};
+use notifico_subscription::controllers::subscription::SubscriptionDbController;
 use std::sync::Arc;
 use uuid::Uuid;
 
 pub async fn list(
     Query(params): Query<ListQueryParams>,
-    Extension(subman): Extension<Arc<SubscriptionController>>,
+    Extension(controller): Extension<Arc<SubscriptionDbController>>,
 ) -> impl IntoResponse {
-    let PaginatedResult { items, total_count } =
-        subman.list(params, Default::default()).await.unwrap();
-
-    let mut headers = HeaderMap::new();
-    headers.insert(CONTENT_RANGE, total_count.into());
-
-    (headers, Json(items))
+    controller.list(params).await.unwrap()
 }
 
 pub async fn get(
-    Path((params,)): Path<(Uuid,)>,
-    Extension(subman): Extension<Arc<SubscriptionController>>,
+    Path((id,)): Path<(Uuid,)>,
+    Extension(controller): Extension<Arc<SubscriptionDbController>>,
 ) -> impl IntoResponse {
-    let result = subman.get_by_id(params).await.unwrap();
-
-    let Some(result) = result else {
-        return Json(json!({}));
-    };
-    Json(serde_json::to_value(result).unwrap())
+    match controller.get_by_id(id).await {
+        Ok(Some(item)) => (StatusCode::OK, Json(Some(ItemWithId { item, id }))),
+        Ok(None) => (StatusCode::NOT_FOUND, Json(None)),
+        Err(e) => panic!("{:?}", e),
+    }
 }

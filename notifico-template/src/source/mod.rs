@@ -13,7 +13,7 @@ pub struct TemplateItem {
     pub project_id: Uuid,
     pub channel: String,
     pub name: String,
-    pub template: PreRenderedTemplate,
+    pub template: String,
 }
 
 impl From<entity::template::Model> for ItemWithId<TemplateItem> {
@@ -22,7 +22,7 @@ impl From<entity::template::Model> for ItemWithId<TemplateItem> {
             id: value.id,
             item: TemplateItem {
                 project_id: value.project_id,
-                template: PreRenderedTemplate::from(value.clone()),
+                template: toml::to_string_pretty(&value.template).unwrap(),
                 channel: value.channel,
                 name: value.name,
             },

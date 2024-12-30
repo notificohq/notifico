@@ -1,3 +1,4 @@
+use anyhow::Error;
 use sea_orm::DbErr;
 use std::error::Error as StdError;
 use thiserror::Error;
@@ -26,7 +27,7 @@ pub enum EngineError {
     #[error("Invalid rendered template format: {0}")]
     InvalidRenderedTemplateFormat(Box<dyn StdError>),
     #[error("Internal error: {0}")]
-    InternalError(Box<dyn StdError>),
+    InternalError(#[from] anyhow::Error),
     #[error("Invalid step: {0}")]
     InvalidStep(serde_json::Error),
     #[error("Missing credential")]
@@ -43,6 +44,6 @@ pub enum EngineError {
 
 impl From<DbErr> for EngineError {
     fn from(value: DbErr) -> Self {
-        Self::InternalError(Box::new(value))
+        Self::InternalError(Error::new(value))
     }
 }

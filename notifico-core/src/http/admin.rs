@@ -1,10 +1,14 @@
 use crate::error::EngineError;
 use anyhow::bail;
 use async_trait::async_trait;
+use axum::http::header::CONTENT_RANGE;
+use axum::http::HeaderMap;
+use axum::response::{IntoResponse, Response};
+use axum::Json;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect, Select};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use std::error::Error;
 use std::str::FromStr;
 use uuid::Uuid;
@@ -90,7 +94,25 @@ pub struct ListQueryParams {
 
 pub struct PaginatedResult<T> {
     pub items: Vec<T>,
-    pub total_count: u64,
+    pub total: u64,
+}
+
+impl<T> PaginatedResult<T> {
+    pub fn map<P>(self, f: impl Fn(T) -> P) -> PaginatedResult<P> {
+        PaginatedResult {
+            items: self.items.into_iter().map(f).collect(),
+            total: self.total,
+        }
+    }
+}
+
+impl<T: Serialize> IntoResponse for PaginatedResult<T> {
+    fn into_response(self) -> Response {
+        let mut headers = HeaderMap::new();
+        headers.insert(CONTENT_RANGE, self.total.into());
+
+        (headers, Json(self.items)).into_response()
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -108,7 +130,6 @@ pub trait AdminCrudTable {
     async fn list(
         &self,
         params: ListQueryParams,
-        extras: HashMap<String, String>,
     ) -> Result<PaginatedResult<ItemWithId<Self::Item>>, EngineError>;
     async fn create(&self, item: Self::Item) -> Result<ItemWithId<Self::Item>, EngineError>;
     async fn update(

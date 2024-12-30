@@ -63,13 +63,12 @@ pub async fn list(
     Query(params): Query<ListQueryParams>,
     Extension(pipeline_storage): Extension<Arc<dyn PipelineStorage>>,
 ) -> (HeaderMap, Json<Vec<PipelineItem>>) {
-    let PaginatedResult { items, total_count } =
-        pipeline_storage.list_pipelines(params).await.unwrap();
+    let PaginatedResult { items, total } = pipeline_storage.list_pipelines(params).await.unwrap();
 
     let pipelines = items.into_iter().map(PipelineItem::from).collect();
 
     let mut headers = HeaderMap::new();
-    headers.insert(CONTENT_RANGE, total_count.into());
+    headers.insert(CONTENT_RANGE, total.into());
 
     (headers, Json(pipelines))
 }

@@ -78,6 +78,17 @@ impl MigrationTrait for Migration {
                     .to_owned(),
             )
             .await?;
+
+        manager
+            .create_foreign_key(
+                ForeignKey::create()
+                    .from(Subscription::Table, Subscription::RecipientId)
+                    .to(Recipient::Table, Recipient::Id)
+                    .on_delete(ForeignKeyAction::Cascade)
+                    .on_update(ForeignKeyAction::Restrict)
+                    .to_owned(),
+            )
+            .await?;
         Ok(())
     }
 
@@ -115,4 +126,10 @@ enum RecipientGroupJ {
     Table,
     RecipientId,
     GroupId,
+}
+
+#[derive(DeriveIden)]
+enum Subscription {
+    Table,
+    RecipientId,
 }

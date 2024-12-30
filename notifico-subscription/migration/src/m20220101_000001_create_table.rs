@@ -12,7 +12,6 @@ impl MigrationTrait for Migration {
                     .table(Subscription::Table)
                     .if_not_exists()
                     .col(pk_uuid(Subscription::Id))
-                    .col(uuid(Subscription::ProjectId))
                     .col(uuid(Subscription::RecipientId))
                     .col(string(Subscription::Event))
                     .col(string(Subscription::Channel))
@@ -26,7 +25,6 @@ impl MigrationTrait for Migration {
                 Index::create()
                     .name("idx_subscription_project_id")
                     .table(Subscription::Table)
-                    .col(Subscription::ProjectId)
                     .col(Subscription::RecipientId)
                     .unique()
                     .to_owned(),
@@ -45,7 +43,6 @@ impl MigrationTrait for Migration {
 enum Subscription {
     Table,
     Id,
-    ProjectId,
     Event,
     Channel,
     RecipientId,

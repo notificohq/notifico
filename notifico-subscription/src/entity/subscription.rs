@@ -7,7 +7,7 @@ use sea_orm::entity::prelude::*;
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
-    pub project_id: Uuid,
+    #[sea_orm(unique)]
     pub recipient_id: Uuid,
     pub event: String,
     pub channel: String,

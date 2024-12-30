@@ -6,7 +6,6 @@ use notifico_core::http::admin::{
 };
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, PaginatorTrait, Set};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::error::Error;
 use uuid::Uuid;
 
@@ -52,7 +51,6 @@ impl AdminCrudTable for ProjectController {
     async fn list(
         &self,
         params: ListQueryParams,
-        _extras: HashMap<String, String>,
     ) -> Result<PaginatedResult<ItemWithId<Self::Item>>, EngineError> {
         let query = entity::project::Entity::find()
             .apply_params(&params)
@@ -68,7 +66,10 @@ impl AdminCrudTable for ProjectController {
                     item: Project::from(m),
                 })
                 .collect(),
-            total_count: entity::project::Entity::find().count(&self.db).await?,
+            total: entity::project::Entity::find()
+                .apply_filter(&params)?
+                .count(&self.db)
+                .await?,
         })
     }
 

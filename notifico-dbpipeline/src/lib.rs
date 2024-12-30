@@ -73,7 +73,7 @@ impl PipelineStorage for DbPipelineStorage {
 
         Ok(PaginatedResult {
             items: results,
-            total_count: entity::pipeline::Entity::find()
+            total: entity::pipeline::Entity::find()
                 .apply_filter(&params)
                 .unwrap()
                 .count(&self.db)
@@ -186,7 +186,7 @@ impl PipelineStorage for DbPipelineStorage {
                 .into_iter()
                 .map(Event::from)
                 .collect(),
-            total_count: entity::event::Entity::find()
+            total: entity::event::Entity::find()
                 .apply_filter(&params)
                 .unwrap()
                 .count(&self.db)

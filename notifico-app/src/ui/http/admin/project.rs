@@ -1,25 +1,18 @@
 use axum::extract::{Path, Query};
-use axum::http::header::CONTENT_RANGE;
-use axum::http::{HeaderMap, StatusCode};
+use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::{Extension, Json};
-use notifico_core::http::admin::{AdminCrudTable, ListQueryParams, PaginatedResult};
+use notifico_core::http::admin::{AdminCrudTable, ItemWithId, ListQueryParams};
 use notifico_project::{Project, ProjectController};
 use serde_json::json;
 use std::sync::Arc;
 use uuid::Uuid;
 
-pub async fn list_projects(
+pub async fn list(
     Query(params): Query<ListQueryParams>,
     Extension(controller): Extension<Arc<ProjectController>>,
 ) -> impl IntoResponse {
-    let PaginatedResult { items, total_count } =
-        controller.list(params, Default::default()).await.unwrap();
-
-    let mut headers = HeaderMap::new();
-    headers.insert(CONTENT_RANGE, total_count.into());
-
-    (headers, Json(items))
+    controller.list(params).await.unwrap()
 }
 
 pub async fn get(
@@ -31,7 +24,7 @@ pub async fn get(
     let Some(result) = result else {
         return (StatusCode::NOT_FOUND, Json(None));
     };
-    (StatusCode::OK, Json(Some(result)))
+    (StatusCode::OK, Json(Some(ItemWithId { item: result, id })))
 }
 
 pub async fn create(
@@ -39,11 +32,7 @@ pub async fn create(
     Json(update): Json<Project>,
 ) -> impl IntoResponse {
     let result = controller.create(update).await.unwrap();
-
-    (
-        StatusCode::CREATED,
-        Json(serde_json::to_value(result).unwrap()),
-    )
+    (StatusCode::CREATED, Json(result))
 }
 
 pub async fn update(
@@ -52,11 +41,7 @@ pub async fn update(
     Json(update): Json<Project>,
 ) -> impl IntoResponse {
     let result = controller.update(id, update).await.unwrap();
-
-    (
-        StatusCode::ACCEPTED,
-        Json(serde_json::to_value(result).unwrap()),
-    )
+    (StatusCode::ACCEPTED, Json(result))
 }
 
 pub async fn delete(
@@ -64,6 +49,5 @@ pub async fn delete(
     Path((id,)): Path<(Uuid,)>,
 ) -> impl IntoResponse {
     controller.delete(id).await.unwrap();
-
     (StatusCode::NO_CONTENT, Json(json!({})))
 }
