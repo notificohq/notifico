@@ -1,14 +1,11 @@
 use async_trait::async_trait;
 use migration::{Migrator, MigratorTrait};
 use notifico_core::error::EngineError;
-use notifico_core::http::admin::{AdminCrudTable, ListableTrait};
 use notifico_core::pipeline::storage::PipelineStorage;
 use notifico_core::pipeline::Pipeline;
 use sea_orm::prelude::*;
-use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
-};
-use serde::{Deserialize, Serialize};
+use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
+use serde::Deserialize;
 pub mod controllers;
 #[allow(unused_imports)]
 mod entity;

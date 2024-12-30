@@ -4,7 +4,7 @@ use notifico_core::http::admin::{
     AdminCrudTable, ItemWithId, ListQueryParams, ListableTrait, PaginatedResult,
 };
 use sea_orm::ActiveModelTrait;
-use sea_orm::ActiveValue::Set;
+use sea_orm::ActiveValue::{Set, Unchanged};
 use sea_orm::PaginatorTrait;
 use sea_orm::{DatabaseConnection, EntityTrait};
 use serde::{Deserialize, Serialize};
@@ -94,7 +94,14 @@ impl AdminCrudTable for RecipientDbController {
         id: Uuid,
         item: Self::Item,
     ) -> Result<ItemWithId<Self::Item>, EngineError> {
-        todo!()
+        crate::entity::recipient::ActiveModel {
+            id: Unchanged(id),
+            project_id: Set(item.project_id),
+            extras: Set(serde_json::to_value(item.extras.clone()).unwrap()),
+        }
+        .update(&self.db)
+        .await?;
+        Ok(ItemWithId { id, item })
     }
 
     async fn delete(&self, id: Uuid) -> Result<(), EngineError> {
