@@ -34,3 +34,20 @@ pub async fn create(
 
     (StatusCode::CREATED, Json(result))
 }
+
+pub async fn update(
+    Extension(controller): Extension<Arc<ContactDbController>>,
+    Path((id,)): Path<(Uuid,)>,
+    Json(update): Json<ContactItem>,
+) -> impl IntoResponse {
+    let result = controller.update(id, update).await.unwrap();
+    (StatusCode::ACCEPTED, Json(result))
+}
+
+pub async fn delete(
+    Path((id,)): Path<(Uuid,)>,
+    Extension(controller): Extension<Arc<ContactDbController>>,
+) -> impl IntoResponse {
+    controller.delete(id).await.unwrap();
+    StatusCode::NO_CONTENT
+}

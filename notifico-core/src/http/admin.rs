@@ -122,6 +122,15 @@ pub struct ItemWithId<T> {
     pub item: T,
 }
 
+impl<T> ItemWithId<T> {
+    pub fn map<U>(self, f: impl Fn(T) -> U) -> ItemWithId<U> {
+        ItemWithId {
+            id: self.id,
+            item: f(self.item),
+        }
+    }
+}
+
 #[async_trait]
 pub trait AdminCrudTable {
     type Item;

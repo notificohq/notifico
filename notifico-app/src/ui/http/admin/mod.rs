@@ -21,10 +21,20 @@ pub(crate) fn get_router(ext: HttpUiExtensions) -> Router {
             "/v1/recipients",
             get(recipients::list).post(recipients::create),
         )
-        .route("/v1/recipients/:id", get(recipients::get))
+        .route(
+            "/v1/recipients/:id",
+            get(recipients::get)
+                .put(recipients::update)
+                .delete(recipients::delete),
+        )
         // Contacts
         .route("/v1/contacts", get(contacts::list).post(contacts::create))
-        .route("/v1/contacts/:id", get(contacts::get))
+        .route(
+            "/v1/contacts/:id",
+            get(contacts::get)
+                .delete(contacts::delete)
+                .put(contacts::update),
+        )
         // Pipelines
         .route("/v1/pipelines", get(pipeline::list).post(pipeline::create))
         .route(

@@ -44,7 +44,7 @@ pub async fn update(
 
 pub async fn delete(
     Extension(controller): Extension<Arc<DbTemplateSource>>,
-    Path((_channel, id)): Path<(String, Uuid)>,
+    Path((id,)): Path<(Uuid,)>,
 ) -> impl IntoResponse {
     controller.delete(id).await.unwrap();
     StatusCode::NO_CONTENT

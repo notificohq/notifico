@@ -1,12 +1,11 @@
 use axum::extract::{Path, Query};
-use axum::http::header::CONTENT_RANGE;
-use axum::http::{HeaderMap, StatusCode};
+use axum::http::StatusCode;
+use axum::response::IntoResponse;
 use axum::{Extension, Json};
-use notifico_core::http::admin::{ListQueryParams, PaginatedResult};
+use notifico_core::http::admin::ListQueryParams;
 use notifico_core::pipeline::storage::{PipelineResult, PipelineStorage};
 use notifico_core::pipeline::Pipeline;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -34,7 +33,7 @@ impl From<PipelineResult> for PipelineItem {
 pub async fn create(
     Extension(pipeline_storage): Extension<Arc<dyn PipelineStorage>>,
     Json(item): Json<PipelineItem>,
-) -> (StatusCode, Json<PipelineItem>) {
+) -> impl IntoResponse {
     let id = Uuid::now_v7();
     let pipeline = Pipeline {
         id,
@@ -56,27 +55,27 @@ pub async fn create(
         .await
         .unwrap();
 
-    (StatusCode::CREATED, Json(pipelineresult.into()))
+    (
+        StatusCode::CREATED,
+        Json(PipelineItem::from(pipelineresult)),
+    )
 }
 
 pub async fn list(
     Query(params): Query<ListQueryParams>,
     Extension(pipeline_storage): Extension<Arc<dyn PipelineStorage>>,
-) -> (HeaderMap, Json<Vec<PipelineItem>>) {
-    let PaginatedResult { items, total } = pipeline_storage.list_pipelines(params).await.unwrap();
-
-    let pipelines = items.into_iter().map(PipelineItem::from).collect();
-
-    let mut headers = HeaderMap::new();
-    headers.insert(CONTENT_RANGE, total.into());
-
-    (headers, Json(pipelines))
+) -> impl IntoResponse {
+    pipeline_storage
+        .list_pipelines(params)
+        .await
+        .unwrap()
+        .map(PipelineItem::from)
 }
 
 pub async fn get(
     Path((id,)): Path<(Uuid,)>,
     Extension(pipeline_storage): Extension<Arc<dyn PipelineStorage>>,
-) -> (StatusCode, Json<Option<PipelineItem>>) {
+) -> impl IntoResponse {
     let result = pipeline_storage
         .get_pipeline_by_id(id)
         .await
@@ -93,7 +92,7 @@ pub async fn update(
     Extension(pipeline_storage): Extension<Arc<dyn PipelineStorage>>,
     Path((id,)): Path<(Uuid,)>,
     Json(update): Json<PipelineItem>,
-) -> (StatusCode, Json<Value>) {
+) -> impl IntoResponse {
     let pipeline = Pipeline {
         id,
         project_id: update.project_id,
@@ -105,17 +104,13 @@ pub async fn update(
         .await
         .unwrap();
 
-    (
-        StatusCode::ACCEPTED,
-        Json(serde_json::to_value(()).unwrap()),
-    )
+    StatusCode::ACCEPTED
 }
 
 pub async fn delete(
     Extension(pipeline_storage): Extension<Arc<dyn PipelineStorage>>,
     Path((id,)): Path<(Uuid,)>,
-) -> (StatusCode, Json<Value>) {
+) -> impl IntoResponse {
     pipeline_storage.delete_pipeline(id).await.unwrap();
-
-    (StatusCode::NO_CONTENT, Json(Value::Null))
+    StatusCode::NO_CONTENT
 }

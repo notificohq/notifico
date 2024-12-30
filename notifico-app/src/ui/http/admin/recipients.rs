@@ -41,18 +41,14 @@ pub async fn list(
         .list(params)
         .await
         .unwrap()
-        .map(|item| ItemWithId {
-            id: item.id,
-            item: RecipientRestItem::from(item.item),
-        })
-        .into_response()
+        .map(|item| item.map(RecipientRestItem::from))
 }
 
 pub async fn get(
-    Path((params,)): Path<(Uuid,)>,
+    Path((id,)): Path<(Uuid,)>,
     Extension(controller): Extension<Arc<RecipientDbController>>,
 ) -> impl IntoResponse {
-    let result = controller.get_by_id(params).await.unwrap();
+    let result = controller.get_by_id(id).await.unwrap();
 
     let Some(result) = result else {
         return Json(json!({}));
@@ -60,7 +56,7 @@ pub async fn get(
     Json(
         serde_json::to_value(ItemWithId {
             item: RecipientRestItem::from(result),
-            id: params,
+            id,
         })
         .unwrap(),
     )
@@ -73,4 +69,21 @@ pub async fn create(
     let result = controller.create(update.into()).await.unwrap();
 
     (StatusCode::CREATED, Json(result))
+}
+
+pub async fn update(
+    Extension(controller): Extension<Arc<RecipientDbController>>,
+    Path((id,)): Path<(Uuid,)>,
+    Json(update): Json<RecipientRestItem>,
+) -> impl IntoResponse {
+    let result = controller.update(id, update.into()).await.unwrap();
+    (StatusCode::ACCEPTED, Json(result))
+}
+
+pub async fn delete(
+    Path((id,)): Path<(Uuid,)>,
+    Extension(controller): Extension<Arc<RecipientDbController>>,
+) -> impl IntoResponse {
+    controller.delete(id).await.unwrap();
+    StatusCode::NO_CONTENT
 }

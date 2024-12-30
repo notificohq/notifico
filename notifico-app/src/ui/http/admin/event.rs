@@ -43,10 +43,7 @@ pub async fn create(
         .await
         .unwrap();
 
-    (
-        StatusCode::CREATED,
-        Json(serde_json::to_value(result).unwrap()),
-    )
+    (StatusCode::CREATED, Json(result))
 }
 
 #[derive(Deserialize)]
@@ -64,10 +61,7 @@ pub async fn update(
         .await
         .unwrap();
 
-    (
-        StatusCode::CREATED,
-        Json(serde_json::to_value(result).unwrap()),
-    )
+    (StatusCode::CREATED, Json(result))
 }
 
 pub async fn delete(
