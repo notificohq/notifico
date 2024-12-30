@@ -4,7 +4,8 @@ use axum::http::header::CONTENT_TYPE;
 use axum::http::{StatusCode, Uri};
 use axum::response::{Html, IntoResponse, Response};
 use axum::Router;
-use notifico_core::pipeline::storage::PipelineStorage;
+use notifico_dbpipeline::controllers::event::EventDbController;
+use notifico_dbpipeline::controllers::pipeline::PipelineDbController;
 use notifico_project::ProjectController;
 use notifico_subscription::controllers::contact::ContactDbController;
 use notifico_subscription::controllers::recipient::RecipientDbController;
@@ -20,9 +21,10 @@ pub(crate) struct HttpUiExtensions {
     pub recipient_controller: Arc<RecipientDbController>,
     pub contact_controller: Arc<ContactDbController>,
     pub subscription_controller: Arc<SubscriptionDbController>,
-    pub pipeline_storage: Arc<dyn PipelineStorage>,
-    pub projects_controller: Arc<ProjectController>,
-    pub templates_controller: Arc<DbTemplateSource>,
+    pub pipeline_controller: Arc<PipelineDbController>,
+    pub project_controller: Arc<ProjectController>,
+    pub template_controller: Arc<DbTemplateSource>,
+    pub event_controller: Arc<EventDbController>,
 }
 
 #[derive(Embed)]

@@ -19,6 +19,8 @@ use notifico_core::queue::{ReceiverChannel, SenderChannel};
 use notifico_core::recipient::RecipientInlineController;
 use notifico_core::recorder::BaseRecorder;
 use notifico_core::transport::TransportRegistry;
+use notifico_dbpipeline::controllers::event::EventDbController;
+use notifico_dbpipeline::controllers::pipeline::PipelineDbController;
 use notifico_dbpipeline::DbPipelineStorage;
 use notifico_project::ProjectController;
 use notifico_subscription::controllers::contact::ContactDbController;
@@ -161,16 +163,10 @@ async fn main() {
                 args.public_url,
             ));
 
-            let recipient_controller = Arc::new(RecipientDbController::new(db_connection.clone()));
-            let contact_controller = Arc::new(ContactDbController::new(db_connection.clone()));
-
-            let projects = Arc::new(ProjectController::new(db_connection.clone()));
-
             // Setup stateful plugins
             pipelines.setup().await.unwrap();
             templater_source.setup().await.unwrap();
             subscription_controller.setup().await.unwrap();
-            projects.setup().await.unwrap();
 
             // Spawn HTTP servers
             if components.is_empty() || components.contains(COMPONENT_INGEST) {
@@ -190,14 +186,25 @@ async fn main() {
             }
 
             if components.is_empty() || components.contains(COMPONENT_UI) {
+                let pipeline_controller =
+                    Arc::new(PipelineDbController::new(db_connection.clone()));
+                let recipient_controller =
+                    Arc::new(RecipientDbController::new(db_connection.clone()));
+                let contact_controller = Arc::new(ContactDbController::new(db_connection.clone()));
+                let event_controller = Arc::new(EventDbController::new(db_connection.clone()));
+                let project_controller = Arc::new(ProjectController::new(db_connection.clone()));
+
+                project_controller.setup().await.unwrap();
+
                 info!("Starting HTTP UI server on {}", args.ui);
                 let ext = HttpUiExtensions {
-                    recipient_controller: recipient_controller.clone(),
-                    contact_controller: contact_controller.clone(),
-                    projects_controller: projects,
+                    recipient_controller,
+                    contact_controller,
+                    project_controller,
                     subscription_controller: subscription_controller.clone(),
-                    pipeline_storage: pipelines.clone(),
-                    templates_controller: templater_source.clone(),
+                    pipeline_controller,
+                    template_controller: templater_source.clone(),
+                    event_controller,
                 };
 
                 ui::http::start(args.ui, ext).await;

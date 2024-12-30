@@ -67,9 +67,10 @@ pub(crate) fn get_router(ext: HttpUiExtensions) -> Router {
         // Layers
         .layer(Extension(ext.recipient_controller))
         .layer(Extension(ext.subscription_controller))
-        .layer(Extension(ext.pipeline_storage))
-        .layer(Extension(ext.projects_controller))
-        .layer(Extension(ext.templates_controller))
+        .layer(Extension(ext.pipeline_controller))
+        .layer(Extension(ext.project_controller))
+        .layer(Extension(ext.template_controller))
         .layer(Extension(ext.contact_controller))
+        .layer(Extension(ext.event_controller))
         .layer(CorsLayer::permissive())
 }
