@@ -22,7 +22,7 @@ impl From<entity::template::Model> for ItemWithId<TemplateItem> {
             id: value.id,
             item: TemplateItem {
                 project_id: value.project_id,
-                template: toml::to_string_pretty(&value.template).unwrap(),
+                template: serde_json::to_string_pretty(&value.template).unwrap(),
                 channel: value.channel,
                 name: value.name,
             },

@@ -16,7 +16,6 @@ use notifico_core::http::SecretKey;
 use notifico_core::pipeline::event::EventHandler;
 use notifico_core::pipeline::executor::PipelineExecutor;
 use notifico_core::queue::{ReceiverChannel, SenderChannel};
-use notifico_core::recipient::RecipientInlineController;
 use notifico_core::recorder::BaseRecorder;
 use notifico_core::transport::TransportRegistry;
 use notifico_dbpipeline::controllers::event::EventDbController;
@@ -27,6 +26,7 @@ use notifico_subscription::controllers::contact::ContactDbController;
 use notifico_subscription::controllers::recipient::RecipientDbController;
 use notifico_subscription::controllers::subscription::SubscriptionDbController;
 use notifico_subscription::plugins::SubscriptionPlugin;
+use notifico_subscription::recipient::RecipientDbSource;
 use notifico_template::source::db::DbTemplateSource;
 use notifico_template::Templater;
 use notifico_transports::all_transports;
@@ -211,11 +211,13 @@ async fn main() {
             }
 
             if components.is_empty() || components.contains(COMPONENT_WORKER) {
+                let recipient_source = Arc::new(RecipientDbSource::new(db_connection.clone()));
+
                 // Create Engine with plugins
                 let mut engine = Engine::new();
                 engine.add_plugin(Arc::new(CorePlugin::new(
                     pipelines_tx.clone(),
-                    Arc::new(RecipientInlineController),
+                    recipient_source,
                 )));
                 engine.add_plugin(Arc::new(Templater::new(templater_source.clone())));
                 engine.add_plugin(subman.clone());
