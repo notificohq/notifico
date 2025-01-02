@@ -5,6 +5,7 @@ use tower_http::cors::CorsLayer;
 
 mod contacts;
 mod event;
+mod group;
 mod pipeline;
 mod project;
 mod recipients;
@@ -34,6 +35,12 @@ pub(crate) fn get_router(ext: HttpUiExtensions) -> Router {
             get(contacts::get)
                 .delete(contacts::delete)
                 .put(contacts::update),
+        )
+        // Contacts
+        .route("/v1/groups", get(group::list).post(group::create))
+        .route(
+            "/v1/groups/:id",
+            get(group::get).delete(group::delete).put(group::update),
         )
         // Pipelines
         .route("/v1/pipelines", get(pipeline::list).post(pipeline::create))
@@ -72,5 +79,6 @@ pub(crate) fn get_router(ext: HttpUiExtensions) -> Router {
         .layer(Extension(ext.template_controller))
         .layer(Extension(ext.contact_controller))
         .layer(Extension(ext.event_controller))
+        .layer(Extension(ext.group_controller))
         .layer(CorsLayer::permissive())
 }

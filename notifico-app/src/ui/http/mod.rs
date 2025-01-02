@@ -8,6 +8,7 @@ use notifico_dbpipeline::controllers::event::EventDbController;
 use notifico_dbpipeline::controllers::pipeline::PipelineDbController;
 use notifico_project::ProjectController;
 use notifico_subscription::controllers::contact::ContactDbController;
+use notifico_subscription::controllers::group::GroupDbController;
 use notifico_subscription::controllers::recipient::RecipientDbController;
 use notifico_subscription::controllers::subscription::SubscriptionDbController;
 use notifico_template::source::db::DbTemplateSource;
@@ -25,6 +26,7 @@ pub(crate) struct HttpUiExtensions {
     pub project_controller: Arc<ProjectController>,
     pub template_controller: Arc<DbTemplateSource>,
     pub event_controller: Arc<EventDbController>,
+    pub group_controller: Arc<GroupDbController>,
 }
 
 #[derive(Embed)]

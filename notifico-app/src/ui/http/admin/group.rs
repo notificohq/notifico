@@ -3,48 +3,50 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::{Extension, Json};
 use notifico_core::http::admin::{AdminCrudTable, ItemWithId, ListQueryParams};
-use notifico_template::source::db::DbTemplateSource;
-use notifico_template::source::db::TemplateItem;
+use notifico_subscription::controllers::group::{GroupDbController, GroupItem};
 use std::sync::Arc;
 use uuid::Uuid;
 
 pub async fn list(
     Query(params): Query<ListQueryParams>,
-    Extension(controller): Extension<Arc<DbTemplateSource>>,
+    Extension(controller): Extension<Arc<GroupDbController>>,
 ) -> impl IntoResponse {
     controller.list(params).await.unwrap()
 }
 
 pub async fn get(
     Path((id,)): Path<(Uuid,)>,
-    Extension(controller): Extension<Arc<DbTemplateSource>>,
+    Extension(controller): Extension<Arc<GroupDbController>>,
 ) -> impl IntoResponse {
-    match controller.get_by_id(id).await {
-        Ok(Some(item)) => (StatusCode::OK, Json(Some(ItemWithId { item, id }))),
-        Ok(None) => (StatusCode::NOT_FOUND, Json(None)),
-        Err(e) => panic!("{:?}", e),
-    }
+    let item = controller.get_by_id(id).await.unwrap();
+
+    let Some(item) = item else {
+        return (StatusCode::NOT_FOUND, Json(None));
+    };
+    (StatusCode::OK, Json(Some(ItemWithId { item, id })))
 }
 
 pub async fn create(
-    Extension(controller): Extension<Arc<DbTemplateSource>>,
-    Json(update): Json<TemplateItem>,
+    Extension(controller): Extension<Arc<GroupDbController>>,
+    Json(update): Json<GroupItem>,
 ) -> impl IntoResponse {
     let result = controller.create(update).await.unwrap();
+
     (StatusCode::CREATED, Json(result))
 }
 
 pub async fn update(
-    Extension(controller): Extension<Arc<DbTemplateSource>>,
-    Json(update): Json<ItemWithId<TemplateItem>>,
+    Extension(controller): Extension<Arc<GroupDbController>>,
+    Path((id,)): Path<(Uuid,)>,
+    Json(update): Json<GroupItem>,
 ) -> impl IntoResponse {
-    let result = controller.update(update.id, update.item).await.unwrap();
+    let result = controller.update(id, update).await.unwrap();
     (StatusCode::ACCEPTED, Json(result))
 }
 
 pub async fn delete(
-    Extension(controller): Extension<Arc<DbTemplateSource>>,
     Path((id,)): Path<(Uuid,)>,
+    Extension(controller): Extension<Arc<GroupDbController>>,
 ) -> impl IntoResponse {
     controller.delete(id).await.unwrap();
     StatusCode::NO_CONTENT

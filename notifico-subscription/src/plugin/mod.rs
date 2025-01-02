@@ -1,6 +1,9 @@
-use crate::context::EMAIL_LIST_UNSUBSCRIBE;
+mod context;
+mod step;
+
 use crate::controllers::subscription::SubscriptionDbController;
-use crate::step::{Step, STEPS};
+use crate::plugin::context::EMAIL_LIST_UNSUBSCRIBE;
+use crate::plugin::step::{Step, STEPS};
 use jsonwebtoken::{EncodingKey, Header};
 use migration::async_trait::async_trait;
 use notifico_core::engine::{EnginePlugin, PipelineContext, StepOutput};
@@ -102,7 +105,7 @@ pub fn create_self_unsubscribe_url(
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_secs()
-            + 60 * 60 * 24 * 30,
+            + 60 * 60 * 24 * 30, // TODO: Move this into a configuration option
     };
 
     let token =

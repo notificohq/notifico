@@ -44,6 +44,19 @@ impl MigrationTrait for Migration {
                     .if_not_exists()
                     .col(pk_uuid(Group::Id))
                     .col(uuid(Group::ProjectId))
+                    .col(string(Group::Name))
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .table(Group::Table)
+                    .unique()
+                    .name("uniq_group_project_id_name")
+                    .col(Group::ProjectId)
+                    .col(Group::Name)
                     .to_owned(),
             )
             .await?;
@@ -136,6 +149,7 @@ enum Group {
     Table,
     Id,
     ProjectId,
+    Name,
 }
 
 #[derive(DeriveIden)]

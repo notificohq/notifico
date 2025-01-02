@@ -70,6 +70,26 @@ impl PipelineDbController {
 impl AdminCrudTable for PipelineDbController {
     type Item = PipelineItem;
 
+    async fn get_by_id(&self, id: Uuid) -> Result<Option<Self::Item>, EngineError> {
+        let events = entity::pipeline::Entity::find_by_id(id)
+            .find_with_related(entity::event::Entity)
+            .all(&self.db)
+            .await?;
+
+        let results: Result<Vec<PipelineItem>, EngineError> = events
+            .into_iter()
+            .map(|(p, e)| {
+                Ok(PipelineItem {
+                    pipeline: p.try_into()?,
+                    event_ids: e.into_iter().map(|e| e.id).collect(),
+                })
+            })
+            .collect();
+        let results = results?;
+
+        Ok(results.first().cloned())
+    }
+
     async fn list(
         &self,
         params: ListQueryParams,
@@ -102,26 +122,6 @@ impl AdminCrudTable for PipelineDbController {
                 .count(&self.db)
                 .await?,
         })
-    }
-
-    async fn get_by_id(&self, id: Uuid) -> Result<Option<Self::Item>, EngineError> {
-        let events = entity::pipeline::Entity::find_by_id(id)
-            .find_with_related(entity::event::Entity)
-            .all(&self.db)
-            .await?;
-
-        let results: Result<Vec<PipelineItem>, EngineError> = events
-            .into_iter()
-            .map(|(p, e)| {
-                Ok(PipelineItem {
-                    pipeline: p.try_into()?,
-                    event_ids: e.into_iter().map(|e| e.id).collect(),
-                })
-            })
-            .collect();
-        let results = results?;
-
-        Ok(results.first().cloned())
     }
 
     async fn create(&self, item: Self::Item) -> Result<ItemWithId<Self::Item>, EngineError> {

@@ -23,9 +23,10 @@ use notifico_dbpipeline::controllers::pipeline::PipelineDbController;
 use notifico_dbpipeline::DbPipelineStorage;
 use notifico_project::ProjectController;
 use notifico_subscription::controllers::contact::ContactDbController;
+use notifico_subscription::controllers::group::GroupDbController;
 use notifico_subscription::controllers::recipient::RecipientDbController;
 use notifico_subscription::controllers::subscription::SubscriptionDbController;
-use notifico_subscription::plugins::SubscriptionPlugin;
+use notifico_subscription::plugin::SubscriptionPlugin;
 use notifico_subscription::recipient::RecipientDbSource;
 use notifico_template::source::db::DbTemplateSource;
 use notifico_template::Templater;
@@ -193,6 +194,7 @@ async fn main() {
                 let contact_controller = Arc::new(ContactDbController::new(db_connection.clone()));
                 let event_controller = Arc::new(EventDbController::new(db_connection.clone()));
                 let project_controller = Arc::new(ProjectController::new(db_connection.clone()));
+                let group_controller = Arc::new(GroupDbController::new(db_connection.clone()));
 
                 project_controller.setup().await.unwrap();
 
@@ -205,6 +207,7 @@ async fn main() {
                     pipeline_controller,
                     template_controller: templater_source.clone(),
                     event_controller,
+                    group_controller,
                 };
 
                 ui::http::start(args.ui, ext).await;

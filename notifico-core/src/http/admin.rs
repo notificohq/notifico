@@ -87,9 +87,9 @@ where
 
 #[derive(Deserialize, Clone, Default)]
 pub struct ListQueryParams {
-    pub sort: Option<String>,
-    pub range: Option<String>,
-    pub filter: Option<String>,
+    sort: Option<String>,
+    range: Option<String>,
+    filter: Option<String>,
 }
 
 pub struct PaginatedResult<T> {

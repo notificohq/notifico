@@ -1,5 +1,5 @@
 use crate::error::TemplaterError;
-use crate::source::{TemplateItem, TemplateSource};
+use crate::source::TemplateSource;
 use crate::{entity, PreRenderedTemplate, TemplateSelector};
 use async_trait::async_trait;
 use migration::{Migrator, MigratorTrait};
@@ -11,6 +11,7 @@ use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
     Set,
 };
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 pub struct DbTemplateSource {
@@ -90,7 +91,7 @@ impl AdminCrudTable for DbTemplateSource {
             project_id: Set(item.project_id),
             name: Set(item.name.clone()),
             channel: Set(item.channel.clone()),
-            template: Set(serde_json::to_value(item.template.clone()).unwrap()),
+            template: Set(serde_json::from_str(&item.template).unwrap()),
         }
         .insert(&self.db)
         .await?;
@@ -107,7 +108,7 @@ impl AdminCrudTable for DbTemplateSource {
             project_id: Set(item.project_id),
             name: Set(item.name.clone()),
             channel: Set(item.channel.clone()),
-            template: Set(serde_json::to_value(item.template.clone()).unwrap()),
+            template: Set(serde_json::from_str(&item.template).unwrap()),
         }
         .update(&self.db)
         .await?;
@@ -122,5 +123,27 @@ impl AdminCrudTable for DbTemplateSource {
         .delete(&self.db)
         .await?;
         Ok(())
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct TemplateItem {
+    pub project_id: Uuid,
+    pub channel: String,
+    pub name: String,
+    pub template: String,
+}
+
+impl From<entity::template::Model> for ItemWithId<TemplateItem> {
+    fn from(value: entity::template::Model) -> Self {
+        ItemWithId {
+            id: value.id,
+            item: TemplateItem {
+                project_id: value.project_id,
+                template: serde_json::to_string_pretty(&value.template).unwrap(),
+                channel: value.channel,
+                name: value.name,
+            },
+        }
     }
 }
