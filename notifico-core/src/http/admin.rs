@@ -8,15 +8,16 @@ use axum::Json;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect, Select};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::error::Error;
 use std::str::FromStr;
 use uuid::Uuid;
 
-#[derive(Deserialize)]
-#[serde(rename_all = "UPPERCASE")]
+#[derive(Deserialize, Copy, Clone)]
 pub enum SortOrder {
+    #[serde(alias = "ASC", alias = "asc")]
     Asc,
+    #[serde(alias = "DESC", alias = "desc")]
     Desc,
 }
 
@@ -30,8 +31,8 @@ impl From<SortOrder> for sea_orm::Order {
 }
 
 pub trait ListableTrait: QuerySelect {
-    fn apply_filter(self, params: &ListQueryParams) -> anyhow::Result<Self>;
-    fn apply_params(self, params: &ListQueryParams) -> anyhow::Result<Self>;
+    fn apply_filter(self, params: &ParsedListQueryParams) -> anyhow::Result<Self>;
+    fn apply_params(self, params: &ParsedListQueryParams) -> anyhow::Result<Self>;
 }
 
 impl<ET> ListableTrait for Select<ET>
@@ -39,57 +40,126 @@ where
     ET: EntityTrait,
     <ET::Column as FromStr>::Err: Error + Send + Sync,
 {
-    fn apply_filter(mut self, params: &ListQueryParams) -> anyhow::Result<Self> {
-        if let Some(filter) = &params.filter {
-            let filter: BTreeMap<String, Value> = serde_json::from_str(filter)?;
+    fn apply_filter(mut self, params: &ParsedListQueryParams) -> anyhow::Result<Self> {
+        let Some(filter) = &params.filter else {
+            return Ok(self);
+        };
 
-            for (col, val) in filter.into_iter() {
-                let column = ET::Column::from_str(&col)?;
-                let filters = match val {
-                    Value::String(v) => vec![Value::String(v)],
-                    Value::Array(v) => v,
-                    _ => {
-                        bail!("Invalid filter value type: {col}. Expected string or array of strings.")
+        for (col, val) in filter.iter() {
+            let column = ET::Column::from_str(col)?;
+            match val {
+                FilterOp::IsIn(filter) => {
+                    let mut values: Vec<sea_orm::Value> = vec![];
+                    for filter in filter {
+                        if let Ok(uuid) = Uuid::from_str(filter) {
+                            values.push(uuid.into());
+                        } else {
+                            values.push(filter.into())
+                        }
                     }
-                };
-
-                let mut values: Vec<sea_orm::Value> = vec![];
-                for filter in filters {
-                    if let Ok(uuid) = Uuid::deserialize(filter.clone()) {
-                        values.push(uuid.into());
-                    } else if let Value::String(s) = filter {
-                        values.push(s.into());
-                    } else {
-                        values.push(filter.into())
-                    }
+                    self = self.filter(column.is_in(values));
                 }
-                self = self.filter(column.is_in(values));
             }
         }
+
         Ok(self)
     }
 
-    fn apply_params(mut self, params: &ListQueryParams) -> anyhow::Result<Self> {
+    fn apply_params(mut self, params: &ParsedListQueryParams) -> anyhow::Result<Self> {
         if let Some(order) = &params.sort {
-            let order: (String, SortOrder) = serde_json::from_str(order)?;
-
             self = self.order_by(ET::Column::from_str(&order.0)?, order.1.into())
         }
-        if let Some(range) = &params.range {
-            let range: (u64, u64) = serde_json::from_str(range)?;
-
-            self = self.offset(range.0).limit(range.1 - range.0);
+        if let Some(limit) = params.limit() {
+            self = self.limit(limit)
         }
+        if let Some(offset) = params.offset() {
+            self = self.offset(offset)
+        }
+
         self = self.apply_filter(params)?;
         Ok(self)
     }
 }
 
-#[derive(Deserialize, Clone, Default)]
+#[derive(Deserialize, Clone)]
 pub struct ListQueryParams {
     sort: Option<String>,
     range: Option<String>,
     filter: Option<String>,
+}
+
+#[derive(Deserialize, Clone)]
+enum FilterOp {
+    IsIn(Vec<String>),
+}
+
+pub struct ParsedListQueryParams {
+    range: Option<(u64, u64)>,
+    filter: Option<HashMap<String, FilterOp>>,
+    sort: Option<(String, SortOrder)>,
+}
+
+impl ParsedListQueryParams {
+    fn limit(&self) -> Option<u64> {
+        self.range.map(|(start, end)| end - start)
+    }
+
+    fn offset(&self) -> Option<u64> {
+        self.range.map(|(start, _)| start)
+    }
+}
+
+impl TryFrom<ListQueryParams> for ParsedListQueryParams {
+    type Error = anyhow::Error;
+
+    fn try_from(value: ListQueryParams) -> Result<Self, Self::Error> {
+        let sort = match value.sort {
+            None => None,
+            Some(sort) => serde_json::from_str(&sort)?,
+        };
+
+        let range = match value.range {
+            None => None,
+            Some(range) => serde_json::from_str(&range)?,
+        };
+
+        let filter = match value.filter {
+            None => None,
+            Some(filter) => {
+                let mut parsed_filter = HashMap::new();
+
+                let filter: BTreeMap<String, Value> = serde_json::from_str(&filter)?;
+                for (col, values) in filter.into_iter() {
+                    let values = match values {
+                        Value::String(v) => vec![v],
+                        Value::Array(v) => {
+                            let mut values: Vec<String> = vec![];
+                            for filter in v {
+                                match filter {
+                                    Value::String(filter) => values.push(filter),
+                                    _ => {
+                                        bail!("Invalid filter value type: {col}. Expected string.")
+                                    }
+                                }
+                            }
+                            values
+                        }
+                        _ => {
+                            bail!("Invalid filter value type: {col}. Expected string or array of strings.")
+                        }
+                    };
+                    parsed_filter.insert(col, FilterOp::IsIn(values));
+                }
+                Some(parsed_filter)
+            }
+        };
+
+        Ok(Self {
+            range,
+            filter,
+            sort,
+        })
+    }
 }
 
 pub struct PaginatedResult<T> {

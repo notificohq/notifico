@@ -33,6 +33,7 @@ impl AdminCrudTable for EventDbController {
         &self,
         params: ListQueryParams,
     ) -> Result<PaginatedResult<ItemWithId<Self::Item>>, EngineError> {
+        let params = params.try_into()?;
         Ok(PaginatedResult {
             items: entity::event::Entity::find()
                 .apply_params(&params)?

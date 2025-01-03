@@ -118,6 +118,7 @@ impl AdminCrudTable for SubscriptionDbController {
         &self,
         params: ListQueryParams,
     ) -> Result<PaginatedResult<ItemWithId<Self::Item>>, EngineError> {
+        let params = params.try_into()?;
         let total = Subscription::find()
             .apply_filter(&params)?
             .count(&self.db)

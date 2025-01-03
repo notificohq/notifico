@@ -57,6 +57,7 @@ impl AdminCrudTable for GroupDbController {
         &self,
         params: ListQueryParams,
     ) -> Result<PaginatedResult<ItemWithId<Self::Item>>, EngineError> {
+        let params = params.try_into()?;
         let items = crate::entity::group::Entity::find()
             .apply_params(&params)?
             .all(&self.db)

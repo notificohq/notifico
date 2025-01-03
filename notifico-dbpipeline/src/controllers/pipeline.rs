@@ -94,6 +94,7 @@ impl AdminCrudTable for PipelineDbController {
         &self,
         params: ListQueryParams,
     ) -> Result<PaginatedResult<ItemWithId<Self::Item>>, EngineError> {
+        let params = params.try_into()?;
         let pipelines = entity::pipeline::Entity::find()
             .apply_params(&params)
             .unwrap()

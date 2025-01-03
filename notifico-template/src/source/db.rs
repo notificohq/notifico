@@ -69,6 +69,7 @@ impl AdminCrudTable for DbTemplateSource {
         &self,
         params: ListQueryParams,
     ) -> Result<PaginatedResult<ItemWithId<Self::Item>>, EngineError> {
+        let params = params.try_into()?;
         let items = entity::template::Entity::find();
         Ok(PaginatedResult {
             items: items

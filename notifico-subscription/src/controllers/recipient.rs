@@ -60,6 +60,7 @@ impl AdminCrudTable for RecipientDbController {
         &self,
         params: ListQueryParams,
     ) -> Result<PaginatedResult<ItemWithId<Self::Item>>, EngineError> {
+        let params = params.try_into()?;
         let total = crate::entity::recipient::Entity::find()
             .apply_filter(&params)?
             .count(&self.db)

@@ -52,6 +52,7 @@ impl AdminCrudTable for ProjectController {
         &self,
         params: ListQueryParams,
     ) -> Result<PaginatedResult<ItemWithId<Self::Item>>, EngineError> {
+        let params = params.try_into()?;
         let query = entity::project::Entity::find()
             .apply_params(&params)
             .unwrap()
