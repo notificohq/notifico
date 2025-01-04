@@ -9,6 +9,7 @@ use sea_orm::ActiveValue::{Set, Unchanged};
 use sea_orm::{ActiveModelTrait, PaginatorTrait};
 use sea_orm::{DatabaseConnection, EntityTrait};
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
 pub struct EventDbController {
     db: DatabaseConnection,
@@ -93,7 +94,7 @@ impl AdminCrudTable for EventDbController {
     }
 }
 
-#[derive(Serialize, Deserialize, Default, Clone, Debug)]
+#[derive(Serialize, Deserialize, Default, Clone, Debug, ToSchema)]
 pub struct Event {
     pub project_id: Uuid,
     pub name: String,

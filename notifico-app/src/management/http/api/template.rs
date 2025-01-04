@@ -2,12 +2,19 @@ use axum::extract::{Path, Query};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::{Extension, Json};
-use notifico_core::http::admin::{AdminCrudTable, ItemWithId, ListQueryParams};
+use notifico_core::http::admin::{
+    AdminCrudTable, ItemWithId, ListQueryParams, ReactAdminListQueryParams, RefineListQueryParams,
+};
 use notifico_template::source::db::DbTemplateSource;
 use notifico_template::source::db::TemplateItem;
 use std::sync::Arc;
 use uuid::Uuid;
 
+#[utoipa::path(
+    get,
+    path = "/v1/templates",
+    params(ReactAdminListQueryParams, RefineListQueryParams)
+)]
 pub async fn list(
     Query(params): Query<ListQueryParams>,
     Extension(controller): Extension<Arc<DbTemplateSource>>,
@@ -15,6 +22,7 @@ pub async fn list(
     controller.list(params).await.unwrap()
 }
 
+#[utoipa::path(get, path = "/v1/templates/{id}")]
 pub async fn get(
     Path((id,)): Path<(Uuid,)>,
     Extension(controller): Extension<Arc<DbTemplateSource>>,
@@ -26,6 +34,7 @@ pub async fn get(
     }
 }
 
+#[utoipa::path(post, path = "/v1/templates")]
 pub async fn create(
     Extension(controller): Extension<Arc<DbTemplateSource>>,
     Json(update): Json<TemplateItem>,
@@ -34,6 +43,7 @@ pub async fn create(
     (StatusCode::CREATED, Json(result))
 }
 
+#[utoipa::path(method(put, patch), path = "/v1/templates/{id}")]
 pub async fn update(
     Extension(controller): Extension<Arc<DbTemplateSource>>,
     Json(update): Json<ItemWithId<TemplateItem>>,
@@ -42,6 +52,7 @@ pub async fn update(
     (StatusCode::ACCEPTED, Json(result))
 }
 
+#[utoipa::path(delete, path = "/v1/templates/{id}")]
 pub async fn delete(
     Extension(controller): Extension<Arc<DbTemplateSource>>,
     Path((id,)): Path<(Uuid,)>,

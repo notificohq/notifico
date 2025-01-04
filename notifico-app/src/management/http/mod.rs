@@ -1,4 +1,4 @@
-mod admin;
+mod api;
 
 use axum::http::header::CONTENT_TYPE;
 use axum::http::{StatusCode, Uri};
@@ -38,7 +38,7 @@ pub(crate) async fn start(bind: SocketAddr, ext: HttpManagenemtExtensions) {
     let service_listener = TcpListener::bind(bind).await.unwrap();
 
     // Service API
-    let app = Router::new().nest("/api", admin::get_router(ext.clone()));
+    let app = Router::new().nest("/api", api::get_router(ext.clone()));
     let app = app.fallback(static_handler);
 
     tokio::spawn(async { axum::serve(service_listener, app).await.unwrap() });

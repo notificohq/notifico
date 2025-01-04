@@ -6,6 +6,7 @@ use notifico_core::http::admin::{
 use sea_orm::ActiveValue::{Set, Unchanged};
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, PaginatorTrait};
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 pub struct ContactDbController {
@@ -18,7 +19,7 @@ impl ContactDbController {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, ToSchema)]
 pub struct ContactItem {
     recipient_id: Uuid,
     contact: String,

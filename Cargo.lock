@@ -2109,6 +2109,7 @@ dependencies = [
  "sea-orm",
  "serde",
  "serde_json",
+ "utoipa",
 ]
 
 [[package]]
@@ -2154,6 +2155,7 @@ dependencies = [
  "notifico-project-migration",
  "sea-orm",
  "serde",
+ "utoipa",
  "uuid",
 ]
 
@@ -2251,6 +2253,7 @@ dependencies = [
  "serde_json",
  "tracing",
  "url",
+ "utoipa",
  "uuid",
 ]
 
@@ -2282,6 +2285,7 @@ dependencies = [
  "tokio",
  "toml",
  "tracing",
+ "utoipa",
  "uuid",
 ]
 

@@ -11,9 +11,10 @@ use serde_json::Value;
 use std::collections::BTreeMap;
 use std::error::Error;
 use std::str::FromStr;
+use utoipa::{IntoParams, ToSchema};
 use uuid::Uuid;
 
-#[derive(Deserialize, Copy, Clone)]
+#[derive(Deserialize, Copy, Clone, ToSchema)]
 pub enum SortOrder {
     #[serde(alias = "ASC", alias = "asc")]
     Asc,
@@ -88,7 +89,7 @@ pub enum ListQueryParams {
     Refine(RefineListQueryParams),
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Clone, IntoParams)]
 #[serde(deny_unknown_fields)]
 pub struct ReactAdminListQueryParams {
     sort: Option<String>,
@@ -96,9 +97,10 @@ pub struct ReactAdminListQueryParams {
     filter: Option<String>,
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Clone, IntoParams)]
 pub struct RefineListQueryParams {
     _sort: Option<String>,
+    #[param(inline)]
     _order: Option<SortOrder>,
     _start: Option<u64>,
     _end: Option<u64>,
@@ -214,7 +216,7 @@ impl<T: Serialize> IntoResponse for PaginatedResult<T> {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct ItemWithId<T> {
     pub id: Uuid,
     #[serde(flatten)]

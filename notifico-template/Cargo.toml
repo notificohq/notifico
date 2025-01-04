@@ -17,3 +17,4 @@ anyhow = "1.0.95"
 thiserror = "2.0.9"
 tokio = { version = "1.42.0", features = ["fs"] }
 toml = "0.8.19"
+utoipa = { workspace = true }

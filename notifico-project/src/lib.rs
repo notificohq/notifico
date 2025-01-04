@@ -7,12 +7,13 @@ use notifico_core::http::admin::{
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, PaginatorTrait, Set};
 use serde::{Deserialize, Serialize};
 use std::error::Error;
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 #[allow(unused_imports)]
 mod entity;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, ToSchema)]
 pub struct Project {
     pub name: String,
 }

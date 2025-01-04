@@ -6,6 +6,7 @@ use notifico_core::http::admin::{
 use sea_orm::ActiveValue::{Set, Unchanged};
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, PaginatorTrait};
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 pub struct GroupDbController {
@@ -18,7 +19,7 @@ impl GroupDbController {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, ToSchema)]
 pub struct GroupItem {
     project_id: Uuid,
     name: String,

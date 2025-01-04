@@ -17,3 +17,4 @@ jsonwebtoken = "9.3.0"
 anyhow = "1.0.95"
 async-trait = "0.1.84"
 futures = "0.3.31"
+utoipa = { workspace = true }

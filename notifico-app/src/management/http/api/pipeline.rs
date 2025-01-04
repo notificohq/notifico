@@ -2,14 +2,17 @@ use axum::extract::{Path, Query};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::{Extension, Json};
-use notifico_core::http::admin::{AdminCrudTable, ItemWithId, ListQueryParams};
+use notifico_core::http::admin::{
+    AdminCrudTable, ItemWithId, ListQueryParams, ReactAdminListQueryParams, RefineListQueryParams,
+};
 use notifico_core::pipeline::Pipeline;
 use notifico_dbpipeline::controllers::pipeline::{PipelineDbController, PipelineItem};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use utoipa::ToSchema;
 use uuid::Uuid;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct RestPipelineItem {
     project_id: Uuid,
     steps: String,
@@ -38,6 +41,7 @@ impl From<RestPipelineItem> for PipelineItem {
     }
 }
 
+#[utoipa::path(post, path = "/v1/pipelines")]
 pub async fn create(
     Extension(pipeline_storage): Extension<Arc<PipelineDbController>>,
     Json(item): Json<RestPipelineItem>,
@@ -46,6 +50,11 @@ pub async fn create(
     (StatusCode::CREATED, Json(result))
 }
 
+#[utoipa::path(
+    get,
+    path = "/v1/pipelines",
+    params(ReactAdminListQueryParams, RefineListQueryParams)
+)]
 pub async fn list(
     Query(params): Query<ListQueryParams>,
     Extension(pipeline_storage): Extension<Arc<PipelineDbController>>,
@@ -57,6 +66,7 @@ pub async fn list(
         .map(|item| item.map(RestPipelineItem::from))
 }
 
+#[utoipa::path(get, path = "/v1/pipelines/{id}")]
 pub async fn get(
     Path((id,)): Path<(Uuid,)>,
     Extension(pipeline_storage): Extension<Arc<PipelineDbController>>,
@@ -74,6 +84,7 @@ pub async fn get(
     )
 }
 
+#[utoipa::path(method(put, patch), path = "/v1/pipelines/{id}")]
 pub async fn update(
     Extension(pipeline_storage): Extension<Arc<PipelineDbController>>,
     Path((id,)): Path<(Uuid,)>,
@@ -83,6 +94,7 @@ pub async fn update(
     (StatusCode::ACCEPTED, Json(result))
 }
 
+#[utoipa::path(delete, path = "/v1/pipelines/{id}")]
 pub async fn delete(
     Extension(pipeline_storage): Extension<Arc<PipelineDbController>>,
     Path((id,)): Path<(Uuid,)>,

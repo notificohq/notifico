@@ -12,6 +12,7 @@ use sea_orm::{
     Set,
 };
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 pub struct DbTemplateSource {
@@ -127,7 +128,7 @@ impl AdminCrudTable for DbTemplateSource {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, ToSchema)]
 pub struct TemplateItem {
     pub project_id: Uuid,
     pub channel: String,

@@ -2,14 +2,17 @@ use axum::extract::{Path, Query};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::{Extension, Json};
-use notifico_core::http::admin::{AdminCrudTable, ItemWithId, ListQueryParams};
+use notifico_core::http::admin::{
+    AdminCrudTable, ItemWithId, ListQueryParams, ReactAdminListQueryParams, RefineListQueryParams,
+};
 use notifico_subscription::controllers::recipient::{RecipientDbController, RecipientItem};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Arc;
+use utoipa::ToSchema;
 use uuid::Uuid;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct RecipientRestItem {
     project_id: Uuid,
     extras: String,
@@ -33,6 +36,11 @@ impl From<RecipientRestItem> for RecipientItem {
     }
 }
 
+#[utoipa::path(
+    get,
+    path = "/v1/recipients",
+    params(ReactAdminListQueryParams, RefineListQueryParams)
+)]
 pub async fn list(
     Query(params): Query<ListQueryParams>,
     Extension(controller): Extension<Arc<RecipientDbController>>,
@@ -44,6 +52,7 @@ pub async fn list(
         .map(|item| item.map(RecipientRestItem::from))
 }
 
+#[utoipa::path(get, path = "/v1/recipients/{id}")]
 pub async fn get(
     Path((id,)): Path<(Uuid,)>,
     Extension(controller): Extension<Arc<RecipientDbController>>,
@@ -62,6 +71,7 @@ pub async fn get(
     )
 }
 
+#[utoipa::path(post, path = "/v1/recipients")]
 pub async fn create(
     Extension(controller): Extension<Arc<RecipientDbController>>,
     Json(update): Json<RecipientRestItem>,
@@ -71,6 +81,7 @@ pub async fn create(
     (StatusCode::CREATED, Json(result))
 }
 
+#[utoipa::path(method(put, patch), path = "/v1/recipients/{id}")]
 pub async fn update(
     Extension(controller): Extension<Arc<RecipientDbController>>,
     Path((id,)): Path<(Uuid,)>,
@@ -80,6 +91,7 @@ pub async fn update(
     (StatusCode::ACCEPTED, Json(result))
 }
 
+#[utoipa::path(delete, path = "/v1/recipients/{id}")]
 pub async fn delete(
     Path((id,)): Path<(Uuid,)>,
     Extension(controller): Extension<Arc<RecipientDbController>>,
