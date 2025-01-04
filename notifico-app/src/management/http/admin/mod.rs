@@ -1,4 +1,4 @@
-use crate::ui::http::HttpUiExtensions;
+use crate::management::http::HttpManagenemtExtensions;
 use axum::routing::get;
 use axum::{Extension, Router};
 use tower_http::cors::CorsLayer;
@@ -12,7 +12,7 @@ mod recipients;
 pub mod subscription;
 mod template;
 
-pub(crate) fn get_router(ext: HttpUiExtensions) -> Router {
+pub(crate) fn get_router(ext: HttpManagenemtExtensions) -> Router {
     Router::new()
         // Subscriptions
         .route("/v1/subscriptions", get(subscription::list))

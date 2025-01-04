@@ -8,7 +8,7 @@ use axum::Json;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect, Select};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use std::error::Error;
 use std::str::FromStr;
 use uuid::Uuid;
@@ -45,9 +45,9 @@ where
             return Ok(self);
         };
 
-        for (col, val) in filter.iter() {
-            let column = ET::Column::from_str(col)?;
-            match val {
+        for (column, filterop) in filter.iter() {
+            let column = ET::Column::from_str(column)?;
+            match filterop {
                 FilterOp::IsIn(filter) => {
                     let mut values: Vec<sea_orm::Value> = vec![];
                     for filter in filter {
@@ -82,10 +82,28 @@ where
 }
 
 #[derive(Deserialize, Clone)]
-pub struct ListQueryParams {
+#[serde(untagged)]
+pub enum ListQueryParams {
+    ReactAdmin(ReactAdminListQueryParams),
+    Refine(RefineListQueryParams),
+}
+
+#[derive(Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct ReactAdminListQueryParams {
     sort: Option<String>,
     range: Option<String>,
     filter: Option<String>,
+}
+
+#[derive(Deserialize, Clone)]
+pub struct RefineListQueryParams {
+    _sort: Option<String>,
+    _order: Option<SortOrder>,
+    _start: Option<u64>,
+    _end: Option<u64>,
+    #[serde(flatten)]
+    _filter: Vec<(String, String)>,
 }
 
 #[derive(Deserialize, Clone)]
@@ -95,7 +113,7 @@ enum FilterOp {
 
 pub struct ParsedListQueryParams {
     range: Option<(u64, u64)>,
-    filter: Option<HashMap<String, FilterOp>>,
+    filter: Option<Vec<(String, FilterOp)>>,
     sort: Option<(String, SortOrder)>,
 }
 
@@ -109,10 +127,10 @@ impl ParsedListQueryParams {
     }
 }
 
-impl TryFrom<ListQueryParams> for ParsedListQueryParams {
+impl TryFrom<ReactAdminListQueryParams> for ParsedListQueryParams {
     type Error = anyhow::Error;
 
-    fn try_from(value: ListQueryParams) -> Result<Self, Self::Error> {
+    fn try_from(value: ReactAdminListQueryParams) -> Result<Self, Self::Error> {
         let sort = match value.sort {
             None => None,
             Some(sort) => serde_json::from_str(&sort)?,
@@ -126,7 +144,7 @@ impl TryFrom<ListQueryParams> for ParsedListQueryParams {
         let filter = match value.filter {
             None => None,
             Some(filter) => {
-                let mut parsed_filter = HashMap::new();
+                let mut parsed_filter = vec![];
 
                 let filter: BTreeMap<String, Value> = serde_json::from_str(&filter)?;
                 for (col, values) in filter.into_iter() {
@@ -148,7 +166,7 @@ impl TryFrom<ListQueryParams> for ParsedListQueryParams {
                             bail!("Invalid filter value type: {col}. Expected string or array of strings.")
                         }
                     };
-                    parsed_filter.insert(col, FilterOp::IsIn(values));
+                    parsed_filter.push((col, FilterOp::IsIn(values)));
                 }
                 Some(parsed_filter)
             }
@@ -159,6 +177,17 @@ impl TryFrom<ListQueryParams> for ParsedListQueryParams {
             filter,
             sort,
         })
+    }
+}
+
+impl TryFrom<ListQueryParams> for ParsedListQueryParams {
+    type Error = anyhow::Error;
+
+    fn try_from(value: ListQueryParams) -> Result<Self, Self::Error> {
+        match value {
+            ListQueryParams::ReactAdmin(value) => value.try_into(),
+            ListQueryParams::Refine(_) => unimplemented!(),
+        }
     }
 }
 

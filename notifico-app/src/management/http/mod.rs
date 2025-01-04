@@ -18,7 +18,7 @@ use std::sync::Arc;
 use tokio::net::TcpListener;
 
 #[derive(Clone)]
-pub(crate) struct HttpUiExtensions {
+pub(crate) struct HttpManagenemtExtensions {
     pub recipient_controller: Arc<RecipientDbController>,
     pub contact_controller: Arc<ContactDbController>,
     pub subscription_controller: Arc<SubscriptionDbController>,
@@ -33,7 +33,7 @@ pub(crate) struct HttpUiExtensions {
 #[folder = "assets/"]
 struct Assets;
 
-pub(crate) async fn start(bind: SocketAddr, ext: HttpUiExtensions) {
+pub(crate) async fn start(bind: SocketAddr, ext: HttpManagenemtExtensions) {
     // Bind everything now to catch any errors before spinning up the coroutines
     let service_listener = TcpListener::bind(bind).await.unwrap();
 

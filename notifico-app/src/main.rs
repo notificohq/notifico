@@ -1,12 +1,12 @@
 mod amqp;
 mod ingest;
+mod management;
 mod public;
-mod ui;
 
 use crate::amqp::AmqpClient;
 use crate::ingest::http::HttpIngestExtensions;
+use crate::management::http::HttpManagenemtExtensions;
 use crate::public::http::HttpPublicExtensions;
-use crate::ui::http::HttpUiExtensions;
 use clap::{Parser, Subcommand};
 use notifico_attachment::AttachmentPlugin;
 use notifico_core::credentials::env::EnvCredentialStorage;
@@ -41,7 +41,7 @@ use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, Env
 use url::Url;
 
 const COMPONENT_WORKER: &str = "worker";
-const COMPONENT_UI: &str = "ui";
+const COMPONENT_MANAGEMENT: &str = "management";
 const COMPONENT_INGEST: &str = "ingest";
 const COMPONENT_PUBLIC: &str = "public";
 
@@ -61,7 +61,7 @@ struct Args {
     amqp_prefix: String,
 
     #[clap(long, env = "NOTIFICO_UI_BIND", default_value = "[::]:8000")]
-    ui: SocketAddr,
+    management: SocketAddr,
     #[clap(long, env = "NOTIFICO_HTTP_INGEST_BIND", default_value = "[::]:8001")]
     ingest: SocketAddr,
     #[clap(long, env = "NOTIFICO_PUBLIC_BIND", default_value = "[::]:8002")]
@@ -186,7 +186,7 @@ async fn main() {
                 public::http::start(args.public, ext).await;
             }
 
-            if components.is_empty() || components.contains(COMPONENT_UI) {
+            if components.is_empty() || components.contains(COMPONENT_MANAGEMENT) {
                 let pipeline_controller =
                     Arc::new(PipelineDbController::new(db_connection.clone()));
                 let recipient_controller =
@@ -198,8 +198,8 @@ async fn main() {
 
                 project_controller.setup().await.unwrap();
 
-                info!("Starting HTTP UI server on {}", args.ui);
-                let ext = HttpUiExtensions {
+                info!("Starting HTTP management server on {}", args.management);
+                let ext = HttpManagenemtExtensions {
                     recipient_controller,
                     contact_controller,
                     project_controller,
@@ -210,7 +210,7 @@ async fn main() {
                     group_controller,
                 };
 
-                ui::http::start(args.ui, ext).await;
+                management::http::start(args.management, ext).await;
             }
 
             if components.is_empty() || components.contains(COMPONENT_WORKER) {
