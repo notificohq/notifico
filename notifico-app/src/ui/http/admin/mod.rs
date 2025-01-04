@@ -16,14 +16,14 @@ pub(crate) fn get_router(ext: HttpUiExtensions) -> Router {
     Router::new()
         // Subscriptions
         .route("/v1/subscriptions", get(subscription::list))
-        .route("/v1/subscriptions/:id", get(subscription::get))
+        .route("/v1/subscriptions/{id}", get(subscription::get))
         // Recipients
         .route(
             "/v1/recipients",
             get(recipients::list).post(recipients::create),
         )
         .route(
-            "/v1/recipients/:id",
+            "/v1/recipients/{id}",
             get(recipients::get)
                 .put(recipients::update)
                 .delete(recipients::delete),
@@ -31,7 +31,7 @@ pub(crate) fn get_router(ext: HttpUiExtensions) -> Router {
         // Contacts
         .route("/v1/contacts", get(contacts::list).post(contacts::create))
         .route(
-            "/v1/contacts/:id",
+            "/v1/contacts/{id}",
             get(contacts::get)
                 .delete(contacts::delete)
                 .put(contacts::update),
@@ -39,13 +39,13 @@ pub(crate) fn get_router(ext: HttpUiExtensions) -> Router {
         // Contacts
         .route("/v1/groups", get(group::list).post(group::create))
         .route(
-            "/v1/groups/:id",
+            "/v1/groups/{id}",
             get(group::get).delete(group::delete).put(group::update),
         )
         // Pipelines
         .route("/v1/pipelines", get(pipeline::list).post(pipeline::create))
         .route(
-            "/v1/pipelines/:id",
+            "/v1/pipelines/{id}",
             get(pipeline::get)
                 .put(pipeline::update)
                 .delete(pipeline::delete),
@@ -53,20 +53,20 @@ pub(crate) fn get_router(ext: HttpUiExtensions) -> Router {
         // Events
         .route("/v1/events", get(event::list).post(event::create))
         .route(
-            "/v1/events/:id",
+            "/v1/events/{id}",
             get(event::get).put(event::update).delete(event::delete),
         )
         // Projects
         .route("/v1/projects", get(project::list).post(project::create))
         .route(
-            "/v1/projects/:id",
+            "/v1/projects/{id}",
             get(project::get)
                 .put(project::update)
                 .delete(project::delete),
         )
         .route("/v1/templates", get(template::list).post(template::create))
         .route(
-            "/v1/templates/:id",
+            "/v1/templates/{id}",
             get(template::get)
                 .put(template::update)
                 .delete(template::delete),

@@ -9,5 +9,5 @@ notifico-core = { path = "../notifico-core" }
 
 sea-orm = { workspace = true }
 uuid = { workspace = true }
-serde = { version = "1.0.215", features = ["derive"] }
-async-trait = "0.1.83"
+serde = { version = "1.0.217", features = ["derive"] }
+async-trait = "0.1.84"

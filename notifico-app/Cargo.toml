@@ -13,8 +13,8 @@ notifico-dbpipeline = { path = "../notifico-dbpipeline" }
 notifico-project = { path = "../notifico-project" }
 notifico-attachment = { path = "../notifico-attachment" }
 
-anyhow = "1.0.94"
-async-trait = "0.1.83"
+anyhow = "1.0.95"
+async-trait = "0.1.84"
 axum = { workspace = true }
 backoff = { version = "0.4.0", features = ["tokio"] }
 clap = { workspace = true }
@@ -25,14 +25,13 @@ jsonwebtoken = "9.3.0"
 log = "0.4.22"
 rust-embed = { version = "8.5.0", features = ["mime-guess"] }
 sea-orm = { workspace = true }
-serde = { version = "1.0.215", features = ["derive"] }
-serde_json = "1.0.133"
+serde = { version = "1.0.217", features = ["derive"] }
+serde_json = "1.0.134"
 tokio = { version = "1.42", features = ["macros", "rt", "sync", "rt-multi-thread", "signal"] }
 tower-http = { version = "0.6.2", features = ["cors"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter", "fmt"] }
 url = { workspace = true }
-utoipa = { version = "5.2.0", features = ["axum_extras"] }
-utoipa-redoc = { version = "5.0.0", features = ["axum"] }
-utoipa-swagger-ui = { version = "8", features = ["axum", "vendored"] }
+utoipa = { workspace = true }
+utoipa-swagger-ui = { workspace = true }
 uuid = { workspace = true }

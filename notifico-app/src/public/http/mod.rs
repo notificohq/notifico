@@ -8,8 +8,6 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::TcpListener;
 use utoipa::OpenApi;
-use utoipa_redoc::Redoc;
-use utoipa_redoc::Servable;
 use utoipa_swagger_ui::SwaggerUi;
 
 #[derive(Clone)]
@@ -31,7 +29,6 @@ pub(crate) async fn start(bind: SocketAddr, ext: HttpPublicExtensions) {
 
     let app =
         app.merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()));
-    let app = app.merge(Redoc::with_url("/redoc", ApiDoc::openapi()));
 
     tokio::spawn(async { axum::serve(listener, app).await.unwrap() });
 }

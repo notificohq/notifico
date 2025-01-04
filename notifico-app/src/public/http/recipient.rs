@@ -4,9 +4,6 @@ use axum::{Extension, Router};
 
 pub(crate) fn get_router(ext: HttpPublicExtensions) -> Router {
     Router::new()
-        .nest(
-            "/",
-            subscription_get_router(ext.subscription_controller.clone()),
-        )
+        .merge(subscription_get_router(ext.subscription_controller.clone()))
         .layer(Extension(ext.subscription_controller.clone()))
 }

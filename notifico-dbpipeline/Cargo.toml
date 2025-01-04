@@ -8,7 +8,7 @@ notifico-core = { path = "../notifico-core" }
 notifico-dbpipeline-migration = { path = "migration" }
 
 sea-orm = { workspace = true }
-async-trait = "0.1.83"
-serde = "1.0.215"
-serde_json = "1.0.133"
-anyhow = "1.0.94"
+async-trait = "0.1.84"
+serde = "1.0.217"
+serde_json = "1.0.134"
+anyhow = "1.0.95"
