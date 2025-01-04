@@ -33,5 +33,6 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter", "fmt"] }
 url = { workspace = true }
 utoipa = { workspace = true }
+utoipa-axum = { workspace = true }
 utoipa-swagger-ui = { workspace = true }
 uuid = { workspace = true }

@@ -35,6 +35,7 @@ axum = { version = "0.8.1", features = ["macros"] }
 clap = { version = "4.5.23", features = ["derive", "color", "usage", "env"] }
 url = { version = "2.5.4", features = ["serde"] }
 utoipa = { git = "https://github.com/juhaku/utoipa.git", features = ["axum_extras", "uuid"] }
+utoipa-axum = { git = "https://github.com/juhaku/utoipa.git" }
 utoipa-swagger-ui = { git = "https://github.com/juhaku/utoipa.git", features = ["axum", "vendored"] }
 uuid = { version = "1.11.0", features = ["serde", "v7"] }
 

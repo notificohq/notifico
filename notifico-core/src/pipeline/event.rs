@@ -19,7 +19,9 @@ pub struct ProcessEventRequest {
     #[serde(default = "Uuid::nil")]
     pub project_id: Uuid,
     pub event: String,
+    #[serde(default = "Vec::new")]
     pub recipients: Vec<RecipientSelector>,
+    #[serde(default)]
     pub context: EventContext,
 }
 
