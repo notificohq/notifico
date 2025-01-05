@@ -214,29 +214,29 @@ async fn main() {
             }
 
             if components.is_empty() || components.contains(COMPONENT_WORKER) {
-                let recipient_source = Arc::new(RecipientDbSource::new(db_connection.clone()));
-
                 // Create Engine with plugins
-                let mut engine = Engine::new();
-                engine.add_plugin(Arc::new(CorePlugin::new(
-                    pipelines_tx.clone(),
-                    recipient_source,
-                )));
-                engine.add_plugin(Arc::new(Templater::new(templater_source.clone())));
-                engine.add_plugin(subman.clone());
+                let engine = {
+                    let mut engine = Engine::new();
+                    let recipient_source = Arc::new(RecipientDbSource::new(db_connection.clone()));
+                    engine.add_plugin(Arc::new(CorePlugin::new(
+                        pipelines_tx.clone(),
+                        recipient_source,
+                    )));
+                    engine.add_plugin(Arc::new(Templater::new(templater_source.clone())));
+                    engine.add_plugin(subman.clone());
 
-                let attachment_plugin = Arc::new(AttachmentPlugin::new(false));
-                engine.add_plugin(attachment_plugin.clone());
+                    let attachment_plugin = Arc::new(AttachmentPlugin::new(false));
+                    engine.add_plugin(attachment_plugin.clone());
 
-                let mut transport_registry = TransportRegistry::new();
-                for (engine_plugin, transport_plugin) in all_transports(
-                    credentials.clone(),
-                    recorder.clone(),
-                    attachment_plugin.clone(),
-                ) {
-                    engine.add_plugin(engine_plugin);
-                    transport_registry.register(transport_plugin);
-                }
+                    for (engine_plugin, _) in all_transports(
+                        credentials.clone(),
+                        recorder.clone(),
+                        attachment_plugin.clone(),
+                    ) {
+                        engine.add_plugin(engine_plugin);
+                    }
+                    engine
+                };
 
                 // Main loop
                 let executor = Arc::new(PipelineExecutor::new(engine));
