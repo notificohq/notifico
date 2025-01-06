@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 use notifico_attachment::AttachmentPlugin;
 use notifico_core::credentials::{RawCredential, TypedCredential};
-use notifico_core::engine::{Message, PipelineContext};
 use notifico_core::error::EngineError;
+use notifico_core::pipeline::context::{Message, PipelineContext};
 use notifico_core::recipient::{RawContact, TypedContact};
 use notifico_core::simpletransport::SimpleTransport;
 use notifico_core::templater::RenderedTemplate;
@@ -169,7 +169,7 @@ impl TryFrom<RenderedTemplate> for PushoverMessage {
     fn try_from(value: RenderedTemplate) -> Result<Self, Self::Error> {
         Ok(Self {
             body: value.get("body")?.to_string(),
-            title: value.0.get("title").cloned(),
+            title: value.parts.get("title").cloned(),
         })
     }
 }

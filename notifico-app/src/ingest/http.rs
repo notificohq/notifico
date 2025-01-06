@@ -1,7 +1,7 @@
 use axum::extract::Query;
 use axum::http::StatusCode;
 use axum::{Extension, Json};
-use notifico_core::engine::EventContext;
+use notifico_core::pipeline::context::EventContext;
 use notifico_core::pipeline::event::ProcessEventRequest;
 use notifico_core::queue::SenderChannel;
 use serde::Deserialize;

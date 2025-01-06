@@ -2,7 +2,7 @@ use crate::cloudapi::{MessageType, MessagingProduct};
 use crate::credentials::WhatsAppCredentials;
 use async_trait::async_trait;
 use notifico_core::credentials::RawCredential;
-use notifico_core::engine::{Message, PipelineContext};
+use notifico_core::pipeline::context::{Message, PipelineContext};
 use notifico_core::recipient::{PhoneContact, RawContact};
 use notifico_core::simpletransport::SimpleTransport;
 use notifico_core::{error::EngineError, templater::RenderedTemplate};
@@ -78,7 +78,7 @@ impl TryFrom<RenderedTemplate> for WhatsAppContent {
     type Error = EngineError;
 
     fn try_from(value: RenderedTemplate) -> Result<Self, Self::Error> {
-        serde_json::from_value(Value::from_iter(value.0))
+        serde_json::from_value(Value::from_iter(value.parts))
             .map_err(|e| EngineError::InternalError(e.into()))
     }
 }

@@ -2,6 +2,7 @@ use crate::error::TemplaterError;
 use crate::source::TemplateSource;
 use crate::{PreRenderedTemplate, TemplateSelector};
 use async_trait::async_trait;
+use notifico_core::pipeline::context::AttachmentMetadata;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -18,8 +19,10 @@ enum PartSelector {
 #[derive(Deserialize)]
 struct Descriptor {
     parts: HashMap<String, PartSelector>,
-    // attachments: Vec<String>,
-    // extras: HashMap<String, String>,
+    #[serde(default)]
+    attachments: Vec<AttachmentMetadata>,
+    #[serde(default)]
+    extras: HashMap<String, String>,
 }
 
 pub struct FilesystemSource {
@@ -74,7 +77,11 @@ impl TemplateSource for FilesystemSource {
                     parts.insert(name, content);
                 }
 
-                Ok(PreRenderedTemplate { parts })
+                Ok(PreRenderedTemplate {
+                    parts,
+                    extras: template.extras,
+                    attachments: template.attachments,
+                })
             }
             _ => Err(TemplaterError::TemplateNotFound),
         }

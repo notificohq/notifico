@@ -17,7 +17,6 @@ use notifico_core::pipeline::event::EventHandler;
 use notifico_core::pipeline::executor::PipelineExecutor;
 use notifico_core::queue::{ReceiverChannel, SenderChannel};
 use notifico_core::recorder::BaseRecorder;
-use notifico_core::transport::TransportRegistry;
 use notifico_dbpipeline::controllers::event::EventDbController;
 use notifico_dbpipeline::controllers::pipeline::PipelineDbController;
 use notifico_dbpipeline::DbPipelineStorage;

@@ -1,5 +1,6 @@
-use crate::engine::{EnginePlugin, PipelineContext, StepOutput};
+use crate::engine::{EnginePlugin, StepOutput};
 use crate::error::EngineError;
+use crate::pipeline::context::PipelineContext;
 use crate::pipeline::event::RecipientSelector;
 use crate::pipeline::executor::PipelineTask;
 use crate::queue::SenderChannel;

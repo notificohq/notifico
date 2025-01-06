@@ -1,5 +1,5 @@
-use crate::engine::{EventContext, PipelineContext};
 use crate::error::EngineError;
+use crate::pipeline::context::{EventContext, PipelineContext};
 use crate::pipeline::executor::PipelineTask;
 use crate::pipeline::storage::PipelineStorage;
 use crate::queue::SenderChannel;

@@ -1,7 +1,8 @@
 use async_trait::async_trait;
 use mime_guess::{mime, Mime};
-use notifico_core::engine::{AttachmentMetadata, EnginePlugin, PipelineContext, StepOutput};
+use notifico_core::engine::{EnginePlugin, StepOutput};
 use notifico_core::error::EngineError;
+use notifico_core::pipeline::context::{AttachmentMetadata, PipelineContext};
 use notifico_core::step::SerializedStep;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;

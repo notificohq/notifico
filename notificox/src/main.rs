@@ -3,7 +3,8 @@ use notifico_attachment::AttachmentPlugin;
 use notifico_core::credentials::memory::MemoryCredentialStorage;
 use notifico_core::credentials::RawCredential;
 use notifico_core::engine::plugin::core::CorePlugin;
-use notifico_core::engine::{AttachmentMetadata, Engine, EventContext};
+use notifico_core::engine::Engine;
+use notifico_core::pipeline::context::{AttachmentMetadata, EventContext};
 use notifico_core::pipeline::event::{EventHandler, ProcessEventRequest, RecipientSelector};
 use notifico_core::pipeline::executor::PipelineExecutor;
 use notifico_core::pipeline::storage::SinglePipelineStorage;
@@ -140,7 +141,11 @@ async fn main() {
                 for template in template {
                     match json5::from_str(&template) {
                         Ok(parts) => templates.push(TemplateSelector::Inline {
-                            inline: PreRenderedTemplate { parts },
+                            inline: PreRenderedTemplate {
+                                parts,
+                                attachments: vec![],
+                                extras: HashMap::new(),
+                            },
                         }),
                         Err(e) => {
                             debug!(

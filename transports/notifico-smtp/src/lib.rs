@@ -17,10 +17,10 @@ use lettre::{
 use moka::future::Cache;
 use notifico_attachment::AttachmentPlugin;
 use notifico_core::credentials::RawCredential;
-use notifico_core::engine::Message;
+use notifico_core::error::EngineError;
+use notifico_core::pipeline::context::{Message, PipelineContext};
 use notifico_core::recipient::{RawContact, TypedContact};
 use notifico_core::simpletransport::SimpleTransport;
-use notifico_core::{engine::PipelineContext, error::EngineError};
 use serde::Deserialize;
 use std::str::FromStr;
 use std::sync::Arc;

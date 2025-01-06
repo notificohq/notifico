@@ -1,4 +1,5 @@
-use crate::engine::{Engine, PipelineContext, StepOutput};
+use crate::engine::{Engine, StepOutput};
+use crate::pipeline::context::PipelineContext;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error, instrument};
 

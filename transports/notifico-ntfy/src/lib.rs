@@ -3,8 +3,8 @@ use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
 use notifico_attachment::AttachmentPlugin;
 use notifico_core::credentials::{RawCredential, TypedCredential};
-use notifico_core::engine::{Message, PipelineContext};
 use notifico_core::error::EngineError;
+use notifico_core::pipeline::context::{Message, PipelineContext};
 use notifico_core::recipient::RawContact;
 use notifico_core::simpletransport::SimpleTransport;
 use notifico_core::templater::RenderedTemplate;
@@ -122,7 +122,7 @@ impl TryFrom<RenderedTemplate> for Content {
     type Error = EngineError;
 
     fn try_from(value: RenderedTemplate) -> Result<Self, Self::Error> {
-        serde_json::from_value(Value::from_iter(value.0))
+        serde_json::from_value(Value::from_iter(value.parts))
             .map_err(|e| EngineError::InvalidRenderedTemplateFormat(e.into()))
     }
 }

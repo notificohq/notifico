@@ -5,8 +5,9 @@ pub mod source;
 use async_trait::async_trait;
 use error::TemplaterError;
 use minijinja::Environment;
-use notifico_core::engine::{EnginePlugin, Message, PipelineContext, StepOutput};
+use notifico_core::engine::{EnginePlugin, StepOutput};
 use notifico_core::error::EngineError;
+use notifico_core::pipeline::context::{AttachmentMetadata, Message, PipelineContext};
 use notifico_core::step::SerializedStep;
 use notifico_core::templater::RenderedTemplate;
 use serde::{Deserialize, Serialize};
@@ -21,8 +22,8 @@ use uuid::Uuid;
 #[derive(Default, Clone, Serialize, Deserialize)]
 pub struct PreRenderedTemplate {
     pub parts: HashMap<String, String>,
-    // attachments: Vec<String>,
-    // extras: HashMap<String, String>,
+    pub attachments: Vec<AttachmentMetadata>,
+    pub extras: HashMap<String, String>,
 }
 
 pub struct Templater {
@@ -56,17 +57,21 @@ impl Templater {
         template: PreRenderedTemplate,
         context: &Map<String, Value>,
     ) -> Result<RenderedTemplate, TemplaterError> {
-        let mut data = HashMap::new();
+        let mut parts = HashMap::with_capacity(template.parts.len());
+
         for (part_name, part_content) in template.parts {
             // Render the template using the minijinja environment and the event context
             let rendered_tpl = self.env.render_str(&part_content, context)?;
 
             // Insert the rendered template part into the data map
-            data.insert(part_name, rendered_tpl);
+            parts.insert(part_name, rendered_tpl);
         }
 
         // Return the rendered template data
-        Ok(RenderedTemplate(data))
+        Ok(RenderedTemplate {
+            parts,
+            extras: template.extras,
+        })
     }
 }
 
@@ -107,13 +112,16 @@ impl EnginePlugin for Templater {
 
                     template_context.insert("_".to_owned(), Value::Object(enrich_context));
 
+                    // Attachments
+                    let attachments = template.attachments.clone();
+
                     // Render
                     let rendered_template =
                         self.render_template(template, &template_context).await?;
                     context.messages.push(Message {
                         id: message_id,
                         content: rendered_template,
-                        attachments: vec![],
+                        attachments,
                     });
                 }
 
@@ -137,7 +145,10 @@ impl EnginePlugin for Templater {
                 }
 
                 // Set context as a rendered template
-                let rendered_template: RenderedTemplate = RenderedTemplate(rendered_parts);
+                let rendered_template: RenderedTemplate = RenderedTemplate {
+                    parts: rendered_parts,
+                    extras: HashMap::new(),
+                };
                 context.messages.push(Message {
                     id: message_id,
                     content: rendered_template,

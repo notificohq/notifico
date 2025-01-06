@@ -7,8 +7,9 @@ use async_trait::async_trait;
 use futures_util::sink::SinkExt;
 use futures_util::StreamExt;
 use notifico_core::credentials::CredentialStorage;
-use notifico_core::engine::{EnginePlugin, PipelineContext, StepOutput};
+use notifico_core::engine::{EnginePlugin, StepOutput};
 use notifico_core::error::EngineError;
+use notifico_core::pipeline::context::PipelineContext;
 use notifico_core::recipient::PhoneContact;
 use notifico_core::step::SerializedStep;
 use notifico_core::templater::RenderedTemplate;
@@ -211,6 +212,6 @@ impl TryFrom<RenderedTemplate> for SmsContent {
     type Error = ();
 
     fn try_from(value: RenderedTemplate) -> Result<Self, Self::Error> {
-        serde_json::from_value(Value::from_iter(value.0)).map_err(|_| ())
+        serde_json::from_value(Value::from_iter(value.parts)).map_err(|_| ())
     }
 }
