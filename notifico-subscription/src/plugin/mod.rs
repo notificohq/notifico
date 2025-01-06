@@ -115,7 +115,7 @@ pub fn create_self_unsubscribe_url(
     //TODO: Optimize URL creation to avoid format machinery
     subscriber_url
         .join(&format!(
-            "api/recipient/v1/list_unsubscribe?token={}&event={}",
+            "/v1/email/unsubscribe?token={}&event={}",
             token, event
         ))
         .unwrap()
