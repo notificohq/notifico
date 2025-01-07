@@ -5,7 +5,7 @@ mod public;
 
 use crate::amqp::AmqpClient;
 use crate::ingest::http::HttpIngestExtensions;
-use crate::management::http::HttpManagenemtExtensions;
+use crate::management::http::HttpManagementExtensions;
 use crate::public::http::HttpPublicExtensions;
 use clap::{Parser, Subcommand};
 use notifico_attachment::AttachmentPlugin;
@@ -168,6 +168,8 @@ async fn main() {
             templater_source.setup().await.unwrap();
             subscription_controller.setup().await.unwrap();
 
+            let secret_key = Arc::new(SecretKey(args.secret_key.as_bytes().to_vec()));
+
             // Spawn HTTP servers
             if components.is_empty() || components.contains(COMPONENT_INGEST) {
                 info!("Starting HTTP ingest server on {}", args.ingest);
@@ -180,7 +182,7 @@ async fn main() {
                 info!("Starting HTTP public server on {}", args.public);
                 let ext = HttpPublicExtensions {
                     subscription_controller: subscription_controller.clone(),
-                    secret_key: Arc::new(SecretKey(args.secret_key.as_bytes().to_vec())),
+                    secret_key: secret_key.clone(),
                 };
                 public::http::start(args.public, ext).await;
             }
@@ -198,7 +200,7 @@ async fn main() {
                 project_controller.setup().await.unwrap();
 
                 info!("Starting HTTP management server on {}", args.management);
-                let ext = HttpManagenemtExtensions {
+                let ext = HttpManagementExtensions {
                     recipient_controller,
                     contact_controller,
                     project_controller,
@@ -207,6 +209,7 @@ async fn main() {
                     template_controller: templater_source.clone(),
                     event_controller,
                     group_controller,
+                    secret_key: secret_key.clone(),
                 };
 
                 management::http::start(args.management, ext).await;

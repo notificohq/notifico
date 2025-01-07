@@ -2,13 +2,17 @@ use axum::extract::{Path, Query};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::{Extension, Json};
+use jsonwebtoken::{EncodingKey, Header};
 use notifico_core::http::admin::{
     AdminCrudTable, ItemWithId, ListQueryParams, ReactAdminListQueryParams, RefineListQueryParams,
 };
+use notifico_core::http::auth::Claims;
+use notifico_core::http::SecretKey;
 use notifico_subscription::controllers::recipient::{RecipientDbController, RecipientItem};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Arc;
+use std::time::{SystemTime, UNIX_EPOCH};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -98,4 +102,32 @@ pub async fn delete(
 ) -> impl IntoResponse {
     controller.delete(id).await.unwrap();
     StatusCode::NO_CONTENT
+}
+
+// Additional endpoints
+
+/// Issues a general-purpose JWT token for a recipient.
+/// This token can be used for authorizing requests to public API endpoints.
+#[utoipa::path(get, path = "/v1/recipients/{id}/token")]
+pub async fn token(
+    Path((id,)): Path<(Uuid,)>,
+    Extension(secret_key): Extension<Arc<SecretKey>>,
+) -> impl IntoResponse {
+    let claims = Claims::General {
+        recipient_id: id,
+        exp: SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs()
+            + 60 * 60 * 24 * 30, // TODO: Move this into a configuration option
+    };
+
+    let token = jsonwebtoken::encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(&secret_key.0),
+    )
+    .unwrap();
+
+    (StatusCode::OK, Json(json!({"token": token})))
 }

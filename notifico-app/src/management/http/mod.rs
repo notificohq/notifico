@@ -4,6 +4,7 @@ use axum::http::header::CONTENT_TYPE;
 use axum::http::{StatusCode, Uri};
 use axum::response::{Html, IntoResponse, Response};
 use axum::Router;
+use notifico_core::http::SecretKey;
 use notifico_dbpipeline::controllers::event::EventDbController;
 use notifico_dbpipeline::controllers::pipeline::PipelineDbController;
 use notifico_project::ProjectController;
@@ -18,7 +19,7 @@ use std::sync::Arc;
 use tokio::net::TcpListener;
 
 #[derive(Clone)]
-pub(crate) struct HttpManagenemtExtensions {
+pub(crate) struct HttpManagementExtensions {
     pub recipient_controller: Arc<RecipientDbController>,
     pub contact_controller: Arc<ContactDbController>,
     pub subscription_controller: Arc<SubscriptionDbController>,
@@ -27,13 +28,14 @@ pub(crate) struct HttpManagenemtExtensions {
     pub template_controller: Arc<DbTemplateSource>,
     pub event_controller: Arc<EventDbController>,
     pub group_controller: Arc<GroupDbController>,
+    pub secret_key: Arc<SecretKey>,
 }
 
 #[derive(Embed)]
 #[folder = "assets/"]
 struct Assets;
 
-pub(crate) async fn start(bind: SocketAddr, ext: HttpManagenemtExtensions) {
+pub(crate) async fn start(bind: SocketAddr, ext: HttpManagementExtensions) {
     // Bind everything now to catch any errors before spinning up the coroutines
     let service_listener = TcpListener::bind(bind).await.unwrap();
 

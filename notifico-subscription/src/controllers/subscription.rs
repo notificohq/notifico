@@ -1,5 +1,5 @@
 use crate::entity::subscription;
-use crate::entity::subscription::Entity as Subscription;
+use crate::entity::subscription::{Entity as Subscription, Model};
 use async_trait::async_trait;
 use migration::{Migrator, MigratorTrait, OnConflict};
 use notifico_core::error::EngineError;
@@ -8,7 +8,8 @@ use notifico_core::http::admin::{
 };
 use sea_orm::ActiveValue::Set;
 use sea_orm::{
-    ColumnTrait, DatabaseConnection, EntityOrSelect, EntityTrait, PaginatorTrait, QueryFilter,
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityOrSelect, EntityTrait, PaginatorTrait,
+    QueryFilter,
 };
 use serde::Serialize;
 use tracing::error;
@@ -33,28 +34,33 @@ impl SubscriptionDbController {
         event: &str,
         channel: &str,
         is_subscribed: bool,
-    ) {
-        let model = subscription::ActiveModel {
-            id: Set(Uuid::now_v7()),
-            recipient_id: Set(recipient_id),
-            event: Set(event.to_string()),
-            channel: Set(channel.to_string()),
-            is_subscribed: Set(is_subscribed),
-        };
+    ) -> Result<(), EngineError> {
+        // TODO: SECURITY: match channel against all supported channels, match event against all events in db
+        let current_model = subscription::Entity::find()
+            .filter(subscription::Column::RecipientId.eq(recipient_id))
+            .filter(subscription::Column::Event.eq(event))
+            .filter(subscription::Column::Channel.eq(channel))
+            .one(&self.db)
+            .await?;
 
-        subscription::Entity::insert(model)
-            .on_conflict(
-                OnConflict::columns([
-                    subscription::Column::RecipientId,
-                    subscription::Column::Event,
-                    subscription::Column::Channel,
-                ])
-                .do_nothing()
-                .to_owned(),
-            )
-            .exec(&self.db)
-            .await
-            .unwrap();
+        match current_model {
+            Some(m) => {
+                let mut am = subscription::ActiveModel::from(m);
+                am.is_subscribed = Set(is_subscribed);
+                am.update(&self.db).await?
+            }
+            None => {
+                let am = subscription::ActiveModel {
+                    id: Set(Uuid::now_v7()),
+                    recipient_id: Set(recipient_id),
+                    event: Set(event.to_string()),
+                    channel: Set(channel.to_string()),
+                    is_subscribed: Set(is_subscribed),
+                };
+                am.insert(&self.db).await?
+            }
+        };
+        Ok(())
     }
     pub async fn is_subscribed(&self, recipient_id: Uuid, event: &str, channel: &str) -> bool {
         let result = Subscription

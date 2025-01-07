@@ -51,7 +51,7 @@ impl TemplateSource for FilesystemSource {
                     self.base_path.join(project_id.to_string())
                 };
 
-                // TODO: `file` can be absolute path, so it can "escape" template directory
+                // TODO: SECURITY: `file` can be absolute path, so it can "escape" template directory
                 // Ensure, that we are ok with this in server environments.
                 let template_path = base_path.join(file);
 
@@ -70,7 +70,7 @@ impl TemplateSource for FilesystemSource {
                     let content = match sel {
                         PartSelector::Inline(content) => content,
                         PartSelector::File { file } => {
-                            // TODO: `file` can be absolute path, so it can "escape" template directory
+                            // TODO: SECURITY: `file` can be absolute path, so it can "escape" template directory
                             tokio::fs::read_to_string(base_path.join(file)).await?
                         }
                     };

@@ -1,4 +1,4 @@
-use crate::management::http::HttpManagenemtExtensions;
+use crate::management::http::HttpManagementExtensions;
 use axum::{Extension, Router};
 use tower_http::cors::CorsLayer;
 use utoipa::OpenApi;
@@ -19,7 +19,7 @@ mod template;
 #[openapi(info(title = "Notifico Management API", version = "0.1.0"))]
 struct ApiDoc;
 
-pub(crate) fn get_router(ext: HttpManagenemtExtensions) -> Router {
+pub(crate) fn get_router(ext: HttpManagementExtensions) -> Router {
     let router = OpenApiRouter::with_openapi(ApiDoc::openapi())
         // Subscriptions
         .routes(routes!(subscription::list))
@@ -31,6 +31,7 @@ pub(crate) fn get_router(ext: HttpManagenemtExtensions) -> Router {
             recipients::update,
             recipients::delete
         ))
+        .routes(routes!(recipients::token))
         // Contacts
         .routes(routes!(contacts::list, contacts::create))
         .routes(routes!(contacts::get, contacts::update, contacts::delete))
@@ -58,6 +59,7 @@ pub(crate) fn get_router(ext: HttpManagenemtExtensions) -> Router {
         .layer(Extension(ext.contact_controller))
         .layer(Extension(ext.event_controller))
         .layer(Extension(ext.group_controller))
+        .layer(Extension(ext.secret_key))
         .layer(CorsLayer::permissive());
 
     let (router, api) = router.split_for_parts();
