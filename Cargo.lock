@@ -2093,7 +2093,7 @@ dependencies = [
  "notifico-attachment",
  "notifico-core",
  "notifico-dbpipeline",
- "notifico-project",
+ "notifico-migration",
  "notifico-subscription",
  "notifico-template",
  "notifico-transports",
@@ -2180,6 +2180,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "notifico-migration"
+version = "0.1.0"
+dependencies = [
+ "async-std",
+ "sea-orm",
+ "sea-orm-migration",
+ "uuid",
+]
+
+[[package]]
 name = "notifico-ntfy"
 version = "0.1.0"
 dependencies = [
@@ -2191,29 +2201,6 @@ dependencies = [
  "serde",
  "serde_json",
  "url",
-]
-
-[[package]]
-name = "notifico-project"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "notifico-core",
- "notifico-project-migration",
- "sea-orm",
- "serde",
- "utoipa",
- "uuid",
-]
-
-[[package]]
-name = "notifico-project-migration"
-version = "0.1.0"
-dependencies = [
- "async-std",
- "sea-orm",
- "sea-orm-migration",
- "uuid",
 ]
 
 [[package]]

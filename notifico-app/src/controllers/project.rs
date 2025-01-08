@@ -1,3 +1,4 @@
+use crate::entity;
 use async_trait::async_trait;
 use migration::{Migrator, MigratorTrait};
 use notifico_core::error::EngineError;
@@ -9,9 +10,6 @@ use serde::{Deserialize, Serialize};
 use std::error::Error;
 use utoipa::ToSchema;
 use uuid::Uuid;
-
-#[allow(unused_imports)]
-mod entity;
 
 #[derive(Clone, Debug, Serialize, Deserialize, ToSchema)]
 pub struct Project {

@@ -10,8 +10,9 @@ notifico-transports = { path = "../notifico-transports" }
 notifico-template = { path = "../notifico-template" }
 notifico-subscription = { path = "../notifico-subscription" }
 notifico-dbpipeline = { path = "../notifico-dbpipeline" }
-notifico-project = { path = "../notifico-project" }
 notifico-attachment = { path = "../notifico-attachment" }
+
+notifico-migration = { path = "migration" }
 
 anyhow = "1.0.95"
 async-trait = "0.1.84"

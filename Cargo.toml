@@ -23,8 +23,7 @@ members = [
     "notifico-subscription/migration",
     "notifico-dbpipeline",
     "notifico-dbpipeline/migration",
-    "notifico-project",
-    "notifico-project/migration",
+    "notifico-app/migration",
     "notifico-attachment",
 ]
 

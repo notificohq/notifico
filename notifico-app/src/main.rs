@@ -1,7 +1,11 @@
 mod amqp;
+mod controllers;
+#[allow(unused_imports)]
+pub(crate) mod entity;
 mod http;
 
 use crate::amqp::AmqpClient;
+use crate::controllers::project::ProjectController;
 use crate::http::ingest::HttpIngestExtensions;
 use crate::http::management::HttpManagementExtensions;
 use crate::http::public::HttpPublicExtensions;
@@ -18,7 +22,6 @@ use notifico_core::recorder::BaseRecorder;
 use notifico_dbpipeline::controllers::event::EventDbController;
 use notifico_dbpipeline::controllers::pipeline::PipelineDbController;
 use notifico_dbpipeline::DbPipelineStorage;
-use notifico_project::ProjectController;
 use notifico_subscription::controllers::contact::ContactDbController;
 use notifico_subscription::controllers::group::GroupDbController;
 use notifico_subscription::controllers::recipient::RecipientDbController;

@@ -13,6 +13,6 @@ impl MigratorTrait for Migrator {
     }
 
     fn migration_table_name() -> DynIden {
-        Alias::new("project_migrations").into_iden()
+        Alias::new("notifico_migrations").into_iden()
     }
 }

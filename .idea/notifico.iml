@@ -15,7 +15,6 @@
       <sourceFolder url="file://$MODULE_DIR$/notifico-admin/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/notifico-dbpipeline/migration/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/notifico-dbpipeline/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/notifico-project/migration/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/notifico-project/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/notifico-template/migration/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/transports/notifico-slack/src" isTestSource="false" />
@@ -32,6 +31,7 @@
       <sourceFolder url="file://$MODULE_DIR$/notifico-attachment/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/notifico-bounce/migration/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/notifico-bounce/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/notifico-app/migration/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.idea/dataSources" />
       <excludeFolder url="file://$MODULE_DIR$/example/rabbitmq/mnesia" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
