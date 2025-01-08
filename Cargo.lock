@@ -2088,12 +2088,12 @@ dependencies = [
  "dotenvy",
  "fe2o3-amqp",
  "flume",
+ "futures",
  "jsonwebtoken",
  "log",
  "notifico-attachment",
  "notifico-core",
  "notifico-migration",
- "notifico-subscription",
  "notifico-template",
  "notifico-transports",
  "rust-embed",
@@ -2238,33 +2238,6 @@ dependencies = [
  "serde_json",
  "tracing",
  "url",
- "uuid",
-]
-
-[[package]]
-name = "notifico-subcription-migration"
-version = "0.1.0"
-dependencies = [
- "async-std",
- "sea-orm-migration",
-]
-
-[[package]]
-name = "notifico-subscription"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "futures",
- "jsonwebtoken",
- "notifico-core",
- "notifico-subcription-migration",
- "sea-orm",
- "serde",
- "serde_json",
- "tracing",
- "url",
- "utoipa",
  "uuid",
 ]
 

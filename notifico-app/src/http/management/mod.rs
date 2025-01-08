@@ -1,17 +1,17 @@
 mod api;
 
+use crate::controllers::contact::ContactDbController;
 use crate::controllers::event::EventDbController;
+use crate::controllers::group::GroupDbController;
 use crate::controllers::pipeline::PipelineDbController;
 use crate::controllers::project::ProjectController;
+use crate::controllers::recipient::RecipientDbController;
+use crate::controllers::subscription::SubscriptionDbController;
 use axum::http::header::CONTENT_TYPE;
 use axum::http::{StatusCode, Uri};
 use axum::response::{Html, IntoResponse, Response};
 use axum::Router;
 use notifico_core::http::SecretKey;
-use notifico_subscription::controllers::contact::ContactDbController;
-use notifico_subscription::controllers::group::GroupDbController;
-use notifico_subscription::controllers::recipient::RecipientDbController;
-use notifico_subscription::controllers::subscription::SubscriptionDbController;
 use notifico_template::source::db::DbTemplateSource;
 use rust_embed::Embed;
 use std::net::SocketAddr;

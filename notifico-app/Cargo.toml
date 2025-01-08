@@ -8,7 +8,6 @@ notifico-core = { path = "../notifico-core" }
 notifico-transports = { path = "../notifico-transports" }
 
 notifico-template = { path = "../notifico-template" }
-notifico-subscription = { path = "../notifico-subscription" }
 notifico-attachment = { path = "../notifico-attachment" }
 
 notifico-migration = { path = "migration" }
@@ -22,6 +21,7 @@ clap = { workspace = true }
 dotenvy = "0.15.7"
 fe2o3-amqp = { version = "0.13.1" }
 flume = "0.11.1"
+futures = "0.3.31"
 jsonwebtoken = "9.3.0"
 log = "0.4.22"
 rust-embed = { version = "8.5.0", features = ["mime-guess"] }

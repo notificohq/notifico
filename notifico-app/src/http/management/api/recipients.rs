@@ -1,3 +1,4 @@
+use crate::controllers::recipient::{RecipientDbController, RecipientItem};
 use axum::extract::{Path, Query};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
@@ -8,7 +9,6 @@ use notifico_core::http::admin::{
 };
 use notifico_core::http::auth::Claims;
 use notifico_core::http::SecretKey;
-use notifico_subscription::controllers::recipient::{RecipientDbController, RecipientItem};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Arc;

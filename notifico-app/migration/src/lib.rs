@@ -4,6 +4,7 @@ pub use sea_orm_migration::prelude::*;
 mod m20250108_000001_create_project_table;
 mod m20250108_000002_create_table;
 mod m20250108_000003_drop_channel;
+mod m20250108_000004_recipient;
 
 pub struct Migrator;
 
@@ -14,6 +15,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20250108_000001_create_project_table::Migration),
             Box::new(m20250108_000002_create_table::Migration),
             Box::new(m20250108_000003_drop_channel::Migration),
+            Box::new(m20250108_000004_recipient::Migration),
         ]
     }
 

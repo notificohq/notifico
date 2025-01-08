@@ -1,7 +1,7 @@
 use crate::entity::subscription;
-use crate::entity::subscription::{Entity as Subscription, Model};
+use crate::entity::subscription::Entity as Subscription;
 use async_trait::async_trait;
-use migration::{Migrator, MigratorTrait, OnConflict};
+use migration::{Migrator, MigratorTrait};
 use notifico_core::error::EngineError;
 use notifico_core::http::admin::{
     AdminCrudTable, ItemWithId, ListQueryParams, ListableTrait, PaginatedResult,

@@ -1,3 +1,4 @@
+use crate::controllers::subscription::SubscriptionDbController;
 use axum::extract::{Path, Query};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
@@ -5,7 +6,6 @@ use axum::{Extension, Json};
 use notifico_core::http::admin::{
     AdminCrudTable, ItemWithId, ListQueryParams, ReactAdminListQueryParams, RefineListQueryParams,
 };
-use notifico_subscription::controllers::subscription::SubscriptionDbController;
 use std::sync::Arc;
 use uuid::Uuid;
 

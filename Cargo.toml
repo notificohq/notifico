@@ -20,8 +20,6 @@ members = [
     "notifico-core",
     "notifico-template",
     "notifico-template/migration",
-    "notifico-subscription",
-    "notifico-subscription/migration",
     "notifico-attachment",
 ]
 
