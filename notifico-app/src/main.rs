@@ -1,12 +1,10 @@
 mod amqp;
-mod ingest;
-mod management;
-mod public;
+mod http;
 
 use crate::amqp::AmqpClient;
-use crate::ingest::http::HttpIngestExtensions;
-use crate::management::http::HttpManagementExtensions;
-use crate::public::http::HttpPublicExtensions;
+use crate::http::ingest::HttpIngestExtensions;
+use crate::http::management::HttpManagementExtensions;
+use crate::http::public::HttpPublicExtensions;
 use clap::{Parser, Subcommand};
 use notifico_attachment::AttachmentPlugin;
 use notifico_core::credentials::env::EnvCredentialStorage;
@@ -175,7 +173,7 @@ async fn main() {
                 info!("Starting HTTP ingest server on {}", args.ingest);
                 let ext = HttpIngestExtensions { sender: events_tx };
 
-                ingest::http::start(args.ingest, ext).await;
+                http::ingest::start(args.ingest, ext).await;
             }
 
             if components.is_empty() || components.contains(COMPONENT_PUBLIC) {
@@ -184,7 +182,7 @@ async fn main() {
                     subscription_controller: subscription_controller.clone(),
                     secret_key: secret_key.clone(),
                 };
-                public::http::start(args.public, ext).await;
+                http::public::start(args.public, ext).await;
             }
 
             if components.is_empty() || components.contains(COMPONENT_MANAGEMENT) {
@@ -212,7 +210,7 @@ async fn main() {
                     secret_key: secret_key.clone(),
                 };
 
-                management::http::start(args.management, ext).await;
+                http::management::start(args.management, ext).await;
             }
 
             if components.is_empty() || components.contains(COMPONENT_WORKER) {

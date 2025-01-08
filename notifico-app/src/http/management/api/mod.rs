@@ -1,4 +1,4 @@
-use crate::management::http::HttpManagementExtensions;
+use crate::http::management::HttpManagementExtensions;
 use axum::{Extension, Router};
 use tower_http::cors::CorsLayer;
 use utoipa::OpenApi;
