@@ -2092,7 +2092,6 @@ dependencies = [
  "log",
  "notifico-attachment",
  "notifico-core",
- "notifico-dbpipeline",
  "notifico-migration",
  "notifico-subscription",
  "notifico-template",
@@ -2143,28 +2142,6 @@ dependencies = [
  "url",
  "utoipa",
  "uuid",
-]
-
-[[package]]
-name = "notifico-dbpipeline"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "notifico-core",
- "notifico-dbpipeline-migration",
- "sea-orm",
- "serde",
- "serde_json",
- "utoipa",
-]
-
-[[package]]
-name = "notifico-dbpipeline-migration"
-version = "0.1.0"
-dependencies = [
- "async-std",
- "sea-orm-migration",
 ]
 
 [[package]]

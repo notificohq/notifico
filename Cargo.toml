@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     # Binaries
     "notifico-app",
+    "notifico-app/migration",
     "notificox",
     # Libs
     ## Transports
@@ -21,9 +22,6 @@ members = [
     "notifico-template/migration",
     "notifico-subscription",
     "notifico-subscription/migration",
-    "notifico-dbpipeline",
-    "notifico-dbpipeline/migration",
-    "notifico-app/migration",
     "notifico-attachment",
 ]
 

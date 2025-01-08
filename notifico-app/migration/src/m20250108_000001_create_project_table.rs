@@ -1,6 +1,5 @@
-use crate::entity::project;
-use sea_orm::prelude::Uuid;
-use sea_orm::{ActiveModelTrait, Set};
+use sea_orm::prelude::*;
+use sea_orm::ActiveValue::Set;
 use sea_orm_migration::{prelude::*, schema::*};
 
 #[derive(DeriveMigrationName)]
@@ -22,7 +21,7 @@ impl MigrationTrait for Migration {
 
         let db = manager.get_connection();
 
-        project::ActiveModel {
+        ActiveModel {
             id: Set(Uuid::nil()),
             name: Set("Default Project".to_string()),
         }
@@ -30,12 +29,6 @@ impl MigrationTrait for Migration {
         .await?;
 
         Ok(())
-    }
-
-    async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-        manager
-            .drop_table(Table::drop().table(Project::Table).to_owned())
-            .await
     }
 }
 
@@ -45,3 +38,16 @@ enum Project {
     Id,
     Name,
 }
+
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
+#[sea_orm(table_name = "project")]
+pub struct Model {
+    #[sea_orm(primary_key, auto_increment = false)]
+    pub id: Uuid,
+    pub name: String,
+}
+
+#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
+pub enum Relation {}
+
+impl ActiveModelBehavior for ActiveModel {}

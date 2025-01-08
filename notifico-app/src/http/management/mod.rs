@@ -1,13 +1,13 @@
 mod api;
 
+use crate::controllers::event::EventDbController;
+use crate::controllers::pipeline::PipelineDbController;
 use crate::controllers::project::ProjectController;
 use axum::http::header::CONTENT_TYPE;
 use axum::http::{StatusCode, Uri};
 use axum::response::{Html, IntoResponse, Response};
 use axum::Router;
 use notifico_core::http::SecretKey;
-use notifico_dbpipeline::controllers::event::EventDbController;
-use notifico_dbpipeline::controllers::pipeline::PipelineDbController;
 use notifico_subscription::controllers::contact::ContactDbController;
 use notifico_subscription::controllers::group::GroupDbController;
 use notifico_subscription::controllers::recipient::RecipientDbController;

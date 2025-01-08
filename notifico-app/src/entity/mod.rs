@@ -2,4 +2,7 @@
 
 pub mod prelude;
 
+pub mod event;
+pub mod pipeline;
+pub mod pipeline_event_j;
 pub mod project;

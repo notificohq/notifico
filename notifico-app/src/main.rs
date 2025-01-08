@@ -3,12 +3,16 @@ mod controllers;
 #[allow(unused_imports)]
 pub(crate) mod entity;
 mod http;
+mod pipeline_storage;
 
 use crate::amqp::AmqpClient;
+use crate::controllers::event::EventDbController;
+use crate::controllers::pipeline::PipelineDbController;
 use crate::controllers::project::ProjectController;
 use crate::http::ingest::HttpIngestExtensions;
 use crate::http::management::HttpManagementExtensions;
 use crate::http::public::HttpPublicExtensions;
+use crate::pipeline_storage::DbPipelineStorage;
 use clap::{Parser, Subcommand};
 use notifico_attachment::AttachmentPlugin;
 use notifico_core::credentials::env::EnvCredentialStorage;
@@ -19,9 +23,6 @@ use notifico_core::pipeline::event::EventHandler;
 use notifico_core::pipeline::executor::PipelineExecutor;
 use notifico_core::queue::{ReceiverChannel, SenderChannel};
 use notifico_core::recorder::BaseRecorder;
-use notifico_dbpipeline::controllers::event::EventDbController;
-use notifico_dbpipeline::controllers::pipeline::PipelineDbController;
-use notifico_dbpipeline::DbPipelineStorage;
 use notifico_subscription::controllers::contact::ContactDbController;
 use notifico_subscription::controllers::group::GroupDbController;
 use notifico_subscription::controllers::recipient::RecipientDbController;

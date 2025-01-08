@@ -1,3 +1,4 @@
+use crate::entity;
 use async_trait::async_trait;
 use migration::{Migrator, MigratorTrait};
 use notifico_core::error::EngineError;
@@ -6,9 +7,6 @@ use notifico_core::pipeline::Pipeline;
 use sea_orm::prelude::*;
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use serde::Deserialize;
-pub mod controllers;
-#[allow(unused_imports)]
-mod entity;
 
 pub struct DbPipelineStorage {
     db: DatabaseConnection,

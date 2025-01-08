@@ -1,15 +1,20 @@
+#![allow(unused_imports)]
 pub use sea_orm_migration::prelude::*;
 
-#[allow(unused_imports)]
-mod entity;
-mod m20220101_000001_create_table;
+mod m20250108_000001_create_project_table;
+mod m20250108_000002_create_table;
+mod m20250108_000003_drop_channel;
 
 pub struct Migrator;
 
 #[async_trait::async_trait]
 impl MigratorTrait for Migrator {
     fn migrations() -> Vec<Box<dyn MigrationTrait>> {
-        vec![Box::new(m20220101_000001_create_table::Migration)]
+        vec![
+            Box::new(m20250108_000001_create_project_table::Migration),
+            Box::new(m20250108_000002_create_table::Migration),
+            Box::new(m20250108_000003_drop_channel::Migration),
+        ]
     }
 
     fn migration_table_name() -> DynIden {

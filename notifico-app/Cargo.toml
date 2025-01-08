@@ -9,7 +9,6 @@ notifico-transports = { path = "../notifico-transports" }
 
 notifico-template = { path = "../notifico-template" }
 notifico-subscription = { path = "../notifico-subscription" }
-notifico-dbpipeline = { path = "../notifico-dbpipeline" }
 notifico-attachment = { path = "../notifico-attachment" }
 
 notifico-migration = { path = "migration" }

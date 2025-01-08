@@ -1,3 +1,4 @@
+use crate::controllers::pipeline::{PipelineDbController, PipelineItem};
 use axum::extract::{Path, Query};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
@@ -6,7 +7,6 @@ use notifico_core::http::admin::{
     AdminCrudTable, ItemWithId, ListQueryParams, ReactAdminListQueryParams, RefineListQueryParams,
 };
 use notifico_core::pipeline::Pipeline;
-use notifico_dbpipeline::controllers::pipeline::{PipelineDbController, PipelineItem};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use utoipa::ToSchema;

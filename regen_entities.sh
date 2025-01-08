@@ -11,13 +11,6 @@ sea-orm-cli generate entity -o src/entity --ignore-tables subscription_migration
 rm "$TEMPDB"
 popd
 
-pushd notifico-dbpipeline
-touch "$TEMPDB"
-sea-orm-cli migrate -d migration up
-sea-orm-cli generate entity -o src/entity --ignore-tables pipeline_migrations
-rm "$TEMPDB"
-popd
-
 pushd notifico-app
 touch "$TEMPDB"
 sea-orm-cli migrate -d migration up
