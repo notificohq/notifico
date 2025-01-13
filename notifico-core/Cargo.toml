@@ -9,7 +9,7 @@ serde = { version = "1.0.217", features = ["derive"] }
 serde_json = "1.0.134"
 uuid = { workspace = true }
 tracing = "0.1.41"
-tokio = "1.42.0"
+tokio = "1.43.0"
 axum = { workspace = true }
 url = { workspace = true }
 sea-orm = { workspace = true }
