@@ -14,7 +14,7 @@ notifico-project = { path = "../notifico-project" }
 notifico-attachment = { path = "../notifico-attachment" }
 
 anyhow = "1.0.95"
-async-trait = "0.1.84"
+async-trait = "0.1.85"
 axum = { workspace = true }
 axum-extra = { workspace = true }
 backoff = { version = "0.4.0", features = ["tokio"] }

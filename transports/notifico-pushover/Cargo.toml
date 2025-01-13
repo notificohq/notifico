@@ -8,6 +8,6 @@ notifico-core = { path = "../../notifico-core" }
 notifico-attachment = { path = "../../notifico-attachment" }
 
 reqwest = { workspace = true }
-async-trait = "0.1.84"
+async-trait = "0.1.85"
 serde = "1.0.217"
 url = "2.5.4"

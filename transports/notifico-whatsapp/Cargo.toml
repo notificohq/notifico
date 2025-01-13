@@ -7,7 +7,7 @@ edition = "2021"
 serde = { version = "1.0.217", features = ["derive"] }
 uuid = { workspace = true }
 serde_json = "1.0.134"
-async-trait = "0.1.84"
+async-trait = "0.1.85"
 reqwest = { workspace = true }
 tracing = "0.1.41"
 regex = "1.11.1"
