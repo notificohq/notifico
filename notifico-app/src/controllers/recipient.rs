@@ -1,14 +1,15 @@
+use crate::entity::prelude::*;
 use async_trait::async_trait;
 use notifico_core::error::EngineError;
 use notifico_core::http::admin::{
     AdminCrudTable, ItemWithId, ListQueryParams, ListableTrait, PaginatedResult,
 };
-use sea_orm::ActiveModelTrait;
 use sea_orm::ActiveValue::{Set, Unchanged};
-use sea_orm::PaginatorTrait;
+use sea_orm::{ActiveModelTrait, DbErr, TransactionTrait};
+use sea_orm::{ColumnTrait, PaginatorTrait, QueryFilter};
 use sea_orm::{DatabaseConnection, EntityTrait};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
 
 pub struct RecipientDbController {
@@ -50,7 +51,7 @@ impl AdminCrudTable for RecipientDbController {
     type Item = RecipientItem;
 
     async fn get_by_id(&self, id: Uuid) -> Result<Option<Self::Item>, EngineError> {
-        Ok(crate::entity::recipient::Entity::find_by_id(id)
+        Ok(Recipient::find_by_id(id)
             .one(&self.db)
             .await?
             .map(|m| m.into()))
@@ -61,12 +62,12 @@ impl AdminCrudTable for RecipientDbController {
         params: ListQueryParams,
     ) -> Result<PaginatedResult<ItemWithId<Self::Item>>, EngineError> {
         let params = params.try_into()?;
-        let total = crate::entity::recipient::Entity::find()
+        let total = Recipient::find()
             .apply_filter(&params)?
             .count(&self.db)
             .await?;
 
-        let items = crate::entity::recipient::Entity::find()
+        let items = Recipient::find()
             .apply_params(&params)?
             .all(&self.db)
             .await?
@@ -106,9 +107,59 @@ impl AdminCrudTable for RecipientDbController {
     }
 
     async fn delete(&self, id: Uuid) -> Result<(), EngineError> {
-        crate::entity::recipient::Entity::delete_by_id(id)
-            .exec(&self.db)
-            .await?;
+        Recipient::delete_by_id(id).exec(&self.db).await?;
+        Ok(())
+    }
+}
+
+impl RecipientDbController {
+    pub async fn assign_groups(
+        &self,
+        recipient_id: Uuid,
+        group_ids: Vec<Uuid>,
+    ) -> Result<(), EngineError> {
+        self.db
+            .transaction::<_, (), DbErr>(|txn| {
+                Box::pin(async move {
+                    let current_memberships: HashSet<Uuid> = GroupMembership::find()
+                        .filter(
+                            crate::entity::group_membership::Column::RecipientId.eq(recipient_id),
+                        )
+                        .all(txn)
+                        .await?
+                        .into_iter()
+                        .map(|m| m.group_id)
+                        .collect();
+
+                    let new_memberships: HashSet<Uuid> = group_ids.into_iter().collect();
+
+                    GroupMembership::insert_many(
+                        new_memberships.difference(&current_memberships).map(|id| {
+                            crate::entity::group_membership::ActiveModel {
+                                id: Set(Uuid::now_v7()),
+                                group_id: Set(*id),
+                                recipient_id: Set(recipient_id),
+                            }
+                        }),
+                    )
+                    .exec(txn)
+                    .await?;
+                    GroupMembership::delete_many()
+                        .filter(
+                            crate::entity::group_membership::Column::RecipientId.eq(recipient_id),
+                        )
+                        .filter(
+                            crate::entity::group_membership::Column::GroupId
+                                .is_in(current_memberships.difference(&new_memberships).copied()),
+                        )
+                        .exec(txn)
+                        .await?;
+                    Ok(())
+                })
+            })
+            .await
+            .unwrap();
+
         Ok(())
     }
 }

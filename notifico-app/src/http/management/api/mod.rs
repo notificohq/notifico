@@ -11,7 +11,7 @@ mod event;
 mod group;
 mod pipeline;
 mod project;
-mod recipients;
+mod recipient;
 pub mod subscription;
 mod template;
 
@@ -25,13 +25,13 @@ pub(crate) fn get_router(ext: HttpManagementExtensions) -> Router {
         .routes(routes!(subscription::list))
         .routes(routes!(subscription::get))
         // Recipients
-        .routes(routes!(recipients::list, recipients::create))
+        .routes(routes!(recipient::list, recipient::create))
         .routes(routes!(
-            recipients::get,
-            recipients::update,
-            recipients::delete
+            recipient::get,
+            recipient::update,
+            recipient::delete
         ))
-        .routes(routes!(recipients::token))
+        .routes(routes!(recipient::token))
         // Contacts
         .routes(routes!(contacts::list, contacts::create))
         .routes(routes!(contacts::get, contacts::update, contacts::delete))

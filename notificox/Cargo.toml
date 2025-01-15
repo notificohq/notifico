@@ -11,7 +11,7 @@ notifico-attachment = { path = "../notifico-attachment" }
 # Other deps
 serde = { version = "1.0.217", features = ["derive"] }
 serde_json = { version = "1.0.134", features = ["preserve_order"] }
-tokio = { version = "1.42.0", features = ["rt"] }
+tokio = { workspace = true }
 clap = { workspace = true }
 json5 = "0.4.1"
 flume = "0.11.1"

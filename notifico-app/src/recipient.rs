@@ -37,8 +37,8 @@ impl RecipientController for RecipientDbSource {
         }
 
         // Fetch recipient ids by group id
-        let groups = RecipientGroupJ::find()
-            .filter(entity::recipient_group_j::Column::GroupId.is_in(ids.clone()))
+        let groups = GroupMembership::find()
+            .filter(entity::group_membership::Column::GroupId.is_in(ids.clone()))
             .all(&self.db)
             .await?;
         ids.extend(groups.into_iter().map(|g| g.recipient_id));

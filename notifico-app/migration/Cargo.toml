@@ -9,7 +9,6 @@ name = "migration"
 path = "src/lib.rs"
 
 [dependencies]
-async-std = { version = "1", features = ["attributes", "tokio1"] }
-uuid = { workspace = true }
+tokio = { workspace = true }
 sea-orm = { workspace = true }
 sea-orm-migration = { workspace = true }

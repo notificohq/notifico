@@ -98,7 +98,8 @@ async fn list_unsubscribe(
 
     sub_manager
         .set_subscribed(recipient_id, &event, "email", false)
-        .await;
+        .await
+        .unwrap();
 
     // TODO: redirect to the success page (with a confirmation message and unsubscribe reasons)
     StatusCode::OK
@@ -145,7 +146,8 @@ async fn subscription_parameters(
                 &event_settings.channel,
                 event_settings.enabled,
             )
-            .await;
+            .await
+            .unwrap();
     }
 
     StatusCode::OK

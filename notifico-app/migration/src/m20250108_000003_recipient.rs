@@ -14,6 +14,13 @@ impl MigrationTrait for Migration {
                     .col(pk_uuid(Recipient::Id))
                     .col(uuid(Recipient::ProjectId))
                     .col(json_binary(Recipient::Extras))
+                    .foreign_key(
+                        ForeignKey::create()
+                            .from(Recipient::Table, Recipient::ProjectId)
+                            .to(Project::Table, Project::Id)
+                            .on_delete(ForeignKeyAction::Cascade)
+                            .on_update(ForeignKeyAction::Restrict),
+                    )
                     .to_owned(),
             )
             .await?;
@@ -45,6 +52,13 @@ impl MigrationTrait for Migration {
                     .col(pk_uuid(Group::Id))
                     .col(uuid(Group::ProjectId))
                     .col(string(Group::Name))
+                    .foreign_key(
+                        ForeignKey::create()
+                            .from(Group::Table, Group::ProjectId)
+                            .to(Project::Table, Project::Id)
+                            .on_delete(ForeignKeyAction::Cascade)
+                            .on_update(ForeignKeyAction::Restrict),
+                    )
                     .to_owned(),
             )
             .await?;
@@ -64,29 +78,24 @@ impl MigrationTrait for Migration {
         manager
             .create_table(
                 Table::create()
-                    .table(RecipientGroupJ::Table)
+                    .table(GroupMembership::Table)
                     .if_not_exists()
-                    .col(uuid(RecipientGroupJ::RecipientId))
-                    .col(uuid(RecipientGroupJ::GroupId))
+                    .col(pk_uuid(GroupMembership::Id))
+                    .col(uuid(GroupMembership::GroupId))
+                    .col(uuid(GroupMembership::RecipientId))
                     .foreign_key(
                         ForeignKey::create()
-                            .from(RecipientGroupJ::Table, RecipientGroupJ::RecipientId)
+                            .from(GroupMembership::Table, GroupMembership::RecipientId)
                             .to(Recipient::Table, Recipient::Id)
                             .on_delete(ForeignKeyAction::Cascade)
                             .on_update(ForeignKeyAction::Restrict),
                     )
                     .foreign_key(
                         ForeignKey::create()
-                            .from(RecipientGroupJ::Table, RecipientGroupJ::GroupId)
+                            .from(GroupMembership::Table, GroupMembership::GroupId)
                             .to(Group::Table, Group::Id)
                             .on_delete(ForeignKeyAction::Cascade)
                             .on_update(ForeignKeyAction::Restrict),
-                    )
-                    .primary_key(
-                        Index::create()
-                            .primary()
-                            .col(RecipientGroupJ::RecipientId)
-                            .col(RecipientGroupJ::GroupId),
                     )
                     .to_owned(),
             )
@@ -153,8 +162,9 @@ enum Group {
 }
 
 #[derive(DeriveIden)]
-enum RecipientGroupJ {
+enum GroupMembership {
     Table,
+    Id,
     RecipientId,
     GroupId,
 }
@@ -167,4 +177,10 @@ enum Subscription {
     Channel,
     RecipientId,
     IsSubscribed,
+}
+
+#[derive(DeriveIden)]
+enum Project {
+    Table,
+    Id,
 }

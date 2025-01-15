@@ -5,6 +5,7 @@ use axum::http::header::CONTENT_RANGE;
 use axum::http::HeaderMap;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
+use multimap::MultiMap;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect, Select};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -20,6 +21,18 @@ pub enum SortOrder {
     Asc,
     #[serde(alias = "DESC", alias = "desc")]
     Desc,
+}
+
+impl FromStr for SortOrder {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "asc" | "ASC" => Ok(SortOrder::Asc),
+            "desc" | "DESC" => Ok(SortOrder::Desc),
+            _ => bail!("Invalid sort order: {}", s),
+        }
+    }
 }
 
 impl From<SortOrder> for sea_orm::Order {
@@ -42,11 +55,7 @@ where
     <ET::Column as FromStr>::Err: Error + Send + Sync,
 {
     fn apply_filter(mut self, params: &ParsedListQueryParams) -> anyhow::Result<Self> {
-        let Some(filter) = &params.filter else {
-            return Ok(self);
-        };
-
-        for (column, filterop) in filter.iter() {
+        for (column, filterop) in params.filter.iter() {
             let column = ET::Column::from_str(column)?;
             match filterop {
                 FilterOp::IsIn(filter) => {
@@ -82,12 +91,7 @@ where
     }
 }
 
-#[derive(Deserialize, Clone)]
-#[serde(untagged)]
-pub enum ListQueryParams {
-    ReactAdmin(ReactAdminListQueryParams),
-    Refine(RefineListQueryParams),
-}
+pub type ListQueryParams = Vec<(String, String)>;
 
 #[derive(Deserialize, Clone, IntoParams)]
 #[serde(deny_unknown_fields)]
@@ -104,8 +108,8 @@ pub struct RefineListQueryParams {
     _order: Option<SortOrder>,
     _start: Option<u64>,
     _end: Option<u64>,
-    #[serde(flatten)]
-    _filter: Vec<(String, String)>,
+    #[param(value_type = HashMap<String, String>)]
+    _filter: MultiMap<String, String>,
 }
 
 #[derive(Deserialize, Clone)]
@@ -115,7 +119,7 @@ enum FilterOp {
 
 pub struct ParsedListQueryParams {
     range: Option<(u64, u64)>,
-    filter: Option<Vec<(String, FilterOp)>>,
+    filter: Vec<(String, FilterOp)>,
     sort: Option<(String, SortOrder)>,
 }
 
@@ -144,7 +148,7 @@ impl TryFrom<ReactAdminListQueryParams> for ParsedListQueryParams {
         };
 
         let filter = match value.filter {
-            None => None,
+            None => vec![],
             Some(filter) => {
                 let mut parsed_filter = vec![];
 
@@ -170,9 +174,38 @@ impl TryFrom<ReactAdminListQueryParams> for ParsedListQueryParams {
                     };
                     parsed_filter.push((col, FilterOp::IsIn(values)));
                 }
-                Some(parsed_filter)
+                parsed_filter
             }
         };
+
+        Ok(Self {
+            range,
+            filter,
+            sort,
+        })
+    }
+}
+
+impl TryFrom<RefineListQueryParams> for ParsedListQueryParams {
+    type Error = anyhow::Error;
+
+    fn try_from(value: RefineListQueryParams) -> Result<Self, Self::Error> {
+        let sort = match (value._sort, value._order) {
+            (Some(sort), Some(order)) => Some((sort, order)),
+            (Some(sort), None) => Some((sort, SortOrder::Asc)),
+            _ => None,
+        };
+
+        let range = Some((
+            value._start.unwrap_or(0),
+            value._end.unwrap_or(i64::MAX as _),
+        ));
+
+        let mut filter = vec![];
+        for (col, values) in value._filter.into_iter() {
+            // TODO: Parse filter keys for other filter ops
+            filter.push((col, FilterOp::IsIn(values)));
+        }
 
         Ok(Self {
             range,
@@ -186,10 +219,27 @@ impl TryFrom<ListQueryParams> for ParsedListQueryParams {
     type Error = anyhow::Error;
 
     fn try_from(value: ListQueryParams) -> Result<Self, Self::Error> {
-        match value {
-            ListQueryParams::ReactAdmin(value) => value.try_into(),
-            ListQueryParams::Refine(_) => unimplemented!(),
+        let values: MultiMap<String, String> = MultiMap::from_iter(value);
+        let ra_params = ReactAdminListQueryParams {
+            sort: values.get("sort").cloned(),
+            range: values.get("range").cloned(),
+            filter: values.get("filter").cloned(),
+        };
+        if ra_params.sort.is_some() || ra_params.range.is_some() || ra_params.filter.is_some() {
+            return ra_params.try_into();
         }
+
+        let mut refine_filters = values.clone();
+        refine_filters.retain(|k, _| !k.starts_with("_"));
+
+        let refine_params = RefineListQueryParams {
+            _sort: values.get("_sort").cloned(),
+            _order: values.get("_order").and_then(|s| s.parse().ok()),
+            _start: values.get("_start").and_then(|s| s.parse().ok()),
+            _end: values.get("_end").and_then(|s| s.parse().ok()),
+            _filter: refine_filters,
+        };
+        refine_params.try_into()
     }
 }
 

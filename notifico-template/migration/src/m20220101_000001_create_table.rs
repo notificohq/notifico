@@ -27,7 +27,6 @@ impl MigrationTrait for Migration {
                     .table(Template::Table)
                     .col(Template::ProjectId)
                     .col(Template::Name)
-                    .col(Template::Channel)
                     .to_owned(),
             )
             .await?;

@@ -14,6 +14,13 @@ impl MigrationTrait for Migration {
                     .col(pk_uuid(Event::Id))
                     .col(uuid(Event::ProjectId))
                     .col(string(Event::Name))
+                    .foreign_key(
+                        ForeignKey::create()
+                            .from(Event::Table, Event::ProjectId)
+                            .to(Project::Table, Project::Id)
+                            .on_delete(ForeignKeyAction::Cascade)
+                            .on_update(ForeignKeyAction::Restrict),
+                    )
                     .to_owned(),
             )
             .await?;
@@ -38,8 +45,14 @@ impl MigrationTrait for Migration {
                     .if_not_exists()
                     .col(pk_uuid(Pipeline::Id))
                     .col(uuid(Pipeline::ProjectId))
-                    .col(string(Pipeline::Channel))
                     .col(json_binary(Pipeline::Steps))
+                    .foreign_key(
+                        ForeignKey::create()
+                            .from(Pipeline::Table, Pipeline::ProjectId)
+                            .to(Project::Table, Project::Id)
+                            .on_delete(ForeignKeyAction::Cascade)
+                            .on_update(ForeignKeyAction::Restrict),
+                    )
                     .to_owned(),
             )
             .await?;
@@ -94,7 +107,6 @@ enum Pipeline {
     Table,
     Id,
     ProjectId,
-    Channel,
     Steps,
 }
 
@@ -103,4 +115,10 @@ enum PipelineEventJ {
     Table,
     PipelineId,
     EventId,
+}
+
+#[derive(DeriveIden)]
+enum Project {
+    Table,
+    Id,
 }
