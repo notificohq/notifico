@@ -49,15 +49,15 @@ const INDEX_HTML: &str = "index.html";
 async fn static_handler(uri: Uri) -> impl IntoResponse {
     let path = uri.path().trim_start_matches('/');
 
-    if path.is_empty() || path == INDEX_HTML {
+    if let Some(content) = Assets::get(path) {
+        return ([(CONTENT_TYPE, content.metadata.mimetype())], content.data).into_response();
+    };
+
+    if path.is_empty() || path == INDEX_HTML || !path.starts_with("api/") {
         return index_html().await;
     }
 
-    let Some(content) = Assets::get(path) else {
-        return not_found().await;
-    };
-
-    ([(CONTENT_TYPE, content.metadata.mimetype())], content.data).into_response()
+    not_found().await
 }
 
 async fn index_html() -> Response {
