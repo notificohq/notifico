@@ -1,6 +1,5 @@
 mod api;
 
-use crate::controllers::contact::ContactDbController;
 use crate::controllers::event::EventDbController;
 use crate::controllers::group::GroupDbController;
 use crate::controllers::pipeline::PipelineDbController;
@@ -21,7 +20,6 @@ use tokio::net::TcpListener;
 #[derive(Clone)]
 pub(crate) struct HttpManagementExtensions {
     pub recipient_controller: Arc<RecipientDbController>,
-    pub contact_controller: Arc<ContactDbController>,
     pub subscription_controller: Arc<SubscriptionDbController>,
     pub pipeline_controller: Arc<PipelineDbController>,
     pub project_controller: Arc<ProjectController>,

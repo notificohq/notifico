@@ -98,6 +98,7 @@ impl AdminCrudTable for EventDbController {
 pub struct Event {
     pub project_id: Uuid,
     pub name: String,
+    pub enabled: bool,
 }
 
 impl From<entity::event::Model> for Event {
@@ -105,6 +106,7 @@ impl From<entity::event::Model> for Event {
         Self {
             project_id: value.project_id,
             name: value.name,
+            enabled: true, // Assume all events are enabled by default
         }
     }
 }

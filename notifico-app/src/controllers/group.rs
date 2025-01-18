@@ -1,3 +1,4 @@
+use crate::entity::prelude::*;
 use async_trait::async_trait;
 use notifico_core::error::EngineError;
 use notifico_core::http::admin::{
@@ -48,10 +49,7 @@ impl AdminCrudTable for GroupDbController {
     type Item = GroupItem;
 
     async fn get_by_id(&self, id: Uuid) -> Result<Option<Self::Item>, EngineError> {
-        Ok(crate::entity::group::Entity::find_by_id(id)
-            .one(&self.db)
-            .await?
-            .map(|m| m.into()))
+        Ok(Group::find_by_id(id).one(&self.db).await?.map(|m| m.into()))
     }
 
     async fn list(
@@ -59,7 +57,7 @@ impl AdminCrudTable for GroupDbController {
         params: ListQueryParams,
     ) -> Result<PaginatedResult<ItemWithId<Self::Item>>, EngineError> {
         let params = params.try_into()?;
-        let items = crate::entity::group::Entity::find()
+        let items = Group::find()
             .apply_params(&params)?
             .all(&self.db)
             .await?
@@ -69,10 +67,7 @@ impl AdminCrudTable for GroupDbController {
 
         Ok(PaginatedResult {
             items,
-            total: crate::entity::group::Entity::find()
-                .apply_filter(&params)?
-                .count(&self.db)
-                .await?,
+            total: Group::find().apply_filter(&params)?.count(&self.db).await?,
         })
     }
 
@@ -104,9 +99,7 @@ impl AdminCrudTable for GroupDbController {
     }
 
     async fn delete(&self, id: Uuid) -> Result<(), EngineError> {
-        crate::entity::group::Entity::delete_by_id(id)
-            .exec(&self.db)
-            .await?;
+        Group::delete_by_id(id).exec(&self.db).await?;
         Ok(())
     }
 }

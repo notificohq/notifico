@@ -6,7 +6,6 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 use utoipa_swagger_ui::{Config, SwaggerUi};
 
-mod contacts;
 mod event;
 mod group;
 mod pipeline;
@@ -32,9 +31,6 @@ pub(crate) fn get_router(ext: HttpManagementExtensions) -> Router {
             recipient::delete
         ))
         .routes(routes!(recipient::token))
-        // Contacts
-        .routes(routes!(contacts::list, contacts::create))
-        .routes(routes!(contacts::get, contacts::update, contacts::delete))
         // Groups
         .routes(routes!(group::list, group::create))
         .routes(routes!(group::get, group::update, group::delete))
@@ -56,7 +52,6 @@ pub(crate) fn get_router(ext: HttpManagementExtensions) -> Router {
         .layer(Extension(ext.pipeline_controller))
         .layer(Extension(ext.project_controller))
         .layer(Extension(ext.template_controller))
-        .layer(Extension(ext.contact_controller))
         .layer(Extension(ext.event_controller))
         .layer(Extension(ext.group_controller))
         .layer(Extension(ext.secret_key))

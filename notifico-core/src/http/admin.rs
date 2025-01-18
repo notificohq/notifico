@@ -55,7 +55,7 @@ where
     <ET::Column as FromStr>::Err: Error + Send + Sync,
 {
     fn apply_filter(mut self, params: &ParsedListQueryParams) -> anyhow::Result<Self> {
-        for (column, filterop) in params.filter.iter() {
+        for (column, filterop) in params.filter.flat_iter() {
             let column = ET::Column::from_str(column)?;
             match filterop {
                 FilterOp::IsIn(filter) => {
@@ -119,7 +119,7 @@ enum FilterOp {
 
 pub struct ParsedListQueryParams {
     range: Option<(u64, u64)>,
-    filter: Vec<(String, FilterOp)>,
+    filter: MultiMap<String, FilterOp>,
     sort: Option<(String, SortOrder)>,
 }
 
@@ -148,9 +148,9 @@ impl TryFrom<ReactAdminListQueryParams> for ParsedListQueryParams {
         };
 
         let filter = match value.filter {
-            None => vec![],
+            None => MultiMap::new(),
             Some(filter) => {
-                let mut parsed_filter = vec![];
+                let mut parsed_filter = MultiMap::new();
 
                 let filter: BTreeMap<String, Value> = serde_json::from_str(&filter)?;
                 for (col, values) in filter.into_iter() {
@@ -172,7 +172,7 @@ impl TryFrom<ReactAdminListQueryParams> for ParsedListQueryParams {
                             bail!("Invalid filter value type: {col}. Expected string or array of strings.")
                         }
                     };
-                    parsed_filter.push((col, FilterOp::IsIn(values)));
+                    parsed_filter.insert(col, FilterOp::IsIn(values));
                 }
                 parsed_filter
             }
@@ -201,10 +201,10 @@ impl TryFrom<RefineListQueryParams> for ParsedListQueryParams {
             value._end.unwrap_or(i64::MAX as _),
         ));
 
-        let mut filter = vec![];
+        let mut filter = MultiMap::new();
         for (col, values) in value._filter.into_iter() {
             // TODO: Parse filter keys for other filter ops
-            filter.push((col, FilterOp::IsIn(values)));
+            filter.insert(col, FilterOp::IsIn(values));
         }
 
         Ok(Self {

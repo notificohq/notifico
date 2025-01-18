@@ -4,6 +4,7 @@ use notifico_core::error::EngineError;
 use notifico_core::http::admin::{
     AdminCrudTable, ItemWithId, ListQueryParams, ListableTrait, PaginatedResult,
 };
+use notifico_core::recipient::RawContact;
 use sea_orm::ActiveValue::{Set, Unchanged};
 use sea_orm::{ActiveModelTrait, DbErr, TransactionTrait};
 use sea_orm::{ColumnTrait, PaginatorTrait, QueryFilter};
@@ -26,24 +27,8 @@ impl RecipientDbController {
 pub struct RecipientItem {
     pub extras: HashMap<String, String>,
     pub project_id: Uuid,
-}
-
-impl From<crate::entity::recipient::Model> for RecipientItem {
-    fn from(value: crate::entity::recipient::Model) -> Self {
-        RecipientItem {
-            extras: HashMap::deserialize(value.extras.clone()).unwrap(),
-            project_id: value.project_id,
-        }
-    }
-}
-
-impl From<crate::entity::recipient::Model> for ItemWithId<RecipientItem> {
-    fn from(value: crate::entity::recipient::Model) -> Self {
-        ItemWithId {
-            id: value.id,
-            item: value.into(),
-        }
-    }
+    pub group_ids: Vec<Uuid>,
+    pub contacts: Vec<RawContact>,
 }
 
 #[async_trait]
@@ -51,10 +36,35 @@ impl AdminCrudTable for RecipientDbController {
     type Item = RecipientItem;
 
     async fn get_by_id(&self, id: Uuid) -> Result<Option<Self::Item>, EngineError> {
-        Ok(Recipient::find_by_id(id)
-            .one(&self.db)
+        let recipient = Recipient::find_by_id(id).one(&self.db).await?;
+        let Some(recipient) = recipient else {
+            return Ok(None);
+        };
+
+        let group_ids = GroupMembership::find()
+            .filter(crate::entity::group_membership::Column::RecipientId.eq(id))
+            .all(&self.db)
             .await?
-            .map(|m| m.into()))
+            .into_iter()
+            .map(|g| g.group_id)
+            .collect();
+
+        let contacts = Contact::find()
+            .filter(crate::entity::contact::Column::RecipientId.eq(id))
+            .all(&self.db)
+            .await?
+            .into_iter()
+            .map(|m| m.contact.parse().unwrap())
+            .collect();
+
+        let extras = serde_json::from_value(recipient.extras).unwrap();
+
+        Ok(Some(RecipientItem {
+            group_ids,
+            contacts,
+            extras,
+            project_id: recipient.project_id,
+        }))
     }
 
     async fn list(
@@ -67,13 +77,40 @@ impl AdminCrudTable for RecipientDbController {
             .count(&self.db)
             .await?;
 
-        let items = Recipient::find()
+        let recipients = Recipient::find()
             .apply_params(&params)?
             .all(&self.db)
-            .await?
-            .into_iter()
-            .map(|m| m.into())
-            .collect();
+            .await?;
+
+        let mut items = vec![];
+        for recipient in recipients {
+            let group_ids = GroupMembership::find()
+                .filter(crate::entity::group_membership::Column::RecipientId.eq(recipient.id))
+                .all(&self.db)
+                .await?
+                .into_iter()
+                .map(|g| g.group_id)
+                .collect();
+
+            let contacts = Contact::find()
+                .filter(crate::entity::contact::Column::RecipientId.eq(recipient.id))
+                .all(&self.db)
+                .await?
+                .into_iter()
+                .map(|m| m.contact.parse().unwrap())
+                .collect();
+
+            let extras = serde_json::from_value(recipient.extras).unwrap();
+            items.push(ItemWithId {
+                id: recipient.id,
+                item: RecipientItem {
+                    project_id: recipient.project_id,
+                    group_ids,
+                    contacts,
+                    extras,
+                },
+            });
+        }
 
         Ok(PaginatedResult { items, total })
     }
@@ -87,6 +124,9 @@ impl AdminCrudTable for RecipientDbController {
         }
         .insert(&self.db)
         .await?;
+
+        self.assign_contacts(id, item.contacts.clone()).await?;
+        self.assign_groups(id, item.group_ids.clone()).await?;
 
         Ok(ItemWithId { id, item })
     }
@@ -103,6 +143,10 @@ impl AdminCrudTable for RecipientDbController {
         }
         .update(&self.db)
         .await?;
+
+        self.assign_contacts(id, item.contacts.clone()).await?;
+        self.assign_groups(id, item.group_ids.clone()).await?;
+
         Ok(ItemWithId { id, item })
     }
 
@@ -113,6 +157,56 @@ impl AdminCrudTable for RecipientDbController {
 }
 
 impl RecipientDbController {
+    pub async fn assign_contacts(
+        &self,
+        recipient_id: Uuid,
+        contacts: Vec<RawContact>,
+    ) -> Result<(), EngineError> {
+        let current_contacts: HashSet<RawContact> = Contact::find()
+            .filter(crate::entity::contact::Column::RecipientId.eq(recipient_id))
+            .all(&self.db)
+            .await?
+            .into_iter()
+            .map(|m| m.contact.parse().unwrap())
+            .collect();
+        let new_contacts: HashSet<RawContact> = contacts.into_iter().collect();
+
+        let to_delete: Vec<RawContact> = current_contacts
+            .difference(&new_contacts)
+            .cloned()
+            .collect();
+
+        if !to_delete.is_empty() {
+            Contact::delete_many()
+                .filter(crate::entity::contact::Column::RecipientId.eq(recipient_id))
+                .filter(
+                    crate::entity::contact::Column::Contact
+                        .is_in(to_delete.into_iter().map(|c| c.to_string())),
+                )
+                .exec(&self.db)
+                .await?;
+        }
+
+        let to_insert: Vec<RawContact> = new_contacts
+            .difference(&current_contacts)
+            .cloned()
+            .collect();
+
+        if !to_insert.is_empty() {
+            Contact::insert_many(to_insert.into_iter().map(|c| {
+                crate::entity::contact::ActiveModel {
+                    id: Set(Uuid::now_v7()),
+                    recipient_id: Set(recipient_id),
+                    contact: Set(c.to_string()),
+                }
+            }))
+            .exec(&self.db)
+            .await?;
+        }
+
+        Ok(())
+    }
+
     pub async fn assign_groups(
         &self,
         recipient_id: Uuid,
@@ -133,27 +227,41 @@ impl RecipientDbController {
 
                     let new_memberships: HashSet<Uuid> = group_ids.into_iter().collect();
 
-                    GroupMembership::insert_many(
-                        new_memberships.difference(&current_memberships).map(|id| {
+                    let to_insert: Vec<Uuid> = new_memberships
+                        .difference(&current_memberships)
+                        .copied()
+                        .collect();
+
+                    if !to_insert.is_empty() {
+                        GroupMembership::insert_many(to_insert.into_iter().map(|id| {
                             crate::entity::group_membership::ActiveModel {
                                 id: Set(Uuid::now_v7()),
-                                group_id: Set(*id),
+                                group_id: Set(id),
                                 recipient_id: Set(recipient_id),
                             }
-                        }),
-                    )
-                    .exec(txn)
-                    .await?;
-                    GroupMembership::delete_many()
-                        .filter(
-                            crate::entity::group_membership::Column::RecipientId.eq(recipient_id),
-                        )
-                        .filter(
-                            crate::entity::group_membership::Column::GroupId
-                                .is_in(current_memberships.difference(&new_memberships).copied()),
-                        )
+                        }))
                         .exec(txn)
                         .await?;
+                    }
+
+                    let to_delete: Vec<Uuid> = current_memberships
+                        .difference(&new_memberships)
+                        .copied()
+                        .collect();
+
+                    if !to_delete.is_empty() {
+                        GroupMembership::delete_many()
+                            .filter(
+                                crate::entity::group_membership::Column::RecipientId
+                                    .eq(recipient_id),
+                            )
+                            .filter(
+                                crate::entity::group_membership::Column::GroupId.is_in(to_delete),
+                            )
+                            .exec(txn)
+                            .await?;
+                    }
+
                     Ok(())
                 })
             })

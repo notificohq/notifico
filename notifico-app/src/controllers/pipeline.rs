@@ -82,6 +82,7 @@ impl AdminCrudTable for PipelineDbController {
                 Ok(PipelineItem {
                     pipeline: p.try_into()?,
                     event_ids: e.into_iter().map(|e| e.id).collect(),
+                    enabled: true, // Assume all pipelines are enabled for now
                 })
             })
             .collect();
@@ -110,6 +111,7 @@ impl AdminCrudTable for PipelineDbController {
                     item: PipelineItem {
                         pipeline: p.try_into()?,
                         event_ids: e.into_iter().map(|e| e.id).collect(),
+                        enabled: true, // Assume all pipelines are enabled for now
                     },
                 })
             })
@@ -173,4 +175,5 @@ pub struct PipelineItem {
     #[serde(flatten)]
     pub pipeline: Pipeline,
     pub event_ids: Vec<Uuid>,
+    pub enabled: bool,
 }

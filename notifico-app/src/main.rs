@@ -8,7 +8,6 @@ mod plugin;
 mod recipient;
 
 use crate::amqp::AmqpClient;
-use crate::controllers::contact::ContactDbController;
 use crate::controllers::event::EventDbController;
 use crate::controllers::group::GroupDbController;
 use crate::controllers::pipeline::PipelineDbController;
@@ -196,7 +195,6 @@ async fn main() {
                     Arc::new(PipelineDbController::new(db_connection.clone()));
                 let recipient_controller =
                     Arc::new(RecipientDbController::new(db_connection.clone()));
-                let contact_controller = Arc::new(ContactDbController::new(db_connection.clone()));
                 let event_controller = Arc::new(EventDbController::new(db_connection.clone()));
                 let project_controller = Arc::new(ProjectController::new(db_connection.clone()));
                 let group_controller = Arc::new(GroupDbController::new(db_connection.clone()));
@@ -206,7 +204,6 @@ async fn main() {
                 info!("Starting HTTP management server on {}", args.management);
                 let ext = HttpManagementExtensions {
                     recipient_controller,
-                    contact_controller,
                     project_controller,
                     subscription_controller: subscription_controller.clone(),
                     pipeline_controller,

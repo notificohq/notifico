@@ -4,7 +4,7 @@ use serde_with::{DeserializeFromStr, SerializeDisplay};
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
-#[derive(Clone, Debug, SerializeDisplay, DeserializeFromStr)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash, SerializeDisplay, DeserializeFromStr)]
 pub struct RawContact {
     pub r#type: String,
     pub value: String,
@@ -15,7 +15,7 @@ impl FromStr for RawContact {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let (r#type, value) = s.split_once(':').ok_or(EngineError::InvalidContactFormat(
-            "Invalid URL format".to_string(),
+            "Invalid contact format".to_string(),
         ))?;
         let (r#type, value) = (r#type.to_owned(), value.to_owned());
         Ok(Self { r#type, value })

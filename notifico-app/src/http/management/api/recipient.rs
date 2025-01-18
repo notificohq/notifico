@@ -20,6 +20,8 @@ use uuid::Uuid;
 pub struct RecipientRestItem {
     project_id: Uuid,
     extras: String,
+    group_ids: Vec<Uuid>,
+    contacts: Vec<String>,
 }
 
 impl From<RecipientItem> for RecipientRestItem {
@@ -27,6 +29,8 @@ impl From<RecipientItem> for RecipientRestItem {
         RecipientRestItem {
             project_id: value.project_id,
             extras: serde_json::to_string(&value.extras).unwrap(),
+            group_ids: value.group_ids,
+            contacts: value.contacts.into_iter().map(|c| c.to_string()).collect(),
         }
     }
 }
@@ -36,6 +40,12 @@ impl From<RecipientRestItem> for RecipientItem {
         RecipientItem {
             project_id: value.project_id,
             extras: serde_json::from_str(&value.extras).unwrap(),
+            group_ids: value.group_ids.clone(),
+            contacts: value
+                .contacts
+                .into_iter()
+                .map(|c| c.parse().unwrap())
+                .collect(),
         }
     }
 }

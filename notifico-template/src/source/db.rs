@@ -118,12 +118,9 @@ impl AdminCrudTable for DbTemplateSource {
     }
 
     async fn delete(&self, id: Uuid) -> Result<(), EngineError> {
-        entity::template::ActiveModel {
-            id: Set(id),
-            ..Default::default()
-        }
-        .delete(&self.db)
-        .await?;
+        entity::template::Entity::delete_by_id(id)
+            .exec(&self.db)
+            .await?;
         Ok(())
     }
 }
