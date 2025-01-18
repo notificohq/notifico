@@ -1,6 +1,5 @@
 use crate::entity;
 use async_trait::async_trait;
-use migration::{Migrator, MigratorTrait};
 use notifico_core::error::EngineError;
 use notifico_core::pipeline::storage::PipelineStorage;
 use notifico_core::pipeline::Pipeline;
@@ -15,10 +14,6 @@ pub struct DbPipelineStorage {
 impl DbPipelineStorage {
     pub fn new(db: DatabaseConnection) -> Self {
         Self { db }
-    }
-
-    pub async fn setup(&self) -> anyhow::Result<()> {
-        Ok(Migrator::up(&self.db, None).await?)
     }
 }
 

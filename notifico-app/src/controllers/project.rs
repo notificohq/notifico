@@ -1,13 +1,11 @@
 use crate::entity;
 use async_trait::async_trait;
-use migration::{Migrator, MigratorTrait};
 use notifico_core::error::EngineError;
 use notifico_core::http::admin::{
     AdminCrudTable, ItemWithId, ListQueryParams, ListableTrait, PaginatedResult,
 };
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, PaginatorTrait, Set};
 use serde::{Deserialize, Serialize};
-use std::error::Error;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -23,10 +21,6 @@ pub struct ProjectController {
 impl ProjectController {
     pub fn new(db: DatabaseConnection) -> Self {
         Self { db }
-    }
-
-    pub async fn setup(&self) -> Result<(), Box<dyn Error>> {
-        Ok(Migrator::up(&self.db, None).await?)
     }
 }
 

@@ -21,6 +21,7 @@ use crate::pipeline_storage::DbPipelineStorage;
 use crate::plugin::SubscriptionPlugin;
 use crate::recipient::RecipientDbSource;
 use clap::{Parser, Subcommand};
+use migration::{Migrator, MigratorTrait};
 use notifico_attachment::AttachmentPlugin;
 use notifico_core::credentials::env::EnvCredentialStorage;
 use notifico_core::engine::plugin::core::CorePlugin;
@@ -151,6 +152,8 @@ async fn main() {
             db_conn_options.sqlx_logging_level(log::LevelFilter::Debug);
             let db_connection = Database::connect(db_conn_options).await.unwrap();
 
+            Migrator::up(&db_connection, None).await.unwrap();
+
             // Storages
             let credentials = Arc::new(EnvCredentialStorage::new());
             let pipelines = Arc::new(DbPipelineStorage::new(db_connection.clone()));
@@ -165,11 +168,6 @@ async fn main() {
                 args.secret_key.as_bytes().to_vec(),
                 args.public_url,
             ));
-
-            // Setup stateful plugins
-            pipelines.setup().await.unwrap();
-            templater_source.setup().await.unwrap();
-            subscription_controller.setup().await.unwrap();
 
             let secret_key = Arc::new(SecretKey(args.secret_key.as_bytes().to_vec()));
 
@@ -198,8 +196,6 @@ async fn main() {
                 let event_controller = Arc::new(EventDbController::new(db_connection.clone()));
                 let project_controller = Arc::new(ProjectController::new(db_connection.clone()));
                 let group_controller = Arc::new(GroupDbController::new(db_connection.clone()));
-
-                project_controller.setup().await.unwrap();
 
                 info!("Starting HTTP management server on {}", args.management);
                 let ext = HttpManagementExtensions {
