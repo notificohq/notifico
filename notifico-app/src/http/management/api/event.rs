@@ -4,16 +4,12 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::{Extension, Json};
 use notifico_core::http::admin::{
-    AdminCrudTable, ItemWithId, ListQueryParams, ReactAdminListQueryParams, RefineListQueryParams,
+    AdminCrudTable, ItemWithId, ListQueryParams, RefineListQueryParams,
 };
 use std::sync::Arc;
 use uuid::Uuid;
 
-#[utoipa::path(
-    get,
-    path = "/v1/events",
-    params(ReactAdminListQueryParams, RefineListQueryParams)
-)]
+#[utoipa::path(get, path = "/v1/events", params(RefineListQueryParams))]
 pub async fn list(
     Query(params): Query<ListQueryParams>,
     Extension(pipeline_storage): Extension<Arc<EventDbController>>,

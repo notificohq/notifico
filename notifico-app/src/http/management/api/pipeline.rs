@@ -4,7 +4,7 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::{Extension, Json};
 use notifico_core::http::admin::{
-    AdminCrudTable, ItemWithId, ListQueryParams, ReactAdminListQueryParams, RefineListQueryParams,
+    AdminCrudTable, ItemWithId, ListQueryParams, RefineListQueryParams,
 };
 use notifico_core::pipeline::Pipeline;
 use serde::{Deserialize, Serialize};
@@ -53,11 +53,7 @@ pub async fn create(
     (StatusCode::CREATED, Json(result))
 }
 
-#[utoipa::path(
-    get,
-    path = "/v1/pipelines",
-    params(ReactAdminListQueryParams, RefineListQueryParams)
-)]
+#[utoipa::path(get, path = "/v1/pipelines", params(RefineListQueryParams))]
 pub async fn list(
     Query(params): Query<ListQueryParams>,
     Extension(pipeline_storage): Extension<Arc<PipelineDbController>>,

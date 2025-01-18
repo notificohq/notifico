@@ -8,8 +8,6 @@ use axum::Json;
 use multimap::MultiMap;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect, Select};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use std::collections::BTreeMap;
 use std::error::Error;
 use std::str::FromStr;
 use utoipa::{IntoParams, ToSchema};
@@ -94,14 +92,6 @@ where
 pub type ListQueryParams = Vec<(String, String)>;
 
 #[derive(Deserialize, Clone, IntoParams)]
-#[serde(deny_unknown_fields)]
-pub struct ReactAdminListQueryParams {
-    sort: Option<String>,
-    range: Option<String>,
-    filter: Option<String>,
-}
-
-#[derive(Deserialize, Clone, IntoParams)]
 pub struct RefineListQueryParams {
     _sort: Option<String>,
     #[param(inline)]
@@ -130,59 +120,6 @@ impl ParsedListQueryParams {
 
     fn offset(&self) -> Option<u64> {
         self.range.map(|(start, _)| start)
-    }
-}
-
-impl TryFrom<ReactAdminListQueryParams> for ParsedListQueryParams {
-    type Error = anyhow::Error;
-
-    fn try_from(value: ReactAdminListQueryParams) -> Result<Self, Self::Error> {
-        let sort = match value.sort {
-            None => None,
-            Some(sort) => serde_json::from_str(&sort)?,
-        };
-
-        let range = match value.range {
-            None => None,
-            Some(range) => serde_json::from_str(&range)?,
-        };
-
-        let filter = match value.filter {
-            None => MultiMap::new(),
-            Some(filter) => {
-                let mut parsed_filter = MultiMap::new();
-
-                let filter: BTreeMap<String, Value> = serde_json::from_str(&filter)?;
-                for (col, values) in filter.into_iter() {
-                    let values = match values {
-                        Value::String(v) => vec![v],
-                        Value::Array(v) => {
-                            let mut values: Vec<String> = vec![];
-                            for filter in v {
-                                match filter {
-                                    Value::String(filter) => values.push(filter),
-                                    _ => {
-                                        bail!("Invalid filter value type: {col}. Expected string.")
-                                    }
-                                }
-                            }
-                            values
-                        }
-                        _ => {
-                            bail!("Invalid filter value type: {col}. Expected string or array of strings.")
-                        }
-                    };
-                    parsed_filter.insert(col, FilterOp::IsIn(values));
-                }
-                parsed_filter
-            }
-        };
-
-        Ok(Self {
-            range,
-            filter,
-            sort,
-        })
     }
 }
 
@@ -220,14 +157,6 @@ impl TryFrom<ListQueryParams> for ParsedListQueryParams {
 
     fn try_from(value: ListQueryParams) -> Result<Self, Self::Error> {
         let values: MultiMap<String, String> = MultiMap::from_iter(value);
-        let ra_params = ReactAdminListQueryParams {
-            sort: values.get("sort").cloned(),
-            range: values.get("range").cloned(),
-            filter: values.get("filter").cloned(),
-        };
-        if ra_params.sort.is_some() || ra_params.range.is_some() || ra_params.filter.is_some() {
-            return ra_params.try_into();
-        }
 
         let mut refine_filters = values.clone();
         refine_filters.retain(|k, _| !k.starts_with("_"));

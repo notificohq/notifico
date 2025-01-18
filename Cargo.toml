@@ -32,8 +32,8 @@ clap = { version = "4.5.23", features = ["derive", "color", "usage", "env"] }
 tokio = { version = "1.43", features = ["macros", "rt", "sync", "rt-multi-thread", "signal"] }
 url = { version = "2.5.4", features = ["serde"] }
 utoipa = { version = "5.3.1", features = ["axum_extras", "uuid"] }
-utoipa-axum = "0.1.4"
-utoipa-swagger-ui = { version = "8.1.1", features = ["axum", "vendored"] }
+utoipa-axum = "0.2"
+utoipa-swagger-ui = { version = "9", features = ["axum", "vendored"] }
 uuid = { version = "1.11.0", features = ["serde", "v7"] }
 
 [workspace.dependencies.sea-orm-migration]

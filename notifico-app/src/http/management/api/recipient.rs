@@ -5,7 +5,7 @@ use axum::response::IntoResponse;
 use axum::{Extension, Json};
 use jsonwebtoken::{EncodingKey, Header};
 use notifico_core::http::admin::{
-    AdminCrudTable, ItemWithId, ListQueryParams, ReactAdminListQueryParams, RefineListQueryParams,
+    AdminCrudTable, ItemWithId, ListQueryParams, RefineListQueryParams,
 };
 use notifico_core::http::auth::Claims;
 use notifico_core::http::SecretKey;
@@ -50,11 +50,7 @@ impl From<RecipientRestItem> for RecipientItem {
     }
 }
 
-#[utoipa::path(
-    get,
-    path = "/v1/recipients",
-    params(ReactAdminListQueryParams, RefineListQueryParams)
-)]
+#[utoipa::path(get, path = "/v1/recipients", params(RefineListQueryParams))]
 pub async fn list(
     Query(params): Query<ListQueryParams>,
     Extension(controller): Extension<Arc<RecipientDbController>>,
