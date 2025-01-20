@@ -4,6 +4,7 @@ use notifico_core::error::EngineError;
 use notifico_core::http::admin::{
     AdminCrudTable, ItemWithId, ListQueryParams, ListableTrait, PaginatedResult,
 };
+use notifico_core::pipeline::storage::PipelineStorage;
 use notifico_core::pipeline::Pipeline;
 use sea_orm::prelude::Uuid;
 use sea_orm::ActiveValue::{Set, Unchanged};
@@ -167,6 +168,36 @@ impl AdminCrudTable for PipelineDbController {
             .exec(&self.db)
             .await?;
         Ok(())
+    }
+}
+
+#[async_trait]
+impl PipelineStorage for PipelineDbController {
+    // For service API. Performance-critical
+    async fn get_pipelines_for_event(
+        &self,
+        project: Uuid,
+        event_name: &str,
+    ) -> Result<Vec<Pipeline>, EngineError> {
+        let models = entity::pipeline::Entity::find()
+            .inner_join(entity::event::Entity)
+            .filter(entity::pipeline::Column::ProjectId.eq(project))
+            .filter(entity::event::Column::Name.eq(event_name))
+            .all(&self.db)
+            .await?;
+
+        models.into_iter().map(|m| m.try_into()).collect()
+    }
+}
+
+impl TryFrom<entity::pipeline::Model> for Pipeline {
+    type Error = EngineError;
+
+    fn try_from(value: entity::pipeline::Model) -> Result<Self, Self::Error> {
+        Ok(Self {
+            project_id: value.project_id,
+            steps: Vec::deserialize(value.steps).map_err(EngineError::InvalidStep)?,
+        })
     }
 }
 

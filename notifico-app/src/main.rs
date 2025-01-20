@@ -3,9 +3,7 @@ mod controllers;
 #[allow(unused_imports)]
 pub(crate) mod entity;
 mod http;
-mod pipeline_storage;
 mod plugin;
-mod recipient;
 
 use crate::amqp::AmqpClient;
 use crate::controllers::event::EventDbController;
@@ -17,9 +15,7 @@ use crate::controllers::subscription::SubscriptionDbController;
 use crate::http::ingest::HttpIngestExtensions;
 use crate::http::management::HttpManagementExtensions;
 use crate::http::public::HttpPublicExtensions;
-use crate::pipeline_storage::DbPipelineStorage;
 use crate::plugin::SubscriptionPlugin;
-use crate::recipient::RecipientDbSource;
 use clap::{Parser, Subcommand};
 use migration::{Migrator, MigratorTrait};
 use notifico_attachment::AttachmentPlugin;
@@ -156,9 +152,10 @@ async fn main() {
 
             // Storages
             let credentials = Arc::new(EnvCredentialStorage::new());
-            let pipelines = Arc::new(DbPipelineStorage::new(db_connection.clone()));
+            let pipeline_controller = Arc::new(PipelineDbController::new(db_connection.clone()));
             let recorder = Arc::new(BaseRecorder::new());
             let templater_source = Arc::new(DbTemplateSource::new(db_connection.clone()));
+            let recipient_controller = Arc::new(RecipientDbController::new(db_connection.clone()));
 
             let subscription_controller =
                 Arc::new(SubscriptionDbController::new(db_connection.clone()));
@@ -189,20 +186,16 @@ async fn main() {
             }
 
             if components.is_empty() || components.contains(COMPONENT_MANAGEMENT) {
-                let pipeline_controller =
-                    Arc::new(PipelineDbController::new(db_connection.clone()));
-                let recipient_controller =
-                    Arc::new(RecipientDbController::new(db_connection.clone()));
                 let event_controller = Arc::new(EventDbController::new(db_connection.clone()));
                 let project_controller = Arc::new(ProjectController::new(db_connection.clone()));
                 let group_controller = Arc::new(GroupDbController::new(db_connection.clone()));
 
                 info!("Starting HTTP management server on {}", args.management);
                 let ext = HttpManagementExtensions {
-                    recipient_controller,
+                    recipient_controller: recipient_controller.clone(),
                     project_controller,
                     subscription_controller: subscription_controller.clone(),
-                    pipeline_controller,
+                    pipeline_controller: pipeline_controller.clone(),
                     template_controller: templater_source.clone(),
                     event_controller,
                     group_controller,
@@ -216,10 +209,9 @@ async fn main() {
                 // Create Engine with plugins
                 let engine = {
                     let mut engine = Engine::new();
-                    let recipient_source = Arc::new(RecipientDbSource::new(db_connection.clone()));
                     engine.add_plugin(Arc::new(CorePlugin::new(
                         pipelines_tx.clone(),
-                        recipient_source,
+                        recipient_controller,
                     )));
                     engine.add_plugin(Arc::new(Templater::new(templater_source.clone())));
                     engine.add_plugin(subman.clone());
@@ -239,8 +231,10 @@ async fn main() {
 
                 // Main loop
                 let executor = Arc::new(PipelineExecutor::new(engine));
-                let event_handler =
-                    Arc::new(EventHandler::new(pipelines.clone(), pipelines_tx.clone()));
+                let event_handler = Arc::new(EventHandler::new(
+                    pipeline_controller.clone(),
+                    pipelines_tx.clone(),
+                ));
 
                 tokio::spawn(async move {
                     loop {
