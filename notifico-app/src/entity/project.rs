@@ -20,6 +20,8 @@ pub enum Relation {
     Pipeline,
     #[sea_orm(has_many = "super::recipient::Entity")]
     Recipient,
+    #[sea_orm(has_many = "super::template::Entity")]
+    Template,
 }
 
 impl Related<super::event::Entity> for Entity {
@@ -43,6 +45,12 @@ impl Related<super::pipeline::Entity> for Entity {
 impl Related<super::recipient::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Recipient.def()
+    }
+}
+
+impl Related<super::template::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Template.def()
     }
 }
 

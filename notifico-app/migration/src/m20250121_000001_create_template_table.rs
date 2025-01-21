@@ -16,6 +16,13 @@ impl MigrationTrait for Migration {
                     .col(string(Template::Name))
                     .col(string(Template::Channel))
                     .col(json_binary(Template::Template))
+                    .foreign_key(
+                        ForeignKey::create()
+                            .from(Template::Table, Template::ProjectId)
+                            .to(Project::Table, Project::Id)
+                            .on_delete(ForeignKeyAction::Cascade)
+                            .on_update(ForeignKeyAction::Restrict),
+                    )
                     .to_owned(),
             )
             .await?;
@@ -50,4 +57,10 @@ enum Template {
     Name,
     Channel,
     Template,
+}
+
+#[derive(DeriveIden)]
+enum Project {
+    Table,
+    Id,
 }
