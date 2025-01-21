@@ -1,12 +1,9 @@
+use crate::controllers::template::{DbTemplateSource, TemplateItem};
+use crate::crud_table::{AdminCrudTable, ItemWithId, ListQueryParams, RefineListQueryParams};
 use axum::extract::{Path, Query};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::{Extension, Json};
-use notifico_core::http::admin::{
-    AdminCrudTable, ItemWithId, ListQueryParams, RefineListQueryParams,
-};
-use notifico_template::source::db::DbTemplateSource;
-use notifico_template::source::db::TemplateItem;
 use std::sync::Arc;
 use uuid::Uuid;
 

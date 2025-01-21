@@ -16,10 +16,8 @@ pub struct AttachmentPlugin {
 }
 
 impl AttachmentPlugin {
-    pub fn new(allow_file_schema: bool) -> Self {
-        Self {
-            allow_file_scheme: allow_file_schema,
-        }
+    pub fn new(allow_file_scheme: bool) -> Self {
+        Self { allow_file_scheme }
     }
 }
 

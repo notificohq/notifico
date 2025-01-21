@@ -1,4 +1,3 @@
-pub mod db;
 pub mod fs;
 
 use crate::error::TemplaterError;

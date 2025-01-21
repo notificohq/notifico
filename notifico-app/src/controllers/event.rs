@@ -1,9 +1,7 @@
-use crate::entity;
-use async_trait::async_trait;
-use notifico_core::error::EngineError;
-use notifico_core::http::admin::{
-    AdminCrudTable, ItemWithId, ListQueryParams, ListableTrait, PaginatedResult,
+use crate::crud_table::{
+    AdminCrudError, AdminCrudTable, ItemWithId, ListQueryParams, ListableTrait, PaginatedResult,
 };
+use crate::entity;
 use sea_orm::prelude::Uuid;
 use sea_orm::ActiveValue::{Set, Unchanged};
 use sea_orm::{ActiveModelTrait, PaginatorTrait};
@@ -21,11 +19,10 @@ impl EventDbController {
     }
 }
 
-#[async_trait]
 impl AdminCrudTable for EventDbController {
     type Item = Event;
 
-    async fn get_by_id(&self, id: Uuid) -> Result<Option<Self::Item>, EngineError> {
+    async fn get_by_id(&self, id: Uuid) -> Result<Option<Self::Item>, AdminCrudError> {
         let model = entity::event::Entity::find_by_id(id).one(&self.db).await?;
         Ok(model.map(|m| m.into()))
     }
@@ -33,7 +30,7 @@ impl AdminCrudTable for EventDbController {
     async fn list(
         &self,
         params: ListQueryParams,
-    ) -> Result<PaginatedResult<ItemWithId<Self::Item>>, EngineError> {
+    ) -> Result<PaginatedResult<ItemWithId<Self::Item>>, AdminCrudError> {
         let params = params.try_into()?;
         Ok(PaginatedResult {
             items: entity::event::Entity::find()
@@ -53,7 +50,7 @@ impl AdminCrudTable for EventDbController {
         })
     }
 
-    async fn create(&self, item: Self::Item) -> Result<ItemWithId<Self::Item>, EngineError> {
+    async fn create(&self, item: Self::Item) -> Result<ItemWithId<Self::Item>, AdminCrudError> {
         let id = Uuid::now_v7();
 
         entity::event::ActiveModel {
@@ -71,7 +68,7 @@ impl AdminCrudTable for EventDbController {
         &self,
         id: Uuid,
         item: Self::Item,
-    ) -> Result<ItemWithId<Self::Item>, EngineError> {
+    ) -> Result<ItemWithId<Self::Item>, AdminCrudError> {
         entity::event::ActiveModel {
             id: Unchanged(id),
             name: Set(item.name.clone()),
@@ -83,7 +80,7 @@ impl AdminCrudTable for EventDbController {
         Ok(ItemWithId { id, item })
     }
 
-    async fn delete(&self, id: Uuid) -> Result<(), EngineError> {
+    async fn delete(&self, id: Uuid) -> Result<(), AdminCrudError> {
         entity::event::ActiveModel {
             id: Set(id),
             ..Default::default()

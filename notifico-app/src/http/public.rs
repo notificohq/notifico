@@ -1,4 +1,5 @@
 use crate::controllers::subscription::SubscriptionDbController;
+use crate::http::auth::Claims;
 use axum::extract::Query;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
@@ -7,7 +8,6 @@ use axum_extra::headers::authorization::Bearer;
 use axum_extra::headers::Authorization;
 use axum_extra::TypedHeader;
 use jsonwebtoken::{DecodingKey, Validation};
-use notifico_core::http::auth::Claims;
 use notifico_core::http::SecretKey;
 use serde::Deserialize;
 use std::collections::HashMap;

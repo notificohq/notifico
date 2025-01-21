@@ -1,12 +1,12 @@
+use crate::crud_table::{
+    AdminCrudError, AdminCrudTable, ItemWithId, ListQueryParams, ListableTrait, PaginatedResult,
+};
 use crate::entity;
 use crate::entity::prelude::*;
 use async_trait::async_trait;
 use futures::stream::BoxStream;
 use futures::{stream, StreamExt};
 use notifico_core::error::EngineError;
-use notifico_core::http::admin::{
-    AdminCrudTable, ItemWithId, ListQueryParams, ListableTrait, PaginatedResult,
-};
 use notifico_core::pipeline::event::RecipientSelector;
 use notifico_core::recipient::{RawContact, RecipientController};
 use sea_orm::ActiveValue::{Set, Unchanged};
@@ -35,11 +35,10 @@ pub struct RecipientItem {
     pub contacts: Vec<RawContact>,
 }
 
-#[async_trait]
 impl AdminCrudTable for RecipientDbController {
     type Item = RecipientItem;
 
-    async fn get_by_id(&self, id: Uuid) -> Result<Option<Self::Item>, EngineError> {
+    async fn get_by_id(&self, id: Uuid) -> Result<Option<Self::Item>, AdminCrudError> {
         let recipient = Recipient::find_by_id(id).one(&self.db).await?;
         let Some(recipient) = recipient else {
             return Ok(None);
@@ -74,7 +73,7 @@ impl AdminCrudTable for RecipientDbController {
     async fn list(
         &self,
         params: ListQueryParams,
-    ) -> Result<PaginatedResult<ItemWithId<Self::Item>>, EngineError> {
+    ) -> Result<PaginatedResult<ItemWithId<Self::Item>>, AdminCrudError> {
         let params = params.try_into()?;
         let total = Recipient::find()
             .apply_filter(&params)?
@@ -119,7 +118,7 @@ impl AdminCrudTable for RecipientDbController {
         Ok(PaginatedResult { items, total })
     }
 
-    async fn create(&self, item: Self::Item) -> Result<ItemWithId<Self::Item>, EngineError> {
+    async fn create(&self, item: Self::Item) -> Result<ItemWithId<Self::Item>, AdminCrudError> {
         let id = Uuid::now_v7();
         crate::entity::recipient::ActiveModel {
             id: Set(id),
@@ -139,7 +138,7 @@ impl AdminCrudTable for RecipientDbController {
         &self,
         id: Uuid,
         item: Self::Item,
-    ) -> Result<ItemWithId<Self::Item>, EngineError> {
+    ) -> Result<ItemWithId<Self::Item>, AdminCrudError> {
         crate::entity::recipient::ActiveModel {
             id: Unchanged(id),
             project_id: Set(item.project_id),
@@ -154,7 +153,7 @@ impl AdminCrudTable for RecipientDbController {
         Ok(ItemWithId { id, item })
     }
 
-    async fn delete(&self, id: Uuid) -> Result<(), EngineError> {
+    async fn delete(&self, id: Uuid) -> Result<(), AdminCrudError> {
         Recipient::delete_by_id(id).exec(&self.db).await?;
         Ok(())
     }
@@ -165,7 +164,7 @@ impl RecipientDbController {
         &self,
         recipient_id: Uuid,
         contacts: Vec<RawContact>,
-    ) -> Result<(), EngineError> {
+    ) -> Result<(), AdminCrudError> {
         let current_contacts: HashSet<RawContact> = Contact::find()
             .filter(crate::entity::contact::Column::RecipientId.eq(recipient_id))
             .all(&self.db)
@@ -215,7 +214,7 @@ impl RecipientDbController {
         &self,
         recipient_id: Uuid,
         group_ids: Vec<Uuid>,
-    ) -> Result<(), EngineError> {
+    ) -> Result<(), AdminCrudError> {
         self.db
             .transaction::<_, (), DbErr>(|txn| {
                 Box::pin(async move {
@@ -297,7 +296,8 @@ impl RecipientController for RecipientDbController {
         let groups = GroupMembership::find()
             .filter(entity::group_membership::Column::GroupId.is_in(ids.clone()))
             .all(&self.db)
-            .await?;
+            .await
+            .map_err(|e| EngineError::InternalError(anyhow::Error::new(e)))?;
         ids.extend(groups.into_iter().map(|g| g.recipient_id));
 
         // Individual recipient IDs
@@ -306,7 +306,8 @@ impl RecipientController for RecipientDbController {
             .filter(entity::recipient::Column::Id.is_in(ids.clone()))
             .filter(entity::recipient::Column::ProjectId.eq(project))
             .all(&self.db)
-            .await?;
+            .await
+            .map_err(|e| EngineError::InternalError(anyhow::Error::new(e)))?;
 
         let mut core_recipients = vec![];
         for (recipient, contacts) in recipients {

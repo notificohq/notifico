@@ -1,15 +1,15 @@
-use crate::error::EngineError;
 use anyhow::bail;
-use async_trait::async_trait;
 use axum::http::header::CONTENT_RANGE;
 use axum::http::HeaderMap;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use multimap::MultiMap;
+use notifico_core::error::EngineError;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect, Select};
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::str::FromStr;
+use thiserror::Error as ThisError;
 use utoipa::{IntoParams, ToSchema};
 use uuid::Uuid;
 
@@ -211,20 +211,33 @@ impl<T> ItemWithId<T> {
     }
 }
 
-#[async_trait]
+#[derive(ThisError, Debug)]
+pub enum AdminCrudError {
+    #[error("Database error: {0}")]
+    Db(#[from] sea_orm::DbErr),
+    #[error("Internal error: {0}")]
+    InternalError(#[from] anyhow::Error),
+}
+
+impl From<EngineError> for AdminCrudError {
+    fn from(value: EngineError) -> Self {
+        AdminCrudError::InternalError(anyhow::Error::new(value))
+    }
+}
+
 pub trait AdminCrudTable {
     type Item;
 
-    async fn get_by_id(&self, id: Uuid) -> Result<Option<Self::Item>, EngineError>;
+    async fn get_by_id(&self, id: Uuid) -> Result<Option<Self::Item>, AdminCrudError>;
     async fn list(
         &self,
         params: ListQueryParams,
-    ) -> Result<PaginatedResult<ItemWithId<Self::Item>>, EngineError>;
-    async fn create(&self, item: Self::Item) -> Result<ItemWithId<Self::Item>, EngineError>;
+    ) -> Result<PaginatedResult<ItemWithId<Self::Item>>, AdminCrudError>;
+    async fn create(&self, item: Self::Item) -> Result<ItemWithId<Self::Item>, AdminCrudError>;
     async fn update(
         &self,
         id: Uuid,
         item: Self::Item,
-    ) -> Result<ItemWithId<Self::Item>, EngineError>;
-    async fn delete(&self, id: Uuid) -> Result<(), EngineError>;
+    ) -> Result<ItemWithId<Self::Item>, AdminCrudError>;
+    async fn delete(&self, id: Uuid) -> Result<(), AdminCrudError>;
 }

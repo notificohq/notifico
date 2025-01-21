@@ -1,5 +1,6 @@
 mod amqp;
 mod controllers;
+mod crud_table;
 #[allow(unused_imports)]
 pub(crate) mod entity;
 mod http;
@@ -12,6 +13,7 @@ use crate::controllers::pipeline::PipelineDbController;
 use crate::controllers::project::ProjectController;
 use crate::controllers::recipient::RecipientDbController;
 use crate::controllers::subscription::SubscriptionDbController;
+use crate::controllers::template::DbTemplateSource;
 use crate::http::ingest::HttpIngestExtensions;
 use crate::http::management::HttpManagementExtensions;
 use crate::http::public::HttpPublicExtensions;
@@ -27,7 +29,6 @@ use notifico_core::pipeline::event::EventHandler;
 use notifico_core::pipeline::executor::PipelineExecutor;
 use notifico_core::queue::{ReceiverChannel, SenderChannel};
 use notifico_core::recorder::BaseRecorder;
-use notifico_template::source::db::DbTemplateSource;
 use notifico_template::Templater;
 use notifico_transports::all_transports;
 use sea_orm::{ConnectOptions, Database};

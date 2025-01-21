@@ -1,5 +1,4 @@
 use notifico_core::error::EngineError;
-use sea_orm::DbErr;
 use std::io;
 use std::io::ErrorKind;
 use thiserror::Error;
@@ -10,12 +9,12 @@ pub enum TemplaterError {
     TemplateNotFound,
     #[error("I/O error: {0}")]
     Io(io::Error),
-    #[error("SeaORM error: {0}")]
-    Db(DbErr),
     #[error("Jinja error: {0}")]
     JinjaError(#[from] minijinja::Error),
     #[error("Invalid template format")]
     InvalidTemplateFormat,
+    #[error("Internal error: {0}")]
+    InternalError(#[from] anyhow::Error),
 }
 
 impl From<TemplaterError> for EngineError {
@@ -30,11 +29,5 @@ impl From<io::Error> for TemplaterError {
             ErrorKind::NotFound => Self::TemplateNotFound,
             _ => Self::Io(value),
         }
-    }
-}
-
-impl From<DbErr> for TemplaterError {
-    fn from(value: DbErr) -> Self {
-        TemplaterError::Db(value)
     }
 }

@@ -2,13 +2,13 @@ mod context;
 mod step;
 
 use crate::controllers::subscription::SubscriptionDbController;
+use crate::http::auth::Claims;
 use crate::plugin::context::EMAIL_LIST_UNSUBSCRIBE;
 use crate::plugin::step::{Step, STEPS};
 use jsonwebtoken::{EncodingKey, Header};
 use migration::async_trait::async_trait;
 use notifico_core::engine::{EnginePlugin, StepOutput};
 use notifico_core::error::EngineError;
-use notifico_core::http::auth::Claims;
 use notifico_core::pipeline::context::PipelineContext;
 use notifico_core::step::SerializedStep;
 use serde_json::Value;

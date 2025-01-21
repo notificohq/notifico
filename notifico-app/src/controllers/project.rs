@@ -1,9 +1,7 @@
-use crate::entity;
-use async_trait::async_trait;
-use notifico_core::error::EngineError;
-use notifico_core::http::admin::{
-    AdminCrudTable, ItemWithId, ListQueryParams, ListableTrait, PaginatedResult,
+use crate::crud_table::{
+    AdminCrudError, AdminCrudTable, ItemWithId, ListQueryParams, ListableTrait, PaginatedResult,
 };
+use crate::entity;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, PaginatorTrait, Set};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -30,11 +28,10 @@ impl From<entity::project::Model> for Project {
     }
 }
 
-#[async_trait]
 impl AdminCrudTable for ProjectController {
     type Item = Project;
 
-    async fn get_by_id(&self, id: Uuid) -> Result<Option<Self::Item>, EngineError> {
+    async fn get_by_id(&self, id: Uuid) -> Result<Option<Self::Item>, AdminCrudError> {
         let query = entity::project::Entity::find_by_id(id)
             .one(&self.db)
             .await?;
@@ -44,7 +41,7 @@ impl AdminCrudTable for ProjectController {
     async fn list(
         &self,
         params: ListQueryParams,
-    ) -> Result<PaginatedResult<ItemWithId<Self::Item>>, EngineError> {
+    ) -> Result<PaginatedResult<ItemWithId<Self::Item>>, AdminCrudError> {
         let params = params.try_into()?;
         let query = entity::project::Entity::find()
             .apply_params(&params)
@@ -67,7 +64,7 @@ impl AdminCrudTable for ProjectController {
         })
     }
 
-    async fn create(&self, entity: Self::Item) -> Result<ItemWithId<Self::Item>, EngineError> {
+    async fn create(&self, entity: Self::Item) -> Result<ItemWithId<Self::Item>, AdminCrudError> {
         let id = Uuid::now_v7();
 
         entity::project::ActiveModel {
@@ -89,7 +86,7 @@ impl AdminCrudTable for ProjectController {
         &self,
         id: Uuid,
         entity: Self::Item,
-    ) -> Result<ItemWithId<Self::Item>, EngineError> {
+    ) -> Result<ItemWithId<Self::Item>, AdminCrudError> {
         entity::project::ActiveModel {
             id: Set(id),
             name: Set(entity.name.to_string()),
@@ -104,7 +101,7 @@ impl AdminCrudTable for ProjectController {
         })
     }
 
-    async fn delete(&self, id: Uuid) -> Result<(), EngineError> {
+    async fn delete(&self, id: Uuid) -> Result<(), AdminCrudError> {
         if id.is_nil() {
             return Ok(());
         }

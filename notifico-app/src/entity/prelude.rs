@@ -9,3 +9,4 @@ pub use super::pipeline_event_j::Entity as PipelineEventJ;
 pub use super::project::Entity as Project;
 pub use super::recipient::Entity as Recipient;
 pub use super::subscription::Entity as Subscription;
+pub use super::template::Entity as Template;

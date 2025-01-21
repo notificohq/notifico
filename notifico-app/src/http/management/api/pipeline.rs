@@ -1,11 +1,9 @@
 use crate::controllers::pipeline::{PipelineDbController, PipelineItem};
+use crate::crud_table::{AdminCrudTable, ItemWithId, ListQueryParams, RefineListQueryParams};
 use axum::extract::{Path, Query};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::{Extension, Json};
-use notifico_core::http::admin::{
-    AdminCrudTable, ItemWithId, ListQueryParams, RefineListQueryParams,
-};
 use notifico_core::pipeline::Pipeline;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;

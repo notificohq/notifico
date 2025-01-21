@@ -10,10 +10,3 @@ sea-orm-cli migrate -d migration up
 sea-orm-cli generate entity -o src/entity --ignore-tables notifico_migrations
 rm "$TEMPDB"
 popd
-
-pushd notifico-template
-touch "$TEMPDB"
-sea-orm-cli migrate -d migration up
-sea-orm-cli generate entity -o src/entity --ignore-tables template_migrations
-rm "$TEMPDB"
-popd

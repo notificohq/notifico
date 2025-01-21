@@ -1,9 +1,7 @@
-use crate::entity::prelude::*;
-use async_trait::async_trait;
-use notifico_core::error::EngineError;
-use notifico_core::http::admin::{
-    AdminCrudTable, ItemWithId, ListQueryParams, ListableTrait, PaginatedResult,
+use crate::crud_table::{
+    AdminCrudError, AdminCrudTable, ItemWithId, ListQueryParams, ListableTrait, PaginatedResult,
 };
+use crate::entity::prelude::*;
 use sea_orm::ActiveValue::{Set, Unchanged};
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, PaginatorTrait};
 use serde::{Deserialize, Serialize};
@@ -44,18 +42,17 @@ impl From<crate::entity::group::Model> for ItemWithId<GroupItem> {
     }
 }
 
-#[async_trait]
 impl AdminCrudTable for GroupDbController {
     type Item = GroupItem;
 
-    async fn get_by_id(&self, id: Uuid) -> Result<Option<Self::Item>, EngineError> {
+    async fn get_by_id(&self, id: Uuid) -> Result<Option<Self::Item>, AdminCrudError> {
         Ok(Group::find_by_id(id).one(&self.db).await?.map(|m| m.into()))
     }
 
     async fn list(
         &self,
         params: ListQueryParams,
-    ) -> Result<PaginatedResult<ItemWithId<Self::Item>>, EngineError> {
+    ) -> Result<PaginatedResult<ItemWithId<Self::Item>>, AdminCrudError> {
         let params = params.try_into()?;
         let items = Group::find()
             .apply_params(&params)?
@@ -71,7 +68,7 @@ impl AdminCrudTable for GroupDbController {
         })
     }
 
-    async fn create(&self, item: Self::Item) -> Result<ItemWithId<Self::Item>, EngineError> {
+    async fn create(&self, item: Self::Item) -> Result<ItemWithId<Self::Item>, AdminCrudError> {
         let id = Uuid::now_v7();
         crate::entity::group::ActiveModel {
             id: Set(id),
@@ -87,7 +84,7 @@ impl AdminCrudTable for GroupDbController {
         &self,
         id: Uuid,
         item: Self::Item,
-    ) -> Result<ItemWithId<Self::Item>, EngineError> {
+    ) -> Result<ItemWithId<Self::Item>, AdminCrudError> {
         crate::entity::group::ActiveModel {
             id: Unchanged(id),
             project_id: Set(item.project_id),
@@ -98,7 +95,7 @@ impl AdminCrudTable for GroupDbController {
         Ok(ItemWithId { id, item })
     }
 
-    async fn delete(&self, id: Uuid) -> Result<(), EngineError> {
+    async fn delete(&self, id: Uuid) -> Result<(), AdminCrudError> {
         Group::delete_by_id(id).exec(&self.db).await?;
         Ok(())
     }

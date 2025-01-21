@@ -1,9 +1,9 @@
+use crate::crud_table::{
+    AdminCrudError, AdminCrudTable, ItemWithId, ListQueryParams, ListableTrait, PaginatedResult,
+};
 use crate::entity;
 use async_trait::async_trait;
 use notifico_core::error::EngineError;
-use notifico_core::http::admin::{
-    AdminCrudTable, ItemWithId, ListQueryParams, ListableTrait, PaginatedResult,
-};
 use notifico_core::pipeline::storage::PipelineStorage;
 use notifico_core::pipeline::Pipeline;
 use sea_orm::prelude::Uuid;
@@ -29,7 +29,7 @@ impl PipelineDbController {
         &self,
         pipeline_id: Uuid,
         event_id: Vec<Uuid>,
-    ) -> Result<(), EngineError> {
+    ) -> Result<(), AdminCrudError> {
         let current_events = entity::pipeline_event_j::Entity::find()
             .filter(entity::pipeline_event_j::Column::PipelineId.eq(pipeline_id))
             .all(&self.db)
@@ -67,11 +67,10 @@ impl PipelineDbController {
     }
 }
 
-#[async_trait]
 impl AdminCrudTable for PipelineDbController {
     type Item = PipelineItem;
 
-    async fn get_by_id(&self, id: Uuid) -> Result<Option<Self::Item>, EngineError> {
+    async fn get_by_id(&self, id: Uuid) -> Result<Option<Self::Item>, AdminCrudError> {
         let events = entity::pipeline::Entity::find_by_id(id)
             .find_with_related(entity::event::Entity)
             .all(&self.db)
@@ -95,7 +94,7 @@ impl AdminCrudTable for PipelineDbController {
     async fn list(
         &self,
         params: ListQueryParams,
-    ) -> Result<PaginatedResult<ItemWithId<Self::Item>>, EngineError> {
+    ) -> Result<PaginatedResult<ItemWithId<Self::Item>>, AdminCrudError> {
         let params = params.try_into()?;
         let pipelines = entity::pipeline::Entity::find()
             .apply_params(&params)
@@ -104,13 +103,13 @@ impl AdminCrudTable for PipelineDbController {
             .all(&self.db)
             .await?;
 
-        let results: Result<Vec<ItemWithId<PipelineItem>>, EngineError> = pipelines
+        let results: Result<Vec<ItemWithId<PipelineItem>>, AdminCrudError> = pipelines
             .into_iter()
             .map(|(p, e)| {
                 Ok(ItemWithId {
                     id: p.id,
                     item: PipelineItem {
-                        pipeline: p.try_into()?,
+                        pipeline: p.try_into().map_err(|e| AdminCrudError::from(e))?,
                         event_ids: e.into_iter().map(|e| e.id).collect(),
                         enabled: true, // Assume all pipelines are enabled for now
                     },
@@ -128,7 +127,7 @@ impl AdminCrudTable for PipelineDbController {
         })
     }
 
-    async fn create(&self, item: Self::Item) -> Result<ItemWithId<Self::Item>, EngineError> {
+    async fn create(&self, item: Self::Item) -> Result<ItemWithId<Self::Item>, AdminCrudError> {
         let id = Uuid::now_v7();
         entity::pipeline::ActiveModel {
             id: Set(id),
@@ -148,7 +147,7 @@ impl AdminCrudTable for PipelineDbController {
         &self,
         id: Uuid,
         item: Self::Item,
-    ) -> Result<ItemWithId<Self::Item>, EngineError> {
+    ) -> Result<ItemWithId<Self::Item>, AdminCrudError> {
         entity::pipeline::ActiveModel {
             id: Unchanged(id),
             project_id: Set(item.pipeline.project_id),
@@ -163,7 +162,7 @@ impl AdminCrudTable for PipelineDbController {
         Ok(ItemWithId { id, item })
     }
 
-    async fn delete(&self, id: Uuid) -> Result<(), EngineError> {
+    async fn delete(&self, id: Uuid) -> Result<(), AdminCrudError> {
         entity::pipeline::Entity::delete_by_id(id)
             .exec(&self.db)
             .await?;
@@ -184,7 +183,8 @@ impl PipelineStorage for PipelineDbController {
             .filter(entity::pipeline::Column::ProjectId.eq(project))
             .filter(entity::event::Column::Name.eq(event_name))
             .all(&self.db)
-            .await?;
+            .await
+            .map_err(|e| anyhow::Error::new(e))?;
 
         models.into_iter().map(|m| m.try_into()).collect()
     }

@@ -1,10 +1,9 @@
+use crate::crud_table::{
+    AdminCrudError, AdminCrudTable, ItemWithId, ListQueryParams, ListableTrait, PaginatedResult,
+};
 use crate::entity::subscription;
 use crate::entity::subscription::Entity as Subscription;
-use async_trait::async_trait;
 use notifico_core::error::EngineError;
-use notifico_core::http::admin::{
-    AdminCrudTable, ItemWithId, ListQueryParams, ListableTrait, PaginatedResult,
-};
 use sea_orm::ActiveValue::Set;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityOrSelect, EntityTrait, PaginatorTrait,
@@ -36,13 +35,16 @@ impl SubscriptionDbController {
             .filter(subscription::Column::Event.eq(event))
             .filter(subscription::Column::Channel.eq(channel))
             .one(&self.db)
-            .await?;
+            .await
+            .map_err(|e| EngineError::InternalError(anyhow::Error::new(e)))?;
 
         match current_model {
             Some(m) => {
                 let mut am = subscription::ActiveModel::from(m);
                 am.is_subscribed = Set(is_subscribed);
-                am.update(&self.db).await?
+                am.update(&self.db)
+                    .await
+                    .map_err(|e| EngineError::InternalError(anyhow::Error::new(e)))?;
             }
             None => {
                 let am = subscription::ActiveModel {
@@ -52,7 +54,9 @@ impl SubscriptionDbController {
                     channel: Set(channel.to_string()),
                     is_subscribed: Set(is_subscribed),
                 };
-                am.insert(&self.db).await?
+                am.insert(&self.db)
+                    .await
+                    .map_err(|e| EngineError::InternalError(anyhow::Error::new(e)))?;
             }
         };
         Ok(())
@@ -104,11 +108,10 @@ impl From<subscription::Model> for ItemWithId<SubscriptionItem> {
     }
 }
 
-#[async_trait]
 impl AdminCrudTable for SubscriptionDbController {
     type Item = SubscriptionItem;
 
-    async fn get_by_id(&self, id: Uuid) -> Result<Option<Self::Item>, EngineError> {
+    async fn get_by_id(&self, id: Uuid) -> Result<Option<Self::Item>, AdminCrudError> {
         Ok(Subscription::find_by_id(id)
             .one(&self.db)
             .await?
@@ -118,7 +121,7 @@ impl AdminCrudTable for SubscriptionDbController {
     async fn list(
         &self,
         params: ListQueryParams,
-    ) -> Result<PaginatedResult<ItemWithId<Self::Item>>, EngineError> {
+    ) -> Result<PaginatedResult<ItemWithId<Self::Item>>, AdminCrudError> {
         let params = params.try_into()?;
         let total = Subscription::find()
             .apply_filter(&params)?
@@ -136,7 +139,7 @@ impl AdminCrudTable for SubscriptionDbController {
         })
     }
 
-    async fn create(&self, _entity: Self::Item) -> Result<ItemWithId<Self::Item>, EngineError> {
+    async fn create(&self, _entity: Self::Item) -> Result<ItemWithId<Self::Item>, AdminCrudError> {
         todo!()
     }
 
@@ -144,11 +147,11 @@ impl AdminCrudTable for SubscriptionDbController {
         &self,
         _id: Uuid,
         _entity: Self::Item,
-    ) -> Result<ItemWithId<Self::Item>, EngineError> {
+    ) -> Result<ItemWithId<Self::Item>, AdminCrudError> {
         todo!()
     }
 
-    async fn delete(&self, _id: Uuid) -> Result<(), EngineError> {
+    async fn delete(&self, _id: Uuid) -> Result<(), AdminCrudError> {
         todo!()
     }
 }

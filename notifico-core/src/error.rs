@@ -1,6 +1,3 @@
-use anyhow::Error;
-use sea_orm::DbErr;
-use std::error::Error as StdError;
 use thiserror::Error;
 use url::Url;
 
@@ -25,7 +22,7 @@ pub enum EngineError {
     #[error("Missing template parameter: {0}")]
     MissingTemplateParameter(String),
     #[error("Invalid rendered template format: {0}")]
-    InvalidRenderedTemplateFormat(Box<dyn StdError>),
+    InvalidRenderedTemplateFormat(anyhow::Error),
     #[error("Internal error: {0}")]
     InternalError(#[from] anyhow::Error),
     #[error("Invalid step: {0}")]
@@ -40,10 +37,4 @@ pub enum EngineError {
     MessageNotFound(u16),
     #[error("Invalid attachment URL: {0}")]
     InvalidAttachmentUrl(Url),
-}
-
-impl From<DbErr> for EngineError {
-    fn from(value: DbErr) -> Self {
-        Self::InternalError(Error::new(value))
-    }
 }

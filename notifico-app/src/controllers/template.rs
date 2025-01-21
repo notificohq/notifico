@@ -1,12 +1,11 @@
-use crate::error::TemplaterError;
-use crate::source::TemplateSource;
-use crate::{entity, PreRenderedTemplate, TemplateSelector};
-use async_trait::async_trait;
-use migration::{Migrator, MigratorTrait};
-use notifico_core::error::EngineError;
-use notifico_core::http::admin::{
-    AdminCrudTable, ItemWithId, ListQueryParams, ListableTrait, PaginatedResult,
+use crate::crud_table::{
+    AdminCrudError, AdminCrudTable, ItemWithId, ListQueryParams, ListableTrait, PaginatedResult,
 };
+use crate::entity;
+use async_trait::async_trait;
+use notifico_template::error::TemplaterError;
+use notifico_template::source::TemplateSource;
+use notifico_template::{PreRenderedTemplate, TemplateSelector};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
     Set,
@@ -23,10 +22,6 @@ impl DbTemplateSource {
     pub fn new(db: DatabaseConnection) -> Self {
         Self { db }
     }
-
-    pub async fn setup(&self) -> anyhow::Result<()> {
-        Ok(Migrator::up(&self.db, None).await?)
-    }
 }
 
 #[async_trait]
@@ -41,7 +36,8 @@ impl TemplateSource for DbTemplateSource {
                 .filter(entity::template::Column::ProjectId.eq(project_id))
                 .filter(entity::template::Column::Name.eq(name))
                 .one(&self.db)
-                .await?
+                .await
+                .map_err(anyhow::Error::new)?
                 .ok_or(TemplaterError::TemplateNotFound)?,
             _ => return Err(TemplaterError::TemplateNotFound),
         }
@@ -55,11 +51,10 @@ impl From<entity::template::Model> for PreRenderedTemplate {
     }
 }
 
-#[async_trait]
 impl AdminCrudTable for DbTemplateSource {
     type Item = TemplateItem;
 
-    async fn get_by_id(&self, id: Uuid) -> Result<Option<Self::Item>, EngineError> {
+    async fn get_by_id(&self, id: Uuid) -> Result<Option<Self::Item>, AdminCrudError> {
         Ok(entity::template::Entity::find_by_id(id)
             .one(&self.db)
             .await?
@@ -69,24 +64,23 @@ impl AdminCrudTable for DbTemplateSource {
     async fn list(
         &self,
         params: ListQueryParams,
-    ) -> Result<PaginatedResult<ItemWithId<Self::Item>>, EngineError> {
+    ) -> Result<PaginatedResult<ItemWithId<Self::Item>>, AdminCrudError> {
         let params = params.try_into()?;
         let items = entity::template::Entity::find();
         Ok(PaginatedResult {
             items: items
                 .clone()
-                .apply_params(&params)
-                .unwrap()
+                .apply_params(&params)?
                 .all(&self.db)
                 .await?
                 .into_iter()
                 .map(|m| m.into())
                 .collect(),
-            total: items.apply_filter(&params).unwrap().count(&self.db).await?,
+            total: items.apply_filter(&params)?.count(&self.db).await?,
         })
     }
 
-    async fn create(&self, item: Self::Item) -> Result<ItemWithId<Self::Item>, EngineError> {
+    async fn create(&self, item: Self::Item) -> Result<ItemWithId<Self::Item>, AdminCrudError> {
         let id = Uuid::now_v7();
         entity::template::ActiveModel {
             id: Set(id),
@@ -104,7 +98,7 @@ impl AdminCrudTable for DbTemplateSource {
         &self,
         id: Uuid,
         item: Self::Item,
-    ) -> Result<ItemWithId<Self::Item>, EngineError> {
+    ) -> Result<ItemWithId<Self::Item>, AdminCrudError> {
         entity::template::ActiveModel {
             id: Set(id),
             project_id: Set(item.project_id),
@@ -117,7 +111,7 @@ impl AdminCrudTable for DbTemplateSource {
         Ok(ItemWithId { id, item })
     }
 
-    async fn delete(&self, id: Uuid) -> Result<(), EngineError> {
+    async fn delete(&self, id: Uuid) -> Result<(), AdminCrudError> {
         entity::template::Entity::delete_by_id(id)
             .exec(&self.db)
             .await?;

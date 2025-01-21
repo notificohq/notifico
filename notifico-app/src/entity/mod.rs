@@ -11,3 +11,4 @@ pub mod pipeline_event_j;
 pub mod project;
 pub mod recipient;
 pub mod subscription;
+pub mod template;
