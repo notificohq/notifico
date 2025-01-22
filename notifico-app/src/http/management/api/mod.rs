@@ -6,6 +6,7 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 use utoipa_swagger_ui::{Config, SwaggerUi};
 
+mod channel;
 mod event;
 mod group;
 mod pipeline;
@@ -20,6 +21,8 @@ struct ApiDoc;
 
 pub(crate) fn get_router(ext: HttpManagementExtensions) -> Router {
     let router = OpenApiRouter::with_openapi(ApiDoc::openapi())
+        // Channels
+        .routes(routes!(channel::list))
         // Subscriptions
         .routes(routes!(subscription::list))
         .routes(routes!(subscription::get))
@@ -54,6 +57,7 @@ pub(crate) fn get_router(ext: HttpManagementExtensions) -> Router {
         .layer(Extension(ext.template_controller))
         .layer(Extension(ext.event_controller))
         .layer(Extension(ext.group_controller))
+        .layer(Extension(ext.transport_registry))
         .layer(Extension(ext.secret_key))
         .layer(CorsLayer::permissive());
 

@@ -29,6 +29,7 @@ use notifico_core::pipeline::event::EventHandler;
 use notifico_core::pipeline::executor::PipelineExecutor;
 use notifico_core::queue::{ReceiverChannel, SenderChannel};
 use notifico_core::recorder::BaseRecorder;
+use notifico_core::transport::TransportRegistry;
 use notifico_template::Templater;
 use notifico_transports::all_transports;
 use sea_orm::{ConnectOptions, Database};
@@ -169,6 +170,34 @@ async fn main() {
 
             let secret_key = Arc::new(SecretKey(args.secret_key.as_bytes().to_vec()));
 
+            // Create Engine with plugins
+            let mut transport_registry = TransportRegistry::new();
+
+            let engine = {
+                let mut engine = Engine::new();
+                engine.add_plugin(Arc::new(CorePlugin::new(
+                    pipelines_tx.clone(),
+                    recipient_controller.clone(),
+                )));
+                engine.add_plugin(Arc::new(Templater::new(templater_source.clone())));
+                engine.add_plugin(subman.clone());
+
+                let attachment_plugin = Arc::new(AttachmentPlugin::new(false));
+                engine.add_plugin(attachment_plugin.clone());
+
+                for (engine_plugin, transport) in all_transports(
+                    credentials.clone(),
+                    recorder.clone(),
+                    attachment_plugin.clone(),
+                ) {
+                    engine.add_plugin(engine_plugin);
+                    transport_registry.register(transport);
+                }
+                engine
+            };
+
+            let transport_registry = Arc::new(transport_registry);
+
             // Spawn HTTP servers
             if components.is_empty() || components.contains(COMPONENT_INGEST) {
                 info!("Starting HTTP ingest server on {}", args.ingest);
@@ -201,35 +230,13 @@ async fn main() {
                     event_controller,
                     group_controller,
                     secret_key: secret_key.clone(),
+                    transport_registry,
                 };
 
                 http::management::start(args.management, ext).await;
             }
 
             if components.is_empty() || components.contains(COMPONENT_WORKER) {
-                // Create Engine with plugins
-                let engine = {
-                    let mut engine = Engine::new();
-                    engine.add_plugin(Arc::new(CorePlugin::new(
-                        pipelines_tx.clone(),
-                        recipient_controller,
-                    )));
-                    engine.add_plugin(Arc::new(Templater::new(templater_source.clone())));
-                    engine.add_plugin(subman.clone());
-
-                    let attachment_plugin = Arc::new(AttachmentPlugin::new(false));
-                    engine.add_plugin(attachment_plugin.clone());
-
-                    for (engine_plugin, _) in all_transports(
-                        credentials.clone(),
-                        recorder.clone(),
-                        attachment_plugin.clone(),
-                    ) {
-                        engine.add_plugin(engine_plugin);
-                    }
-                    engine
-                };
-
                 // Main loop
                 let executor = Arc::new(PipelineExecutor::new(engine));
                 let event_handler = Arc::new(EventHandler::new(

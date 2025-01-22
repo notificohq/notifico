@@ -27,6 +27,7 @@ pub trait SimpleTransport: Send + Sync {
     }
 
     fn supports_contact(&self, r#type: &str) -> bool;
+    fn supported_channels(&self) -> Vec<Cow<'static, str>>;
 }
 
 pub struct SimpleTransportWrapper {
@@ -135,5 +136,9 @@ impl Transport for SimpleTransportWrapper {
     fn send_step(&self) -> Cow<'static, str> {
         let transport = self.inner.name().to_owned();
         Cow::Owned(transport + ".send")
+    }
+
+    fn supported_channels(&self) -> Vec<Cow<'static, str>> {
+        self.inner.supported_channels()
     }
 }

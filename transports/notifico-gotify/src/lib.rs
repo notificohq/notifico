@@ -8,6 +8,7 @@ use notifico_core::simpletransport::SimpleTransport;
 use notifico_core::templater::RenderedTemplate;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
+use std::borrow::Cow;
 
 mod credentials;
 
@@ -72,6 +73,10 @@ impl SimpleTransport for GotifyTransport {
 
     fn supports_contact(&self, _type: &str) -> bool {
         false
+    }
+
+    fn supported_channels(&self) -> Vec<Cow<'static, str>> {
+        vec!["gotify".into()]
     }
 }
 

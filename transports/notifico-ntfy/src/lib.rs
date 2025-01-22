@@ -10,6 +10,7 @@ use notifico_core::simpletransport::SimpleTransport;
 use notifico_core::templater::RenderedTemplate;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::borrow::Cow;
 use std::sync::Arc;
 use url::Url;
 
@@ -90,6 +91,10 @@ impl SimpleTransport for NtfyTransport {
 
     fn supports_contact(&self, r#type: &str) -> bool {
         r#type == "ntfy"
+    }
+
+    fn supported_channels(&self) -> Vec<Cow<'static, str>> {
+        vec!["ntfy".into()]
     }
 }
 

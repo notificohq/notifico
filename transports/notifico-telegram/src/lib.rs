@@ -10,6 +10,7 @@ use notifico_core::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::borrow::Cow;
 use std::sync::Arc;
 
 const API_URL: &str = "https://api.telegram.org/bot";
@@ -153,6 +154,10 @@ impl SimpleTransport for TelegramTransport {
 
     fn supports_contact(&self, r#type: &str) -> bool {
         r#type == "telegram"
+    }
+
+    fn supported_channels(&self) -> Vec<Cow<'static, str>> {
+        vec!["telegram".into()]
     }
 }
 

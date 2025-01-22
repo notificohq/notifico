@@ -8,6 +8,7 @@ use notifico_core::simpletransport::SimpleTransport;
 use notifico_core::{error::EngineError, templater::RenderedTemplate};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::borrow::Cow;
 
 mod cloudapi;
 mod credentials;
@@ -66,6 +67,10 @@ impl SimpleTransport for WabaTransport {
 
     fn supports_contact(&self, r#type: &str) -> bool {
         r#type == "mobile_phone"
+    }
+
+    fn supported_channels(&self) -> Vec<Cow<'static, str>> {
+        vec!["whatsapp".into()]
     }
 }
 

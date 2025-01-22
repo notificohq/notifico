@@ -12,6 +12,7 @@ use axum::http::{StatusCode, Uri};
 use axum::response::{Html, IntoResponse, Response};
 use axum::Router;
 use notifico_core::http::SecretKey;
+use notifico_core::transport::TransportRegistry;
 use rust_embed::Embed;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -26,6 +27,7 @@ pub(crate) struct HttpManagementExtensions {
     pub template_controller: Arc<DbTemplateSource>,
     pub event_controller: Arc<EventDbController>,
     pub group_controller: Arc<GroupDbController>,
+    pub transport_registry: Arc<TransportRegistry>,
     pub secret_key: Arc<SecretKey>,
 }
 

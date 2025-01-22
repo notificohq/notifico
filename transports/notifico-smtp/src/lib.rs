@@ -22,6 +22,7 @@ use notifico_core::pipeline::context::{Message, PipelineContext};
 use notifico_core::recipient::{RawContact, TypedContact};
 use notifico_core::simpletransport::SimpleTransport;
 use serde::Deserialize;
+use std::borrow::Cow;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -101,6 +102,10 @@ impl SimpleTransport for EmailTransport {
 
     fn supports_contact(&self, r#type: &str) -> bool {
         r#type == "email"
+    }
+
+    fn supported_channels(&self) -> Vec<Cow<'static, str>> {
+        vec!["email".into()]
     }
 }
 

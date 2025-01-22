@@ -200,6 +200,10 @@ impl Transport for SmppPlugin {
     fn send_step(&self) -> Cow<'static, str> {
         "smpp.send".into()
     }
+
+    fn supported_channels(&self) -> Vec<Cow<'static, str>> {
+        vec!["sms".into()]
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone)]

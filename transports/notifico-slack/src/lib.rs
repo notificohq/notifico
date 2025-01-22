@@ -11,6 +11,7 @@ use notifico_core::recipient::{RawContact, TypedContact};
 use notifico_core::simpletransport::SimpleTransport;
 use notifico_core::templater::RenderedTemplate;
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 use std::sync::Arc;
 
 pub struct SlackTransport {
@@ -74,6 +75,10 @@ impl SimpleTransport for SlackTransport {
 
     fn supports_contact(&self, r#type: &str) -> bool {
         r#type == "slack"
+    }
+
+    fn supported_channels(&self) -> Vec<Cow<'static, str>> {
+        vec!["slack".into()]
     }
 }
 
