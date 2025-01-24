@@ -14,6 +14,7 @@ impl MigrationTrait for Migration {
                     .col(pk_uuid(Template::Id))
                     .col(uuid(Template::ProjectId))
                     .col(string(Template::Name))
+                    .col(string(Template::Description))
                     .col(string(Template::Channel))
                     .col(json_binary(Template::Template))
                     .foreign_key(
@@ -32,6 +33,7 @@ impl MigrationTrait for Migration {
                 Index::create()
                     .name("uniq_template_project_id_name")
                     .table(Template::Table)
+                    .unique()
                     .col(Template::ProjectId)
                     .col(Template::Name)
                     .to_owned(),
@@ -55,6 +57,7 @@ enum Template {
     Id,
     ProjectId,
     Name,
+    Description,
     Channel,
     Template,
 }

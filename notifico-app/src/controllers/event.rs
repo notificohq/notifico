@@ -57,6 +57,8 @@ impl AdminCrudTable for EventDbController {
             id: Set(id),
             project_id: Set(item.project_id),
             name: Set(item.name.clone()),
+            enabled: Set(item.enabled),
+            description: Set(item.description.clone()),
         }
         .insert(&self.db)
         .await?;
@@ -72,6 +74,8 @@ impl AdminCrudTable for EventDbController {
         entity::event::ActiveModel {
             id: Unchanged(id),
             name: Set(item.name.clone()),
+            enabled: Set(item.enabled),
+            description: Set(item.description.clone()),
             ..Default::default()
         }
         .update(&self.db)
@@ -96,6 +100,7 @@ pub struct Event {
     pub project_id: Uuid,
     pub name: String,
     pub enabled: bool,
+    pub description: String,
 }
 
 impl From<entity::event::Model> for Event {
@@ -103,7 +108,8 @@ impl From<entity::event::Model> for Event {
         Self {
             project_id: value.project_id,
             name: value.name,
-            enabled: true, // Assume all events are enabled by default
+            enabled: value.enabled,
+            description: value.description,
         }
     }
 }

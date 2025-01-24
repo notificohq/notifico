@@ -88,6 +88,7 @@ impl AdminCrudTable for DbTemplateSource {
             name: Set(item.name.clone()),
             channel: Set(item.channel.clone()),
             template: Set(serde_json::from_str(&item.template).unwrap()),
+            description: Set(item.description.clone()),
         }
         .insert(&self.db)
         .await?;
@@ -105,6 +106,7 @@ impl AdminCrudTable for DbTemplateSource {
             name: Set(item.name.clone()),
             channel: Set(item.channel.clone()),
             template: Set(serde_json::from_str(&item.template).unwrap()),
+            description: Set(item.description.clone()),
         }
         .update(&self.db)
         .await?;
@@ -125,6 +127,7 @@ pub struct TemplateItem {
     pub channel: String,
     pub name: String,
     pub template: String,
+    pub description: String,
 }
 
 impl From<entity::template::Model> for ItemWithId<TemplateItem> {
@@ -136,6 +139,7 @@ impl From<entity::template::Model> for ItemWithId<TemplateItem> {
                 template: serde_json::to_string_pretty(&value.template).unwrap(),
                 channel: value.channel,
                 name: value.name,
+                description: value.description,
             },
         }
     }

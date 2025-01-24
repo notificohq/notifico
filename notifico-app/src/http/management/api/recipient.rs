@@ -20,6 +20,7 @@ pub struct RecipientRestItem {
     extras: String,
     group_ids: Vec<Uuid>,
     contacts: Vec<String>,
+    description: String,
 }
 
 impl From<RecipientItem> for RecipientRestItem {
@@ -29,6 +30,7 @@ impl From<RecipientItem> for RecipientRestItem {
             extras: serde_json::to_string(&value.extras).unwrap(),
             group_ids: value.group_ids,
             contacts: value.contacts.into_iter().map(|c| c.to_string()).collect(),
+            description: value.description,
         }
     }
 }
@@ -44,6 +46,7 @@ impl From<RecipientRestItem> for RecipientItem {
                 .into_iter()
                 .map(|c| c.parse().unwrap())
                 .collect(),
+            description: value.description,
         }
     }
 }

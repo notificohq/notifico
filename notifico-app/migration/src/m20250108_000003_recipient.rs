@@ -14,6 +14,7 @@ impl MigrationTrait for Migration {
                     .col(pk_uuid(Recipient::Id))
                     .col(uuid(Recipient::ProjectId))
                     .col(json_binary(Recipient::Extras))
+                    .col(string(Recipient::Description))
                     .foreign_key(
                         ForeignKey::create()
                             .from(Recipient::Table, Recipient::ProjectId)
@@ -52,6 +53,7 @@ impl MigrationTrait for Migration {
                     .col(pk_uuid(Group::Id))
                     .col(uuid(Group::ProjectId))
                     .col(string(Group::Name))
+                    .col(string(Group::Description))
                     .foreign_key(
                         ForeignKey::create()
                             .from(Group::Table, Group::ProjectId)
@@ -141,6 +143,7 @@ enum Recipient {
     Table,
     Id,
     ProjectId,
+    Description,
     Extras,
 }
 
@@ -159,6 +162,7 @@ enum Group {
     Id,
     ProjectId,
     Name,
+    Description,
 }
 
 #[derive(DeriveIden)]

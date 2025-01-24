@@ -33,6 +33,7 @@ pub struct RecipientItem {
     pub project_id: Uuid,
     pub group_ids: Vec<Uuid>,
     pub contacts: Vec<RawContact>,
+    pub description: String,
 }
 
 impl AdminCrudTable for RecipientDbController {
@@ -45,7 +46,7 @@ impl AdminCrudTable for RecipientDbController {
         };
 
         let group_ids = GroupMembership::find()
-            .filter(crate::entity::group_membership::Column::RecipientId.eq(id))
+            .filter(entity::group_membership::Column::RecipientId.eq(id))
             .all(&self.db)
             .await?
             .into_iter()
@@ -53,7 +54,7 @@ impl AdminCrudTable for RecipientDbController {
             .collect();
 
         let contacts = Contact::find()
-            .filter(crate::entity::contact::Column::RecipientId.eq(id))
+            .filter(entity::contact::Column::RecipientId.eq(id))
             .all(&self.db)
             .await?
             .into_iter()
@@ -67,6 +68,7 @@ impl AdminCrudTable for RecipientDbController {
             contacts,
             extras,
             project_id: recipient.project_id,
+            description: recipient.description,
         }))
     }
 
@@ -111,6 +113,7 @@ impl AdminCrudTable for RecipientDbController {
                     group_ids,
                     contacts,
                     extras,
+                    description: recipient.description,
                 },
             });
         }
@@ -120,10 +123,11 @@ impl AdminCrudTable for RecipientDbController {
 
     async fn create(&self, item: Self::Item) -> Result<ItemWithId<Self::Item>, AdminCrudError> {
         let id = Uuid::now_v7();
-        crate::entity::recipient::ActiveModel {
+        entity::recipient::ActiveModel {
             id: Set(id),
             project_id: Set(item.project_id),
             extras: Set(serde_json::to_value(item.extras.clone()).unwrap()),
+            description: Set(item.description.clone()),
         }
         .insert(&self.db)
         .await?;
@@ -139,10 +143,11 @@ impl AdminCrudTable for RecipientDbController {
         id: Uuid,
         item: Self::Item,
     ) -> Result<ItemWithId<Self::Item>, AdminCrudError> {
-        crate::entity::recipient::ActiveModel {
+        entity::recipient::ActiveModel {
             id: Unchanged(id),
             project_id: Set(item.project_id),
             extras: Set(serde_json::to_value(item.extras.clone()).unwrap()),
+            description: Set(item.description.clone()),
         }
         .update(&self.db)
         .await?;

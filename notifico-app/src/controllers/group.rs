@@ -22,6 +22,7 @@ impl GroupDbController {
 pub struct GroupItem {
     project_id: Uuid,
     name: String,
+    description: String,
 }
 
 impl From<crate::entity::group::Model> for GroupItem {
@@ -29,6 +30,7 @@ impl From<crate::entity::group::Model> for GroupItem {
         Self {
             project_id: value.project_id,
             name: value.name,
+            description: value.description,
         }
     }
 }
@@ -74,6 +76,7 @@ impl AdminCrudTable for GroupDbController {
             id: Set(id),
             project_id: Set(item.project_id),
             name: Set(item.name.clone()),
+            description: Set(item.description.clone()),
         }
         .insert(&self.db)
         .await?;
@@ -89,6 +92,7 @@ impl AdminCrudTable for GroupDbController {
             id: Unchanged(id),
             project_id: Set(item.project_id),
             name: Set(item.name.clone()),
+            description: Set(item.description.clone()),
         }
         .update(&self.db)
         .await?;

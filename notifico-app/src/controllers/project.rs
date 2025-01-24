@@ -9,7 +9,7 @@ use uuid::Uuid;
 
 #[derive(Clone, Debug, Serialize, Deserialize, ToSchema)]
 pub struct Project {
-    pub name: String,
+    pub description: String,
 }
 
 pub struct ProjectController {
@@ -24,7 +24,9 @@ impl ProjectController {
 
 impl From<entity::project::Model> for Project {
     fn from(value: entity::project::Model) -> Self {
-        Project { name: value.name }
+        Project {
+            description: value.description,
+        }
     }
 }
 
@@ -69,7 +71,7 @@ impl AdminCrudTable for ProjectController {
 
         entity::project::ActiveModel {
             id: Set(id),
-            name: Set(entity.name.to_string()),
+            description: Set(entity.description.to_string()),
         }
         .insert(&self.db)
         .await?;
@@ -77,7 +79,7 @@ impl AdminCrudTable for ProjectController {
         Ok(ItemWithId {
             id,
             item: Project {
-                name: entity.name.to_string(),
+                description: entity.description.to_string(),
             },
         })
     }
@@ -89,14 +91,14 @@ impl AdminCrudTable for ProjectController {
     ) -> Result<ItemWithId<Self::Item>, AdminCrudError> {
         entity::project::ActiveModel {
             id: Set(id),
-            name: Set(entity.name.to_string()),
+            description: Set(entity.description.to_string()),
         }
         .update(&self.db)
         .await?;
         Ok(ItemWithId {
             id,
             item: Project {
-                name: entity.name.to_string(),
+                description: entity.description.to_string(),
             },
         })
     }
@@ -105,13 +107,9 @@ impl AdminCrudTable for ProjectController {
         if id.is_nil() {
             return Ok(());
         }
-
-        entity::project::ActiveModel {
-            id: Set(id),
-            ..Default::default()
-        }
-        .delete(&self.db)
-        .await?;
+        entity::project::Entity::delete_by_id(id)
+            .exec(&self.db)
+            .await?;
         Ok(())
     }
 }

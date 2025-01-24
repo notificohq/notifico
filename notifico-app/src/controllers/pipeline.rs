@@ -80,9 +80,10 @@ impl AdminCrudTable for PipelineDbController {
             .into_iter()
             .map(|(p, e)| {
                 Ok(PipelineItem {
-                    pipeline: p.try_into()?,
+                    pipeline: p.clone().try_into()?,
                     event_ids: e.into_iter().map(|e| e.id).collect(),
-                    enabled: true, // Assume all pipelines are enabled for now
+                    enabled: p.enabled,
+                    description: p.description,
                 })
             })
             .collect();
@@ -109,9 +110,10 @@ impl AdminCrudTable for PipelineDbController {
                 Ok(ItemWithId {
                     id: p.id,
                     item: PipelineItem {
-                        pipeline: p.try_into().map_err(|e| AdminCrudError::from(e))?,
+                        pipeline: p.clone().try_into().map_err(|e| AdminCrudError::from(e))?,
                         event_ids: e.into_iter().map(|e| e.id).collect(),
-                        enabled: true, // Assume all pipelines are enabled for now
+                        enabled: p.enabled,
+                        description: p.description,
                     },
                 })
             })
@@ -133,6 +135,8 @@ impl AdminCrudTable for PipelineDbController {
             id: Set(id),
             project_id: Set(item.pipeline.project_id),
             steps: Set(serde_json::to_value(item.pipeline.steps.clone()).unwrap()),
+            description: Set(item.description.clone()),
+            enabled: Set(item.enabled),
         }
         .insert(&self.db)
         .await?;
@@ -152,6 +156,8 @@ impl AdminCrudTable for PipelineDbController {
             id: Unchanged(id),
             project_id: Set(item.pipeline.project_id),
             steps: Set(serde_json::to_value(item.pipeline.steps.clone()).unwrap()),
+            enabled: Set(item.enabled),
+            description: Set(item.description.clone()),
         }
         .update(&self.db)
         .await?;
@@ -207,4 +213,5 @@ pub struct PipelineItem {
     pub pipeline: Pipeline,
     pub event_ids: Vec<Uuid>,
     pub enabled: bool,
+    pub description: String,
 }

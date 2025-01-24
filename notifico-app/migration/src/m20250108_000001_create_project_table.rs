@@ -14,7 +14,7 @@ impl MigrationTrait for Migration {
                     .table(Project::Table)
                     .if_not_exists()
                     .col(pk_uuid(Project::Id))
-                    .col(string(Project::Name))
+                    .col(string(Project::Description))
                     .to_owned(),
             )
             .await?;
@@ -23,7 +23,7 @@ impl MigrationTrait for Migration {
 
         ActiveModel {
             id: Set(Uuid::nil()),
-            name: Set("Default Project".to_string()),
+            description: Set("Default Project".to_string()),
         }
         .insert(db)
         .await?;
@@ -36,7 +36,7 @@ impl MigrationTrait for Migration {
 enum Project {
     Table,
     Id,
-    Name,
+    Description,
 }
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
@@ -44,7 +44,7 @@ enum Project {
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
-    pub name: String,
+    pub description: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

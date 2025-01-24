@@ -14,6 +14,8 @@ impl MigrationTrait for Migration {
                     .col(pk_uuid(Event::Id))
                     .col(uuid(Event::ProjectId))
                     .col(string(Event::Name))
+                    .col(string(Event::Description))
+                    .col(boolean(Event::Enabled))
                     .foreign_key(
                         ForeignKey::create()
                             .from(Event::Table, Event::ProjectId)
@@ -45,7 +47,9 @@ impl MigrationTrait for Migration {
                     .if_not_exists()
                     .col(pk_uuid(Pipeline::Id))
                     .col(uuid(Pipeline::ProjectId))
+                    .col(string(Pipeline::Description))
                     .col(json_binary(Pipeline::Steps))
+                    .col(boolean(Pipeline::Enabled))
                     .foreign_key(
                         ForeignKey::create()
                             .from(Pipeline::Table, Pipeline::ProjectId)
@@ -100,6 +104,8 @@ enum Event {
     Id,
     ProjectId,
     Name,
+    Description,
+    Enabled,
 }
 
 #[derive(DeriveIden)]
@@ -107,7 +113,9 @@ enum Pipeline {
     Table,
     Id,
     ProjectId,
+    Description,
     Steps,
+    Enabled,
 }
 
 #[derive(DeriveIden)]

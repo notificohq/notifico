@@ -16,6 +16,7 @@ pub struct RestPipelineItem {
     steps: String,
     event_ids: Vec<Uuid>,
     enabled: bool,
+    description: String,
 }
 
 impl From<PipelineItem> for RestPipelineItem {
@@ -25,6 +26,7 @@ impl From<PipelineItem> for RestPipelineItem {
             steps: serde_json::to_string_pretty(&value.pipeline.steps).unwrap(),
             event_ids: value.event_ids,
             enabled: value.enabled,
+            description: value.description,
         }
     }
 }
@@ -38,6 +40,7 @@ impl From<RestPipelineItem> for PipelineItem {
             },
             event_ids: value.event_ids,
             enabled: value.enabled,
+            description: value.description,
         }
     }
 }

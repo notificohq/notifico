@@ -8,8 +8,10 @@ pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
     pub project_id: Uuid,
+    pub description: String,
     #[sea_orm(column_type = "JsonBinary")]
     pub steps: Json,
+    pub enabled: bool,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
