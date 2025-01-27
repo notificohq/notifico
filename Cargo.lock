@@ -2091,6 +2091,7 @@ dependencies = [
  "tokio",
  "toml",
  "tracing",
+ "utoipa",
  "uuid",
 ]
 
@@ -4245,6 +4246,7 @@ dependencies = [
  "quote",
  "regex",
  "syn 2.0.96",
+ "url",
  "uuid",
 ]
 

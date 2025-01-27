@@ -87,7 +87,7 @@ impl AdminCrudTable for DbTemplateSource {
             project_id: Set(item.project_id),
             name: Set(item.name.clone()),
             channel: Set(item.channel.clone()),
-            template: Set(serde_json::from_str(&item.template).unwrap()),
+            template: Set(serde_json::to_value(&item.template).unwrap()),
             description: Set(item.description.clone()),
         }
         .insert(&self.db)
@@ -105,7 +105,7 @@ impl AdminCrudTable for DbTemplateSource {
             project_id: Set(item.project_id),
             name: Set(item.name.clone()),
             channel: Set(item.channel.clone()),
-            template: Set(serde_json::from_str(&item.template).unwrap()),
+            template: Set(serde_json::to_value(&item.template).unwrap()),
             description: Set(item.description.clone()),
         }
         .update(&self.db)
@@ -126,7 +126,7 @@ pub struct TemplateItem {
     pub project_id: Uuid,
     pub channel: String,
     pub name: String,
-    pub template: String,
+    pub template: PreRenderedTemplate,
     pub description: String,
 }
 
@@ -136,7 +136,7 @@ impl From<entity::template::Model> for ItemWithId<TemplateItem> {
             id: value.id,
             item: TemplateItem {
                 project_id: value.project_id,
-                template: serde_json::to_string_pretty(&value.template).unwrap(),
+                template: serde_json::from_value(value.template).unwrap(),
                 channel: value.channel,
                 name: value.name,
                 description: value.description,

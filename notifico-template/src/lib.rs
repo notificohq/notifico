@@ -16,12 +16,15 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tracing::debug;
+use utoipa::ToSchema;
 use uuid::Uuid;
 
-#[derive(Default, Clone, Serialize, Deserialize)]
+#[derive(Default, Clone, Serialize, Deserialize, ToSchema)]
 pub struct PreRenderedTemplate {
     pub parts: HashMap<String, String>,
+    #[serde(default = "Vec::new")]
     pub attachments: Vec<AttachmentMetadata>,
+    #[serde(default = "HashMap::new")]
     pub extras: HashMap<String, String>,
 }
 

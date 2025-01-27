@@ -14,7 +14,7 @@ use uuid::Uuid;
 /// Event context contains all variables, that will be passed to templating engine.
 pub struct EventContext(pub Map<String, Value>);
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, ToSchema)]
 pub struct AttachmentMetadata {
     pub url: Url,
     pub file_name: Option<String>,
