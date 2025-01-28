@@ -14,7 +14,7 @@ pub enum Claims {
         recipient_id: Uuid,
         exp: u64,
     },
-    /// This claim is issued using server-to-server call to Management API.
+    /// This claim is issued using server-to-server call to S2S API.
     /// The external system's backend should validate the recipient's identity prior to issuing this
     /// token.
     /// This token can be used for changing recipient notification settings,

@@ -1,4 +1,4 @@
-use crate::http::management::HttpManagementExtensions;
+use crate::http::ui::HttpUiExtensions;
 use axum::{Extension, Router};
 use tower_http::cors::CorsLayer;
 use utoipa::OpenApi;
@@ -17,10 +17,10 @@ pub mod subscription;
 mod template;
 
 #[derive(OpenApi)]
-#[openapi(info(title = "Notifico Management API", version = "0.1.0"))]
+#[openapi(info(title = "Notifico UI API", version = "0.1.0"))]
 struct ApiDoc;
 
-pub(crate) fn get_router(ext: HttpManagementExtensions) -> Router {
+pub(crate) fn get_router(ext: HttpUiExtensions) -> Router {
     let router = OpenApiRouter::with_openapi(ApiDoc::openapi())
         // Credentials
         .routes(routes!(credential::list))

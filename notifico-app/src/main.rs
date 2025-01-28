@@ -15,8 +15,8 @@ use crate::controllers::recipient::RecipientDbController;
 use crate::controllers::subscription::SubscriptionDbController;
 use crate::controllers::template::DbTemplateSource;
 use crate::http::ingest::HttpIngestExtensions;
-use crate::http::management::HttpManagementExtensions;
 use crate::http::public::HttpPublicExtensions;
+use crate::http::ui::HttpUiExtensions;
 use crate::plugin::SubscriptionPlugin;
 use clap::{Parser, Subcommand};
 use migration::{Migrator, MigratorTrait};
@@ -42,7 +42,7 @@ use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, Env
 use url::Url;
 
 const COMPONENT_WORKER: &str = "worker";
-const COMPONENT_MANAGEMENT: &str = "management";
+const COMPONENT_UI: &str = "ui";
 const COMPONENT_INGEST: &str = "ingest";
 const COMPONENT_PUBLIC: &str = "public";
 
@@ -62,7 +62,7 @@ struct Args {
     amqp_prefix: String,
 
     #[clap(long, env = "NOTIFICO_UI_BIND", default_value = "[::]:8000")]
-    management: SocketAddr,
+    ui: SocketAddr,
     #[clap(long, env = "NOTIFICO_HTTP_INGEST_BIND", default_value = "[::]:8001")]
     ingest: SocketAddr,
     #[clap(long, env = "NOTIFICO_PUBLIC_BIND", default_value = "[::]:8002")]
@@ -215,13 +215,13 @@ async fn main() {
                 http::public::start(args.public, ext).await;
             }
 
-            if components.is_empty() || components.contains(COMPONENT_MANAGEMENT) {
+            if components.is_empty() || components.contains(COMPONENT_UI) {
                 let event_controller = Arc::new(EventDbController::new(db_connection.clone()));
                 let project_controller = Arc::new(ProjectController::new(db_connection.clone()));
                 let group_controller = Arc::new(GroupDbController::new(db_connection.clone()));
 
-                info!("Starting HTTP management server on {}", args.management);
-                let ext = HttpManagementExtensions {
+                info!("Starting HTTP UI server on {}", args.ui);
+                let ext = HttpUiExtensions {
                     recipient_controller: recipient_controller.clone(),
                     project_controller,
                     subscription_controller: subscription_controller.clone(),
@@ -234,7 +234,7 @@ async fn main() {
                     transport_registry,
                 };
 
-                http::management::start(args.management, ext).await;
+                http::ui::start(args.ui, ext).await;
             }
 
             if components.is_empty() || components.contains(COMPONENT_WORKER) {
