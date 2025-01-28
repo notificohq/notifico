@@ -2,9 +2,11 @@ use crate::credentials::{CredentialSelector, CredentialStorage, RawCredential};
 use crate::error::EngineError;
 use async_trait::async_trait;
 use regex::Regex;
+use serde::Serialize;
 use std::collections::HashMap;
 use std::str::FromStr;
 use tracing::info;
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 #[derive(Eq, PartialEq, Hash, Debug)]
@@ -15,6 +17,14 @@ struct CredentialKey {
 
 #[derive(Default, Debug)]
 pub struct EnvCredentialStorage(HashMap<CredentialKey, RawCredential>);
+
+#[derive(Serialize, ToSchema, Default, Debug)]
+pub struct CredentialRestItem {
+    id: Uuid,
+    project_id: Uuid,
+    name: String,
+    r#type: String,
+}
 
 impl EnvCredentialStorage {
     pub fn new() -> Self {
@@ -46,6 +56,20 @@ impl EnvCredentialStorage {
             storage.len()
         );
         Self(storage)
+    }
+
+    pub fn list(&self) -> Vec<CredentialRestItem> {
+        let mut items = Vec::with_capacity(self.0.len());
+        for (key, credential) in &self.0 {
+            items.push(CredentialRestItem {
+                id: Uuid::now_v7(), // This id is purely synthetic, as refine requires ID in DataGrid
+                project_id: key.project,
+                name: key.name.clone(),
+                r#type: credential.transport.clone(),
+            });
+        }
+        items.sort_by(|item1, item2| natord::compare(&item1.name, &item2.name));
+        items
     }
 }
 

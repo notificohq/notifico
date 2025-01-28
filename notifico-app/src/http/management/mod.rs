@@ -11,6 +11,7 @@ use axum::http::header::CONTENT_TYPE;
 use axum::http::{StatusCode, Uri};
 use axum::response::{Html, IntoResponse, Response};
 use axum::Router;
+use notifico_core::credentials::env::EnvCredentialStorage;
 use notifico_core::http::SecretKey;
 use notifico_core::transport::TransportRegistry;
 use rust_embed::Embed;
@@ -28,6 +29,7 @@ pub(crate) struct HttpManagementExtensions {
     pub event_controller: Arc<EventDbController>,
     pub group_controller: Arc<GroupDbController>,
     pub transport_registry: Arc<TransportRegistry>,
+    pub credential_controller: Arc<EnvCredentialStorage>,
     pub secret_key: Arc<SecretKey>,
 }
 

@@ -230,6 +230,7 @@ async fn main() {
                     event_controller,
                     group_controller,
                     secret_key: secret_key.clone(),
+                    credential_controller: credentials.clone(),
                     transport_registry,
                 };
 
