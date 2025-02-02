@@ -59,10 +59,7 @@ async fn trigger(
     Extension(ext): Extension<HttpIngestExtensions>,
     Json(payload): Json<ProcessEventRequest>,
 ) -> StatusCode {
-    ext.sender
-        .send(serde_json::to_string(&payload).unwrap())
-        .await
-        .unwrap();
+    ext.sender.send(payload).await.unwrap();
 
     StatusCode::ACCEPTED
 }
@@ -101,10 +98,7 @@ async fn trigger_webhook(
         context,
     };
 
-    ext.sender
-        .send(serde_json::to_string(&process_event_request).unwrap())
-        .await
-        .unwrap();
+    ext.sender.send(process_event_request).await.unwrap();
 
     StatusCode::ACCEPTED
 }

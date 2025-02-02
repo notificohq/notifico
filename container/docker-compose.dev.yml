@@ -1,9 +1,10 @@
 services:
   rabbitmq:
-    image: rabbitmq:4.0.3-management
+    image: rabbitmq:4.0-management
     ports:
       - "5672:5672"
       - "15672:15672"
+      - "15692:15692"
   postgres:
     image: postgres:17
     ports:

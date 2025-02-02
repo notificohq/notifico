@@ -12,7 +12,7 @@ use tracing::warn;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-#[derive(Serialize, Deserialize, ToSchema, Debug)]
+#[derive(Serialize, Deserialize, ToSchema, Debug, Clone)]
 pub struct ProcessEventRequest {
     #[serde(default = "Uuid::now_v7")]
     pub id: Uuid,
@@ -88,7 +88,7 @@ impl EventHandler {
                 event_id: msg.id,
             };
 
-            let task = serde_json::to_string(&PipelineTask { context }).unwrap();
+            let task = PipelineTask { context };
             self.task_tx.send(task).await.unwrap();
         }
         Ok(())

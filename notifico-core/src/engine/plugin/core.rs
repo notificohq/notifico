@@ -59,7 +59,7 @@ impl EnginePlugin for CorePlugin {
 
                         context.notification_id = Uuid::now_v7();
 
-                        let task = serde_json::to_string(&PipelineTask { context }).unwrap();
+                        let task = PipelineTask { context };
 
                         self.pipeline_sender.send(task).await.unwrap();
                     }

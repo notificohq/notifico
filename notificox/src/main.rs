@@ -9,6 +9,7 @@ use notifico_core::pipeline::event::{EventHandler, ProcessEventRequest, Recipien
 use notifico_core::pipeline::executor::PipelineExecutor;
 use notifico_core::pipeline::storage::SinglePipelineStorage;
 use notifico_core::pipeline::Pipeline;
+use notifico_core::queue::{Outcome, ReceiverChannel, SenderChannel};
 use notifico_core::recipient::{RawContact, Recipient, RecipientInlineController};
 use notifico_core::recorder::BaseRecorder;
 use notifico_core::step::SerializedStep;
@@ -230,7 +231,8 @@ async fn main() {
             };
 
             let (pipelines_tx, pipelines_rx) = flume::unbounded();
-            let pipelines_tx = Arc::new(pipelines_tx);
+            let pipelines_tx: Arc<dyn SenderChannel> = Arc::new(pipelines_tx);
+            let pipelines_rx: Arc<dyn ReceiverChannel> = Arc::new(pipelines_rx);
 
             engine.add_plugin(Arc::new(CorePlugin::new(
                 pipelines_tx.clone(),
@@ -254,9 +256,12 @@ async fn main() {
             loop {
                 tokio::select! {
                     biased;
-                    Ok(task) = pipelines_rx.recv_async() => {
+                    Ok(task) = pipelines_rx.receive() => {
                         let executor = executor.clone();
-                        let _handle = joinset.spawn(async move {executor.execute_pipeline(serde_json::from_str(&task).unwrap()).await});
+                        let _handle = joinset.spawn(async move {
+                            executor.execute_pipeline(task.0).await;
+                            task.1.send(Outcome::Accepted).unwrap();
+                        });
                     }
                     result = joinset.join_next() => {
                         if result.is_none() { break;}

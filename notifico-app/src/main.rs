@@ -27,7 +27,7 @@ use notifico_core::engine::Engine;
 use notifico_core::http::SecretKey;
 use notifico_core::pipeline::event::EventHandler;
 use notifico_core::pipeline::executor::PipelineExecutor;
-use notifico_core::queue::{ReceiverChannel, SenderChannel};
+use notifico_core::queue::{Outcome, ReceiverChannel, SenderChannel};
 use notifico_core::recorder::BaseRecorder;
 use notifico_core::transport::TransportRegistry;
 use notifico_template::Templater;
@@ -37,7 +37,7 @@ use std::collections::HashSet;
 use std::fs::OpenOptions;
 use std::net::SocketAddr;
 use std::sync::Arc;
-use tracing::{debug, info, warn};
+use tracing::{debug, error, info, warn};
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 use url::Url;
 
@@ -251,12 +251,26 @@ async fn main() {
                             Ok(task) = pipelines_rx.receive() => {
                                 debug!("Received pipeline: {:?}", task);
                                 let executor = executor.clone();
-                                let _handle = tokio::spawn(async move {executor.execute_pipeline(serde_json::from_str(&task).unwrap()).await});
+                                let _handle = tokio::spawn(async move {
+                                    executor.execute_pipeline(task.0).await;
+                                    task.1.send(Outcome::Accepted).unwrap();
+                                });
                             }
-                            Ok(event) = events_rx.receive() => {
-                                debug!("Received event: {:?}", event);
-                                let event_handler = event_handler.clone();
-                                let _handle = tokio::spawn(async move {event_handler.process_eventrequest(serde_json::from_str(&event).unwrap()).await.unwrap()});
+                            event = events_rx.receive() => {
+                                match event {
+                                    Ok(event) => {
+                                        debug!("Received event: {:?}", event);
+                                        let event_handler = event_handler.clone();
+                                        let _handle = tokio::spawn(async move {
+                                            event_handler.process_eventrequest(event.0).await.unwrap();
+                                            event.1.send(Outcome::Accepted).unwrap();
+                                        });
+                                    }
+                                    Err(err) => {
+                                        error!("Error receiving event: {:?}", err);
+                                    }
+                                }
+
                             }
                         }
                     }
