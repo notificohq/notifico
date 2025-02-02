@@ -40,6 +40,7 @@ use std::sync::Arc;
 use tracing::{debug, error, info, warn};
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 use url::Url;
+use uuid::Uuid;
 
 const COMPONENT_WORKER: &str = "worker";
 const COMPONENT_UI: &str = "ui";
@@ -117,12 +118,10 @@ async fn main() {
             #[allow(unused_assignments)]
             let mut amqp_client = None;
             if let Some(amqp_url) = args.amqp {
+                let container_name = format!("notifico-{}", Uuid::now_v7());
+
                 // Initialize AMQP client and replace local channels with AMQP ones
-                amqp_client = Some(
-                    AmqpClient::connect(amqp_url, "wrk".to_string())
-                        .await
-                        .unwrap(),
-                );
+                amqp_client = Some(AmqpClient::connect(amqp_url, container_name).await.unwrap());
 
                 let (amqp_pipelines_tx, amqp_pipelines_rx) = amqp_client
                     .as_mut()

@@ -2,7 +2,6 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::any::Any;
 use std::error::Error;
-use std::ops::Deref;
 use tokio::sync::oneshot;
 
 #[derive(Debug, Clone, Copy)]
@@ -22,7 +21,7 @@ pub trait SenderChannel: Send + Sync {
     async fn send_object(
         &self,
         message: Box<dyn Any + Send + Sync + 'static>,
-    ) -> Result<Outcome, Box<dyn std::error::Error>>;
+    ) -> Result<Outcome, Box<dyn Error>>;
     fn message_kind(&self) -> MessageKind;
 }
 
@@ -57,7 +56,7 @@ pub trait ReceiverChannel: Send + Sync {
 impl dyn ReceiverChannel {
     pub async fn receive<T>(&self) -> Result<(T, oneshot::Sender<Outcome>), Box<dyn Error>>
     where
-        T: for<'de> Deserialize<'de> + Send + Sync + Clone + Sized + 'static,
+        T: for<'de> Deserialize<'de> + Send + Sync + Sized + 'static,
     {
         let result = self.receive_object().await?;
         match self.message_kind() {
@@ -74,7 +73,7 @@ impl dyn ReceiverChannel {
             }
             MessageKind::Object => {
                 let message = result.0.downcast::<T>().unwrap();
-                Ok((message.deref().clone(), result.1))
+                Ok((*message, result.1))
             }
         }
     }

@@ -12,7 +12,7 @@ use tracing::warn;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-#[derive(Serialize, Deserialize, ToSchema, Debug, Clone)]
+#[derive(Serialize, Deserialize, ToSchema, Debug)]
 pub struct ProcessEventRequest {
     #[serde(default = "Uuid::now_v7")]
     pub id: Uuid,
