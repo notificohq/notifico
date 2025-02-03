@@ -1,0 +1,5 @@
+[env]
+AXUM_HTTP_REQUESTS_TOTAL = "notifico_http_requests_total"
+AXUM_HTTP_REQUESTS_DURATION_SECONDS = "notifico_http_requests_duration_seconds"
+AXUM_HTTP_REQUESTS_PENDING = "notifico_http_requests_pending"
+AXUM_HTTP_RESPONSE_BODY_SIZE = "notifico_http_response_body_size"

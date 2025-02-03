@@ -7,6 +7,7 @@ use axum::{Extension, Json};
 use axum_extra::headers::authorization::Bearer;
 use axum_extra::headers::Authorization;
 use axum_extra::TypedHeader;
+use axum_prometheus::PrometheusMetricLayer;
 use jsonwebtoken::{DecodingKey, Validation};
 use notifico_core::http::SecretKey;
 use serde::Deserialize;
@@ -48,6 +49,7 @@ pub(crate) async fn start(bind: SocketAddr, ext: HttpPublicExtensions) {
     let app = OpenApiRouter::with_openapi(openapi)
         .routes(routes!(list_unsubscribe))
         .routes(routes!(subscription_parameters))
+        .layer(PrometheusMetricLayer::new())
         .layer(Extension(ext.secret_key.clone()))
         .layer(Extension(ext.subscription_controller.clone()));
 

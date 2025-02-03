@@ -36,9 +36,9 @@ pub struct ApiKeyController {
 impl ApiKeyController {
     pub fn new(db: DatabaseConnection) -> Self {
         let authorization_cache_capacity = 100;
-        gauge!("ingest_api_key_cache_capacity").set(authorization_cache_capacity as f64);
+        gauge!("notifico_ingest_api_key_cache_capacity").set(authorization_cache_capacity as f64);
 
-        let authorization_cache_gauge = gauge!("ingest_api_key_cache_total");
+        let authorization_cache_gauge = gauge!("notifico_ingest_api_key_cache_total");
         let authorization_cache_gauge_for_fut = authorization_cache_gauge.clone();
 
         let authorization_cache = Cache::builder()
@@ -54,9 +54,9 @@ impl ApiKeyController {
             db,
             authorization_cache,
             authorization_cache_gauge,
-            authorization_cache_hit: counter!("ingest_api_key_cache_hit"),
-            authorization_cache_miss: counter!("ingest_api_key_cache_miss"),
-            authorization_invalid_key: counter!("ingest_api_key_invalid"),
+            authorization_cache_hit: counter!("notifico_ingest_api_key_cache_hit"),
+            authorization_cache_miss: counter!("notifico_ingest_api_key_cache_miss"),
+            authorization_invalid_key: counter!("notifico_ingest_api_key_invalid"),
         }
     }
 }

@@ -19,6 +19,7 @@ use crate::http::ingest::HttpIngestExtensions;
 use crate::http::public::HttpPublicExtensions;
 use crate::http::ui::HttpUiExtensions;
 use crate::plugin::SubscriptionPlugin;
+use axum_prometheus::{Handle, MakeDefaultHandle};
 use clap::{Parser, Subcommand};
 use migration::{Migrator, MigratorTrait};
 use notifico_attachment::AttachmentPlugin;
@@ -70,6 +71,9 @@ struct Args {
     #[clap(long, env = "NOTIFICO_PUBLIC_BIND", default_value = "[::]:8002")]
     public: SocketAddr,
 
+    #[clap(long, env = "NOTIFICO_METRICS_BIND")]
+    metrics: Option<SocketAddr>,
+
     #[command(subcommand)]
     command: Commands,
 }
@@ -93,6 +97,8 @@ async fn main() {
         .with(fmt::layer())
         .with(EnvFilter::from_default_env())
         .init();
+
+    let prometheus_handle = Handle::make_default_handle(Handle::default()); // Registers Prometheus as default metrics recorder
 
     debug!("Config: {:#?}", args);
 
@@ -200,6 +206,10 @@ async fn main() {
             let transport_registry = Arc::new(transport_registry);
 
             // Spawn HTTP servers
+            if let Some(metrics_bind) = args.metrics {
+                info!("Starting HTTP metrics server on {}", metrics_bind);
+                http::metrics::start(metrics_bind, prometheus_handle).await;
+            }
             if components.is_empty() || components.contains(COMPONENT_INGEST) {
                 info!("Starting HTTP ingest server on {}", args.ingest);
                 let ext = HttpIngestExtensions {

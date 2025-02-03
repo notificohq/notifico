@@ -12,6 +12,7 @@ use axum::http::header::CONTENT_TYPE;
 use axum::http::{StatusCode, Uri};
 use axum::response::{Html, IntoResponse, Response};
 use axum::Router;
+use axum_prometheus::PrometheusMetricLayer;
 use notifico_core::credentials::env::EnvCredentialStorage;
 use notifico_core::http::SecretKey;
 use notifico_core::transport::TransportRegistry;
@@ -44,7 +45,9 @@ pub(crate) async fn start(bind: SocketAddr, ext: HttpUiExtensions) {
     let service_listener = TcpListener::bind(bind).await.unwrap();
 
     // Service API
-    let app = Router::new().nest("/api", api::get_router(ext.clone()));
+    let app = Router::new()
+        .nest("/api", api::get_router(ext.clone()))
+        .layer(PrometheusMetricLayer::new());
     let app = app.fallback(static_handler);
 
     tokio::spawn(async { axum::serve(service_listener, app).await.unwrap() });

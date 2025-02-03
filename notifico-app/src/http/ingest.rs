@@ -5,6 +5,7 @@ use axum::{Extension, Json};
 use axum_extra::headers::authorization::Bearer;
 use axum_extra::headers::Authorization;
 use axum_extra::TypedHeader;
+use axum_prometheus::PrometheusMetricLayer;
 use notifico_core::pipeline::context::EventContext;
 use notifico_core::pipeline::event::{ProcessEventRequest, RecipientSelector};
 use notifico_core::queue::SenderChannel;
@@ -40,6 +41,7 @@ pub async fn start(serviceapi_bind: SocketAddr, ext: HttpIngestExtensions) {
     let app = OpenApiRouter::with_openapi(ApiDoc::openapi())
         .routes(routes!(trigger))
         .routes(routes!(trigger_webhook))
+        .layer(PrometheusMetricLayer::new())
         .layer(Extension(ext));
 
     let (mut app, api) = app.split_for_parts();
