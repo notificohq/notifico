@@ -30,15 +30,15 @@ impl EnvCredentialStorage {
     pub fn new() -> Self {
         let mut storage = HashMap::new();
 
-        let re = Regex::new("^NOTIFICO_CRED_(?:([[:xdigit:]]{8}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{12})_)?(.+)$").unwrap();
+        let re = Regex::new("^NOTIFICO_CRED_(?:([[:xdigit:]]{8}_[[:xdigit:]]{4}_[[:xdigit:]]{4}_[[:xdigit:]]{4}_[[:xdigit:]]{12})_)?(.+)$").unwrap();
         for (name, value) in std::env::vars() {
             let Some(captures) = re.captures(&name) else {
                 continue;
             };
 
-            let project = captures
-                .get(1)
-                .map_or_else(Uuid::nil, |m| Uuid::parse_str(m.as_str()).unwrap());
+            let project = captures.get(1).map_or_else(Uuid::nil, |m| {
+                Uuid::parse_str(&m.as_str().replace("_", "-")).unwrap()
+            });
             let name = captures.get(2).unwrap().as_str();
             let credential = RawCredential::from_str(&value).unwrap();
 
