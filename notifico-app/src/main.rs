@@ -7,6 +7,7 @@ mod http;
 mod plugin;
 
 use crate::amqp::AmqpClient;
+use crate::controllers::api_key::ApiKeyController;
 use crate::controllers::event::EventDbController;
 use crate::controllers::group::GroupDbController;
 use crate::controllers::pipeline::PipelineDbController;
@@ -157,6 +158,7 @@ async fn main() {
             let recorder = Arc::new(BaseRecorder::new());
             let templater_source = Arc::new(DbTemplateSource::new(db_connection.clone()));
             let recipient_controller = Arc::new(RecipientDbController::new(db_connection.clone()));
+            let api_key_controller = Arc::new(ApiKeyController::new(db_connection.clone()));
 
             let subscription_controller =
                 Arc::new(SubscriptionDbController::new(db_connection.clone()));
@@ -200,7 +202,10 @@ async fn main() {
             // Spawn HTTP servers
             if components.is_empty() || components.contains(COMPONENT_INGEST) {
                 info!("Starting HTTP ingest server on {}", args.ingest);
-                let ext = HttpIngestExtensions { sender: events_tx };
+                let ext = HttpIngestExtensions {
+                    sender: events_tx,
+                    api_key_controller: api_key_controller.clone(),
+                };
 
                 http::ingest::start(args.ingest, ext).await;
             }
@@ -231,6 +236,7 @@ async fn main() {
                     secret_key: secret_key.clone(),
                     credential_controller: credentials.clone(),
                     transport_registry,
+                    api_key_controller,
                 };
 
                 http::ui::start(args.ui, ext).await;

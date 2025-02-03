@@ -489,8 +489,10 @@ checksum = "7e36cc9d416881d2e24f9a963be5fb1cd90966419ac844274161d10488b3e825"
 dependencies = [
  "android-tzdata",
  "iana-time-zone",
+ "js-sys",
  "num-traits",
  "serde",
+ "wasm-bindgen",
  "windows-targets 0.52.6",
 ]
 
@@ -1779,6 +1781,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "78ca9ab1a0babb1e7d5695e3530886289c18cf2f87ec19a575a0abdce112e3a3"
 
 [[package]]
+name = "metrics"
+version = "0.24.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a7deb012b3b2767169ff203fadb4c6b0b82b947512e5eb9e0b78c2e186ad9e3"
+dependencies = [
+ "ahash 0.8.11",
+ "portable-atomic",
+]
+
+[[package]]
 name = "mime"
 version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1915,6 +1927,7 @@ dependencies = [
  "axum",
  "axum-extra",
  "backoff",
+ "chrono",
  "clap",
  "dotenvy",
  "fe2o3-amqp",
@@ -1922,6 +1935,8 @@ dependencies = [
  "futures",
  "jsonwebtoken",
  "log",
+ "metrics",
+ "moka",
  "multimap",
  "notifico-attachment",
  "notifico-core",

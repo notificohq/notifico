@@ -12,16 +12,12 @@ use tracing::warn;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-#[derive(Serialize, Deserialize, ToSchema, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ProcessEventRequest {
-    #[serde(default = "Uuid::now_v7")]
     pub id: Uuid,
-    #[serde(default = "Uuid::nil")]
     pub project_id: Uuid,
     pub event: String,
-    #[serde(default = "Vec::new")]
     pub recipients: Vec<RecipientSelector>,
-    #[serde(default)]
     pub context: EventContext,
 }
 

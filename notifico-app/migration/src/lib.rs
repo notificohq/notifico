@@ -5,6 +5,7 @@ mod m20250108_000001_create_project_table;
 mod m20250108_000002_create_pipeline_event;
 mod m20250108_000003_recipient;
 mod m20250121_000001_create_template_table;
+mod m20250203_000001_create_apikey_table;
 
 pub struct Migrator;
 
@@ -16,6 +17,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20250108_000002_create_pipeline_event::Migration),
             Box::new(m20250108_000003_recipient::Migration),
             Box::new(m20250121_000001_create_template_table::Migration),
+            Box::new(m20250203_000001_create_apikey_table::Migration),
         ]
     }
 

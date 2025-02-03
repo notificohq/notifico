@@ -6,6 +6,7 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 use utoipa_swagger_ui::{Config, SwaggerUi};
 
+mod api_key;
 mod channel;
 mod credential;
 mod event;
@@ -29,6 +30,9 @@ pub(crate) fn get_router(ext: HttpUiExtensions) -> Router {
         // Subscriptions
         .routes(routes!(subscription::list))
         .routes(routes!(subscription::get))
+        // API Keys
+        .routes(routes!(api_key::list, api_key::create))
+        .routes(routes!(api_key::get, api_key::update, api_key::delete))
         // Recipients
         .routes(routes!(recipient::list, recipient::create))
         .routes(routes!(
@@ -62,6 +66,7 @@ pub(crate) fn get_router(ext: HttpUiExtensions) -> Router {
         .layer(Extension(ext.group_controller))
         .layer(Extension(ext.transport_registry))
         .layer(Extension(ext.credential_controller))
+        .layer(Extension(ext.api_key_controller))
         .layer(Extension(ext.secret_key))
         .layer(CorsLayer::permissive());
 

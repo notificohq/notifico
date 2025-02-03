@@ -17,6 +17,7 @@ async-trait = "0.1.84"
 axum = { workspace = true }
 axum-extra = { workspace = true }
 backoff = { version = "0.4.0", features = ["tokio"] }
+chrono = "0.4.39"
 clap = { workspace = true }
 dotenvy = "0.15.7"
 fe2o3-amqp = { version = "0.13.1" }
@@ -24,6 +25,9 @@ flume = "0.11.1"
 futures = "0.3.31"
 jsonwebtoken = "9.3.0"
 log = "0.4.22"
+metrics = { workspace = true }
+moka = "0.12.10"
+multimap = "0.10.0"
 rust-embed = { version = "8.5.0", features = ["mime-guess"] }
 sea-orm = { workspace = true }
 serde = { version = "1.0.217", features = ["derive"] }
@@ -38,4 +42,3 @@ utoipa = { workspace = true }
 utoipa-axum = { workspace = true }
 utoipa-swagger-ui = { workspace = true }
 uuid = { workspace = true }
-multimap = "0.10.0"

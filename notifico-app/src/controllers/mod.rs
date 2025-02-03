@@ -1,3 +1,4 @@
+pub mod api_key;
 pub mod event;
 pub mod group;
 pub mod pipeline;

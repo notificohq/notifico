@@ -1,5 +1,6 @@
 mod api;
 
+use crate::controllers::api_key::ApiKeyController;
 use crate::controllers::event::EventDbController;
 use crate::controllers::group::GroupDbController;
 use crate::controllers::pipeline::PipelineDbController;
@@ -30,6 +31,7 @@ pub(crate) struct HttpUiExtensions {
     pub group_controller: Arc<GroupDbController>,
     pub transport_registry: Arc<TransportRegistry>,
     pub credential_controller: Arc<EnvCredentialStorage>,
+    pub api_key_controller: Arc<ApiKeyController>,
     pub secret_key: Arc<SecretKey>,
 }
 

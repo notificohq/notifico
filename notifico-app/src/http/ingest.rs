@@ -1,14 +1,18 @@
+use crate::controllers::api_key::{ApiKeyController, ApiKeyError};
 use axum::extract::Query;
 use axum::http::StatusCode;
 use axum::{Extension, Json};
+use axum_extra::headers::authorization::Bearer;
+use axum_extra::headers::Authorization;
+use axum_extra::TypedHeader;
 use notifico_core::pipeline::context::EventContext;
-use notifico_core::pipeline::event::ProcessEventRequest;
+use notifico_core::pipeline::event::{ProcessEventRequest, RecipientSelector};
 use notifico_core::queue::SenderChannel;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::TcpListener;
-use utoipa::{IntoParams, OpenApi};
+use utoipa::{IntoParams, OpenApi, ToSchema};
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 use utoipa_swagger_ui::SwaggerUi;
@@ -17,6 +21,7 @@ use uuid::Uuid;
 #[derive(Clone)]
 pub struct HttpIngestExtensions {
     pub(crate) sender: Arc<dyn SenderChannel>,
+    pub(crate) api_key_controller: Arc<ApiKeyController>,
 }
 
 #[derive(OpenApi)]
@@ -43,10 +48,21 @@ pub async fn start(serviceapi_bind: SocketAddr, ext: HttpIngestExtensions) {
     tokio::spawn(async { axum::serve(listener, app).await.unwrap() });
 }
 
+#[derive(Serialize, Deserialize, ToSchema, Debug)]
+struct TriggerEvent {
+    #[serde(default = "Uuid::now_v7")]
+    pub id: Uuid,
+    pub event: String,
+    #[serde(default = "Vec::new")]
+    pub recipients: Vec<RecipientSelector>,
+    #[serde(default)]
+    pub context: EventContext,
+}
+
 #[utoipa::path(
     post,
     path = "/v1/trigger",
-    tag = "event",
+    tag = "trigger",
     responses(
         (status = StatusCode::ACCEPTED, description = "Event sent successfully"),
     ),
@@ -56,10 +72,30 @@ In standalone configuration, the event is queued using an in-memory queue.
 In AMQP configuration, the event is sent to the AMQP queue.",
 )]
 async fn trigger(
+    TypedHeader(auth_header): TypedHeader<Authorization<Bearer>>,
     Extension(ext): Extension<HttpIngestExtensions>,
-    Json(payload): Json<ProcessEventRequest>,
+    Json(payload): Json<TriggerEvent>,
 ) -> StatusCode {
-    ext.sender.send(payload).await.unwrap();
+    let project_id = ext
+        .api_key_controller
+        .authorize_api_key(auth_header.token())
+        .await;
+
+    let project_id = match project_id {
+        Ok(project_id) => project_id,
+        Err(ApiKeyError::InvalidApiKey) => return StatusCode::FORBIDDEN,
+        Err(ApiKeyError::InternalError) => return StatusCode::INTERNAL_SERVER_ERROR,
+    };
+
+    let process_event_request = ProcessEventRequest {
+        id: payload.id,
+        project_id,
+        event: payload.event,
+        recipients: payload.recipients,
+        context: payload.context,
+    };
+
+    ext.sender.send(process_event_request).await.unwrap();
 
     StatusCode::ACCEPTED
 }
@@ -67,15 +103,14 @@ async fn trigger(
 #[derive(Deserialize, IntoParams)]
 #[into_params(style = Form, parameter_in = Query)]
 struct WebhookParameters {
-    #[serde(default = "Uuid::nil")]
-    project_id: Uuid,
     event: String,
+    token: String,
 }
 
 #[utoipa::path(
     post,
-    path = "/v1/trigger_webhook",
-    tag = "event",
+    path = "/v1/trigger/webhook",
+    tag = "trigger",
     params(WebhookParameters),
     responses(
         (status = StatusCode::ACCEPTED, description = "Event sent successfully"),
@@ -90,9 +125,20 @@ async fn trigger_webhook(
     parameters: Query<WebhookParameters>,
     Json(context): Json<EventContext>,
 ) -> StatusCode {
+    let project_id = ext
+        .api_key_controller
+        .authorize_api_key(&parameters.token)
+        .await;
+
+    let project_id = match project_id {
+        Ok(project_id) => project_id,
+        Err(ApiKeyError::InvalidApiKey) => return StatusCode::FORBIDDEN,
+        Err(ApiKeyError::InternalError) => return StatusCode::INTERNAL_SERVER_ERROR,
+    };
+
     let process_event_request = ProcessEventRequest {
         id: Uuid::now_v7(),
-        project_id: parameters.project_id,
+        project_id,
         event: parameters.event.clone(),
         recipients: vec![],
         context,

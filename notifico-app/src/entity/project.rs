@@ -12,6 +12,8 @@ pub struct Model {
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
+    #[sea_orm(has_many = "super::api_key::Entity")]
+    ApiKey,
     #[sea_orm(has_many = "super::event::Entity")]
     Event,
     #[sea_orm(has_many = "super::group::Entity")]
@@ -22,6 +24,12 @@ pub enum Relation {
     Recipient,
     #[sea_orm(has_many = "super::template::Entity")]
     Template,
+}
+
+impl Related<super::api_key::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::ApiKey.def()
+    }
 }
 
 impl Related<super::event::Entity> for Entity {

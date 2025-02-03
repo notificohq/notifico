@@ -2,6 +2,7 @@
 
 pub mod prelude;
 
+pub mod api_key;
 pub mod contact;
 pub mod event;
 pub mod group;
