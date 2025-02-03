@@ -7,6 +7,6 @@ edition = "2021"
 notifico-core = { path = "../notifico-core" }
 
 serde = { version = "1.0.217", features = ["derive"] }
-async-trait = "0.1.84"
+async-trait = "0.1.86"
 tokio = { version = "1.42.0", features = ["fs", "sync"] }
 mime_guess = "2.0.5"
