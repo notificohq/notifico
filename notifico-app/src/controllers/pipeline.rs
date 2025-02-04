@@ -186,11 +186,14 @@ impl PipelineStorage for PipelineDbController {
     ) -> Result<Vec<Pipeline>, EngineError> {
         let models = entity::pipeline::Entity::find()
             .inner_join(entity::event::Entity)
+            .filter(entity::pipeline::Column::Enabled.eq(true))
+            .filter(entity::event::Column::Enabled.eq(true))
             .filter(entity::pipeline::Column::ProjectId.eq(project))
+            .filter(entity::event::Column::ProjectId.eq(project))
             .filter(entity::event::Column::Name.eq(event_name))
             .all(&self.db)
             .await
-            .map_err(|e| anyhow::Error::new(e))?;
+            .map_err(anyhow::Error::new)?;
 
         models.into_iter().map(|m| m.try_into()).collect()
     }
