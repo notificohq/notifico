@@ -17,11 +17,11 @@ pub struct ProcessEventRequest {
     pub id: Uuid,
     pub project_id: Uuid,
     pub event: String,
-    pub recipients: Vec<RecipientSelector>,
+    pub recipients: Arc<Vec<RecipientSelector>>,
     pub context: EventContext,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "snake_case", untagged)]
 pub enum RecipientSelector {
     Id(Uuid),
@@ -67,7 +67,7 @@ impl EventHandler {
                 });
                 pipeline
                     .steps
-                    .insert(0, SerializedStep(step.as_object().cloned().unwrap()));
+                    .insert(0, SerializedStep(step.as_object().cloned().unwrap().into()));
             }
 
             let context = PipelineContext {

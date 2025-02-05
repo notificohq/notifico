@@ -93,7 +93,7 @@ async fn trigger(
         id: payload.id,
         project_id,
         event: payload.event,
-        recipients: payload.recipients,
+        recipients: payload.recipients.into(),
         context: payload.context,
     };
 
@@ -142,7 +142,7 @@ async fn trigger_webhook(
         id: Uuid::now_v7(),
         project_id,
         event: parameters.event.clone(),
-        recipients: vec![],
+        recipients: vec![].into(),
         context,
     };
 

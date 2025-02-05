@@ -1,10 +1,11 @@
 use crate::error::EngineError;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::sync::Arc;
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug)]
 #[serde(transparent)]
-pub struct SerializedStep(pub serde_json::Map<String, Value>);
+pub struct SerializedStep(pub Arc<serde_json::Map<String, Value>>);
 
 impl SerializedStep {
     pub fn get_type(&self) -> &str {
@@ -15,6 +16,6 @@ impl SerializedStep {
     where
         T: for<'de> Deserialize<'de>,
     {
-        T::deserialize(&self.0).map_err(EngineError::InvalidStep)
+        T::deserialize(&*self.0).map_err(EngineError::InvalidStep)
     }
 }

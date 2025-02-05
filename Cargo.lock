@@ -2064,6 +2064,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "notifico-noop"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "notifico-core",
+]
+
+[[package]]
 name = "notifico-ntfy"
 version = "0.1.0"
 dependencies = [
@@ -2175,6 +2183,7 @@ dependencies = [
  "notifico-attachment",
  "notifico-core",
  "notifico-gotify",
+ "notifico-noop",
  "notifico-ntfy",
  "notifico-pushover",
  "notifico-slack",

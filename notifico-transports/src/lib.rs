@@ -5,6 +5,7 @@ use notifico_core::recorder::Recorder;
 use notifico_core::simpletransport::SimpleTransportWrapper;
 use notifico_core::transport::Transport;
 use notifico_gotify::GotifyTransport;
+use notifico_noop::NoopTransport;
 use notifico_ntfy::NtfyTransport;
 use notifico_pushover::PushoverTransport;
 use notifico_slack::SlackTransport;
@@ -82,6 +83,14 @@ pub fn all_transports(
         recorder.clone(),
     ));
     plugins.push((ntfy_plugin.clone(), ntfy_plugin.clone()));
+
+    let noop_transport = Arc::new(NoopTransport::new());
+    let noop_plugin = Arc::new(SimpleTransportWrapper::new(
+        noop_transport,
+        credentials.clone(),
+        recorder.clone(),
+    ));
+    plugins.push((noop_plugin.clone(), noop_plugin.clone()));
 
     // Add more transports here...
 

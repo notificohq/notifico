@@ -3,7 +3,7 @@ use crate::pipeline::context::PipelineContext;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error, instrument};
 
-#[derive(Serialize, Deserialize, Default, Clone, Debug)]
+#[derive(Serialize, Deserialize, Default, Debug)]
 pub struct PipelineTask {
     pub context: PipelineContext,
 }

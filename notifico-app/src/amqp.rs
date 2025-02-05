@@ -11,9 +11,12 @@ use fe2o3_amqp::{Connection, Receiver, Sender, Session};
 use notifico_core::queue::{MessageKind, Outcome, ReceiverChannel, SenderChannel};
 use std::any::Any;
 use std::error::Error;
+use std::mem;
 use std::ops::Deref;
 use std::sync::Arc;
-use tokio::sync::Mutex;
+use std::time::Duration;
+use tokio::sync::{oneshot, watch, Mutex};
+use tokio::time;
 use tracing::info;
 use url::Url;
 
@@ -56,27 +59,46 @@ impl AmqpClient {
         link_name: &str,
     ) -> anyhow::Result<AmqpReceiver> {
         let mut receiver = Receiver::attach(&mut self.session, link_name, address).await?;
-        let (outcomes_tx, outcomes_rx) = flume::unbounded::<(Outcome, DeliveryInfo)>();
         let (message_tx, message_rx) = flume::unbounded();
+        let (drop_tx, drop_rx) = watch::channel(false);
+
+        let (accepted_tx, accepted_rx) = flume::unbounded::<DeliveryInfo>();
+        let (rejected_tx, rejected_rx) = flume::unbounded::<DeliveryInfo>();
+        let (released_tx, released_rx) = flume::unbounded::<DeliveryInfo>();
+
+        let ack_buffer_len = 100;
+        let ack_interval = Duration::from_secs(1);
 
         tokio::spawn(async move {
+            let mut drop_rx = drop_rx;
+            let mut interval = time::interval(ack_interval);
+
+            let mut accepted_buffer: Vec<DeliveryInfo> = Vec::with_capacity(ack_buffer_len);
             loop {
                 tokio::select! {
-                    Ok(outcome) = outcomes_rx.recv_async() => {
-                        match outcome.0{
-                            Outcome::Accepted => {
-                                receiver.accept(outcome.1).await.unwrap();
-                            }
-                            Outcome::Rejected => {
-                                receiver.reject(outcome.1, Fe2o3Error::new(AmqpError::InternalError, None, None)).await.unwrap();
-                            }
-                            Outcome::Released => {
-                                receiver.release(outcome.1).await.unwrap();
-                            }
+                    Ok(_) = drop_rx.changed() => {
+                        receiver.detach().await.unwrap();
+                        break;
+                    },
+                    Ok(message) = receiver.recv::<String>() => {
+                        let _ = message_tx.send_async(message.into_parts()).await;
+                    }
+                    Ok(outcome) = accepted_rx.recv_async()  => {
+                        accepted_buffer.push(outcome);
+                        if accepted_buffer.len() >= ack_buffer_len {
+                            let drained: Vec<DeliveryInfo> = mem::replace(&mut accepted_buffer, Vec::with_capacity(ack_buffer_len));
+                            receiver.accept_all(drained).await.unwrap();
                         }
                     }
-                    Ok(message) = receiver.recv::<String>() => {
-                        message_tx.send_async(message.into_parts()).await.unwrap();
+                    _ = interval.tick() => {
+                        let drained: Vec<DeliveryInfo> = mem::replace(&mut accepted_buffer, Vec::with_capacity(ack_buffer_len));
+                        receiver.accept_all(drained).await.unwrap();
+                    }
+                    Ok(outcome) = rejected_rx.recv_async() => {
+                        receiver.reject(outcome, Fe2o3Error::new(AmqpError::InternalError, None, None)).await.unwrap();
+                    }
+                    Ok(outcome) = released_rx.recv_async() => {
+                        receiver.release(outcome).await.unwrap();
                     }
                     else => break
                 }
@@ -85,7 +107,10 @@ impl AmqpClient {
 
         Ok(AmqpReceiver {
             message_receiver: message_rx,
-            outcome_sender: outcomes_tx,
+            accepted_sender: accepted_tx,
+            rejected_sender: rejected_tx,
+            released_sender: released_tx,
+            drop_sender: drop_tx,
         })
     }
 
@@ -125,10 +150,12 @@ impl SenderChannel for AmqpSender {
     }
 }
 
-#[derive(Clone)]
 pub struct AmqpReceiver {
     message_receiver: flume::Receiver<(DeliveryInfo, Message<String>)>,
-    outcome_sender: flume::Sender<(Outcome, DeliveryInfo)>,
+    accepted_sender: flume::Sender<DeliveryInfo>,
+    rejected_sender: flume::Sender<DeliveryInfo>,
+    released_sender: flume::Sender<DeliveryInfo>,
+    drop_sender: watch::Sender<bool>,
 }
 
 #[async_trait]
@@ -138,18 +165,25 @@ impl ReceiverChannel for AmqpReceiver {
     ) -> Result<
         (
             Box<dyn Any + Send + Sync + 'static>,
-            tokio::sync::oneshot::Sender<Outcome>,
+            oneshot::Sender<Outcome>,
         ),
         Box<dyn Error>,
     > {
         let (info, message) = self.message_receiver.recv_async().await?;
 
-        let (tx, rx) = tokio::sync::oneshot::channel();
-        let outcome_sender = self.outcome_sender.clone();
+        let (tx, rx) = oneshot::channel();
+        let accepted_sender = self.accepted_sender.clone();
+        let rejected_sender = self.rejected_sender.clone();
+        let released_sender = self.released_sender.clone();
 
         tokio::spawn(async move {
             let outcome = rx.await.unwrap_or(Outcome::Released);
-            outcome_sender.send_async((outcome, info)).await.unwrap();
+            let channel = match outcome {
+                Outcome::Accepted => accepted_sender,
+                Outcome::Rejected => rejected_sender,
+                Outcome::Released => released_sender,
+            };
+            channel.send_async(info).await.unwrap();
         });
 
         Ok((Box::new(message.body), tx))
@@ -157,5 +191,11 @@ impl ReceiverChannel for AmqpReceiver {
 
     fn message_kind(&self) -> MessageKind {
         MessageKind::Json
+    }
+}
+
+impl Drop for AmqpReceiver {
+    fn drop(&mut self) {
+        let _ = self.drop_sender.send(true);
     }
 }

@@ -290,6 +290,9 @@ async fn main() {
                         }
                     }
                 });
+            } else {
+                drop(pipelines_rx);
+                drop(events_rx);
             }
 
             let _ = tokio::signal::ctrl_c().await;

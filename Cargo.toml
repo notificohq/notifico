@@ -16,6 +16,7 @@ members = [
     "transports/notifico-pushover",
     "transports/notifico-gotify",
     "transports/notifico-ntfy",
+    "transports/notifico-noop",
     ## Other
     "notifico-core",
     "notifico-template",
