@@ -16,6 +16,39 @@ pub enum MessageKind {
     Object,
 }
 
+pub struct ReceivedMessageContainer {
+    kind: MessageKind,
+    message: Box<dyn Any + Send + Sync + 'static>,
+    outcome_sender: oneshot::Sender<Outcome>,
+}
+
+impl ReceivedMessageContainer {
+    pub fn decode<T>(self) -> Result<(T, oneshot::Sender<Outcome>), Box<dyn Error>>
+    where
+        T: for<'de> Deserialize<'de> + Send + Sync + Sized + 'static,
+    {
+        match self.kind {
+            MessageKind::Json => {
+                let message = self.message.downcast::<String>().unwrap();
+                // let message = serde_json::from_str(&message);
+                let mut message = message.into_bytes();
+                let message = simd_json::from_slice(&mut message);
+                match message {
+                    Ok(message) => Ok((message, self.outcome_sender)),
+                    Err(err) => {
+                        self.outcome_sender.send(Outcome::Rejected).unwrap();
+                        Err(Box::new(err))
+                    }
+                }
+            }
+            MessageKind::Object => {
+                let message = self.message.downcast::<T>().unwrap();
+                Ok((*message, self.outcome_sender))
+            }
+        }
+    }
+}
+
 #[async_trait]
 pub trait SenderChannel: Send + Sync {
     async fn send_object(
@@ -31,7 +64,7 @@ impl dyn SenderChannel {
         object: impl Serialize + Send + Sync + 'static,
     ) -> Result<Outcome, Box<dyn Error>> {
         let boxed_object: Box<dyn Any + Send + Sync + 'static> = match self.message_kind() {
-            MessageKind::Json => Box::new(serde_json::to_string(&object)?),
+            MessageKind::Json => Box::new(simd_json::to_string(&object)?),
             MessageKind::Object => Box::new(object),
         };
         self.send_object(boxed_object).await
@@ -54,28 +87,13 @@ pub trait ReceiverChannel: Send + Sync {
 }
 
 impl dyn ReceiverChannel {
-    pub async fn receive<T>(&self) -> Result<(T, oneshot::Sender<Outcome>), Box<dyn Error>>
-    where
-        T: for<'de> Deserialize<'de> + Send + Sync + Sized + 'static,
-    {
+    pub async fn receive(&self) -> Result<ReceivedMessageContainer, Box<dyn Error>> {
         let result = self.receive_object().await?;
-        match self.message_kind() {
-            MessageKind::Json => {
-                let message = result.0.downcast::<String>().unwrap();
-                let message = serde_json::from_str(&message);
-                match message {
-                    Ok(message) => Ok((message, result.1)),
-                    Err(err) => {
-                        result.1.send(Outcome::Rejected).unwrap();
-                        Err(Box::new(err))
-                    }
-                }
-            }
-            MessageKind::Object => {
-                let message = result.0.downcast::<T>().unwrap();
-                Ok((*message, result.1))
-            }
-        }
+        Ok(ReceivedMessageContainer {
+            kind: self.message_kind(),
+            message: result.0,
+            outcome_sender: result.1,
+        })
     }
 }
 

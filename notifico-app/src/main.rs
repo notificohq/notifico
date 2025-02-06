@@ -264,9 +264,10 @@ async fn main() {
                     loop {
                         tokio::select! {
                             Ok(task) = pipelines_rx.receive() => {
-                                debug!("Received pipeline: {:?}", task);
                                 let executor = executor.clone();
                                 tokio::spawn(async move {
+                                    let task = task.decode().unwrap();
+                                    debug!("Received pipeline: {:?}", task);
                                     executor.execute_pipeline(task.0).await;
                                     task.1.send(Outcome::Accepted).unwrap();
                                 });
@@ -274,9 +275,10 @@ async fn main() {
                             event = events_rx.receive() => {
                                 match event {
                                     Ok(event) => {
-                                        debug!("Received event: {:?}", event);
                                         let event_handler = event_handler.clone();
                                         tokio::spawn(async move {
+                                            let event = event.decode().unwrap();
+                                            debug!("Received event: {:?}", event);
                                             event_handler.process_eventrequest(event.0).await.unwrap();
                                             event.1.send(Outcome::Accepted).unwrap();
                                         });
