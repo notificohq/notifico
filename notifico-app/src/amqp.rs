@@ -12,11 +12,10 @@ use notifico_core::queue::{MessageKind, Outcome, ReceiverChannel, SenderChannel}
 use std::any::Any;
 use std::error::Error;
 use std::mem;
-use std::ops::Deref;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::{oneshot, watch, Mutex};
-use tokio::time;
+use tokio::{task, time};
 use tracing::info;
 use url::Url;
 
@@ -59,8 +58,8 @@ impl AmqpClient {
         link_name: &str,
     ) -> anyhow::Result<AmqpReceiver> {
         let mut receiver = Receiver::attach(&mut self.session, link_name, address).await?;
-        let (message_tx, message_rx) = flume::unbounded();
-        let (drop_tx, drop_rx) = watch::channel(false);
+        let (message_tx, message_rx) = flume::bounded(200);
+        let (drop_tx, mut drop_rx) = watch::channel(false);
 
         let (accepted_tx, accepted_rx) = flume::unbounded::<DeliveryInfo>();
         let (rejected_tx, rejected_rx) = flume::unbounded::<DeliveryInfo>();
@@ -69,20 +68,17 @@ impl AmqpClient {
         let ack_buffer_len = 100;
         let ack_interval = Duration::from_secs(1);
 
-        tokio::spawn(async move {
-            let mut drop_rx = drop_rx;
+        let loop_handle = tokio::spawn(async move {
             let mut interval = time::interval(ack_interval);
 
             let mut accepted_buffer: Vec<DeliveryInfo> = Vec::with_capacity(ack_buffer_len);
+
             loop {
                 tokio::select! {
                     Ok(_) = drop_rx.changed() => {
                         receiver.detach().await.unwrap();
                         break;
                     },
-                    Ok(message) = receiver.recv::<String>() => {
-                        let _ = message_tx.send_async(message.into_parts()).await;
-                    }
                     Ok(outcome) = accepted_rx.recv_async()  => {
                         accepted_buffer.push(outcome);
                         if accepted_buffer.len() >= ack_buffer_len {
@@ -100,7 +96,10 @@ impl AmqpClient {
                     Ok(outcome) = released_rx.recv_async() => {
                         receiver.release(outcome).await.unwrap();
                     }
-                    else => break
+                    Ok(message) = receiver.recv::<String>(), if !message_tx.is_full() => {
+                        let _ = message_tx.send_async(message.into_parts()).await;
+                    }
+                    else => {break;}
                 }
             }
         });
@@ -111,6 +110,7 @@ impl AmqpClient {
             rejected_sender: rejected_tx,
             released_sender: released_tx,
             drop_sender: drop_tx,
+            loop_handle: Some(loop_handle),
         })
     }
 
@@ -141,7 +141,7 @@ impl SenderChannel for AmqpSender {
     ) -> Result<Outcome, Box<dyn Error>> {
         let mut sender_lk = self.sender.lock().await;
         let message = message.downcast::<String>().unwrap();
-        sender_lk.send(message.deref().clone()).await?;
+        sender_lk.send(*message).await?;
         Ok(Outcome::Accepted)
     }
 
@@ -156,6 +156,7 @@ pub struct AmqpReceiver {
     rejected_sender: flume::Sender<DeliveryInfo>,
     released_sender: flume::Sender<DeliveryInfo>,
     drop_sender: watch::Sender<bool>,
+    loop_handle: Option<task::JoinHandle<()>>,
 }
 
 #[async_trait]
@@ -197,5 +198,6 @@ impl ReceiverChannel for AmqpReceiver {
 impl Drop for AmqpReceiver {
     fn drop(&mut self) {
         let _ = self.drop_sender.send(true);
+        futures::executor::block_on(self.loop_handle.take().unwrap()).unwrap();
     }
 }

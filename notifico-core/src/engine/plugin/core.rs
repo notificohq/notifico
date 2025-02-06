@@ -51,11 +51,11 @@ impl EnginePlugin for CorePlugin {
                 while let Some(recipient) = recipients.next().await {
                     recipient_number += 1;
                     if recipient_number == 1 {
-                        context.recipient = Some(recipient.clone());
+                        context.recipient = Some(recipient);
                     } else {
                         let mut context = context.clone();
                         context.step_number += 1;
-                        context.recipient = Some(recipient.clone());
+                        context.recipient = Some(recipient);
 
                         context.notification_id = Uuid::now_v7();
 
@@ -94,7 +94,7 @@ mod tests {
     async fn test_no_recipients() {
         let mut context = PipelineContext::default();
         let step = serde_json::json!({ "step": "core.set_recipients", "recipients": [] });
-        let step = SerializedStep(step.as_object().unwrap().clone());
+        let step = SerializedStep(step.as_object().unwrap().clone().into());
 
         let (pipeline_tx, pipeline_rx) = flume::unbounded();
         let plugin = CorePlugin::new(Arc::new(pipeline_tx), Arc::new(RecipientInlineController));
@@ -121,7 +121,7 @@ mod tests {
                 ]
             }
         );
-        let step = SerializedStep(step.as_object().unwrap().clone());
+        let step = SerializedStep(step.as_object().unwrap().clone().into());
 
         let (pipeline_tx, pipeline_rx) = flume::unbounded();
         let plugin = CorePlugin::new(Arc::new(pipeline_tx), Arc::new(RecipientInlineController));
@@ -162,7 +162,7 @@ mod tests {
                 ]
             }
         );
-        let step = SerializedStep(step.as_object().unwrap().clone());
+        let step = SerializedStep(step.as_object().unwrap().clone().into());
 
         let (pipeline_tx, pipeline_rx) = flume::unbounded();
         let plugin = CorePlugin::new(Arc::new(pipeline_tx), Arc::new(RecipientInlineController));

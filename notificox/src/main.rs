@@ -169,7 +169,7 @@ async fn main() {
                         "step": "templates.load-context",
                     })
                 };
-                let step = SerializedStep(step.as_object().cloned().unwrap());
+                let step = SerializedStep(step.as_object().cloned().unwrap().into());
                 pipeline.steps.push(step);
 
                 // attachment.attach
@@ -192,7 +192,7 @@ async fn main() {
                         "attachments": attachments,
                     });
 
-                    let step = SerializedStep(step.as_object().cloned().unwrap());
+                    let step = SerializedStep(step.as_object().cloned().unwrap().into());
                     pipeline.steps.push(step);
                 }
 
@@ -202,7 +202,7 @@ async fn main() {
                     "step": transport_registry.get_step(&transport_name).unwrap(),
                     "credential": SINGLETON_CREDENTIAL_NAME
                 });
-                let step = SerializedStep(step.as_object().cloned().unwrap());
+                let step = SerializedStep(step.as_object().cloned().unwrap().into());
                 pipeline.steps.push(step);
 
                 pipeline
@@ -226,7 +226,7 @@ async fn main() {
                 id: Uuid::nil(),
                 project_id: Uuid::nil(),
                 event: SINGLETON_EVENT_NAME.to_string(),
-                recipients: vec![RecipientSelector::Recipient(recipient)],
+                recipients: vec![RecipientSelector::Recipient(recipient)].into(),
                 context,
             };
 
@@ -284,11 +284,11 @@ async fn main() {
                 id: Uuid::now_v7(),
                 project_id: Default::default(),
                 event,
-                recipients,
+                recipients: Arc::new(recipients),
                 context: json5::from_str(&context).unwrap(),
             };
 
-            let url = ingest.join("/v1/send").unwrap();
+            let url = ingest.join("/v1/trigger").unwrap();
 
             let client = reqwest::Client::new();
             client.post(url).json(&request).send().await.unwrap();
