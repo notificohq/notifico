@@ -3,6 +3,7 @@ use backoff::future::retry;
 use backoff::ExponentialBackoff;
 use fe2o3_amqp::connection::ConnectionHandle;
 use fe2o3_amqp::link::delivery::DeliveryInfo;
+use fe2o3_amqp::link::receiver::CreditMode;
 use fe2o3_amqp::session::SessionHandle;
 use fe2o3_amqp::types::definitions::AmqpError;
 use fe2o3_amqp::types::definitions::Error as Fe2o3Error;
@@ -11,7 +12,6 @@ use fe2o3_amqp::{Connection, Receiver, Sender, Session};
 use notifico_core::queue::{MessageKind, Outcome, ReceiverChannel, SenderChannel};
 use std::any::Any;
 use std::error::Error;
-use std::mem;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::{oneshot, watch, Mutex};
@@ -57,15 +57,24 @@ impl AmqpClient {
         address: &str,
         link_name: &str,
     ) -> anyhow::Result<AmqpReceiver> {
-        let mut receiver = Receiver::attach(&mut self.session, link_name, address).await?;
-        let (message_tx, message_rx) = flume::bounded(200);
+        let prefetch_count = 1000;
+
+        let receiver = Receiver::builder();
+        let mut receiver = receiver
+            .name(link_name)
+            .source(address)
+            .credit_mode(CreditMode::Auto(prefetch_count as _))
+            .attach(&mut self.session)
+            .await?;
+
+        let (message_tx, message_rx) = flume::bounded(prefetch_count as _);
         let (drop_tx, mut drop_rx) = watch::channel(false);
 
         let (accepted_tx, accepted_rx) = flume::unbounded::<DeliveryInfo>();
         let (rejected_tx, rejected_rx) = flume::unbounded::<DeliveryInfo>();
         let (released_tx, released_rx) = flume::unbounded::<DeliveryInfo>();
 
-        let ack_buffer_len = 100;
+        let ack_buffer_len = prefetch_count / 3;
         let ack_interval = Duration::from_secs(1);
 
         let loop_handle = tokio::spawn(async move {
@@ -75,6 +84,7 @@ impl AmqpClient {
 
             loop {
                 tokio::select! {
+                    biased;
                     Ok(_) = drop_rx.changed() => {
                         receiver.detach().await.unwrap();
                         break;
@@ -82,13 +92,13 @@ impl AmqpClient {
                     Ok(outcome) = accepted_rx.recv_async()  => {
                         accepted_buffer.push(outcome);
                         if accepted_buffer.len() >= ack_buffer_len {
-                            let drained: Vec<DeliveryInfo> = mem::replace(&mut accepted_buffer, Vec::with_capacity(ack_buffer_len));
-                            receiver.accept_all(drained).await.unwrap();
+                            receiver.accept_all(accepted_buffer.drain(..)).await.unwrap();
                         }
                     }
                     _ = interval.tick() => {
-                        let drained: Vec<DeliveryInfo> = mem::replace(&mut accepted_buffer, Vec::with_capacity(ack_buffer_len));
-                        receiver.accept_all(drained).await.unwrap();
+                        if !accepted_buffer.is_empty() {
+                            receiver.accept_all(accepted_buffer.drain(..)).await.unwrap();
+                        }
                     }
                     Ok(outcome) = rejected_rx.recv_async() => {
                         receiver.reject(outcome, Fe2o3Error::new(AmqpError::InternalError, None, None)).await.unwrap();
@@ -198,6 +208,8 @@ impl ReceiverChannel for AmqpReceiver {
 impl Drop for AmqpReceiver {
     fn drop(&mut self) {
         let _ = self.drop_sender.send(true);
-        futures::executor::block_on(self.loop_handle.take().unwrap()).unwrap();
+        if let Some(handle) = self.loop_handle.take() {
+            let _ = futures::executor::block_on(handle);
+        }
     }
 }

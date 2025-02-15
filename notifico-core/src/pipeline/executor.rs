@@ -25,14 +25,10 @@ impl PipelineExecutor {
         );
 
         let steps = task.context.pipeline.steps.clone();
-        for (step_number, step) in steps.iter().enumerate() {
-            if step_number < task.context.step_number {
-                continue;
-            }
-
+        for step in steps.iter() {
             let result = self.engine.execute_step(&mut task.context, step).await;
             match result {
-                Ok(StepOutput::Continue) => task.context.step_number += 1,
+                Ok(StepOutput::Continue) => {}
                 Ok(StepOutput::Interrupt) => break,
                 Err(err) => {
                     error!("Error executing step: {:?}", err);

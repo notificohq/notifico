@@ -30,7 +30,6 @@ impl ReceivedMessageContainer {
         match self.kind {
             MessageKind::Json => {
                 let message = self.message.downcast::<String>().unwrap();
-                // let message = serde_json::from_str(&message);
                 let mut message = message.into_bytes();
                 let message = simd_json::from_slice(&mut message);
                 match message {

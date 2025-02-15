@@ -12,7 +12,6 @@ use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::sync::Arc;
 use tracing::debug;
-use uuid::Uuid;
 
 pub struct CorePlugin {
     pipeline_sender: Arc<dyn SenderChannel>,
@@ -53,11 +52,8 @@ impl EnginePlugin for CorePlugin {
                     if recipient_number == 1 {
                         context.recipient = Some(recipient);
                     } else {
-                        let mut context = context.clone();
-                        context.step_number += 1;
+                        let mut context = context.fork();
                         context.recipient = Some(recipient);
-
-                        context.notification_id = Uuid::now_v7();
 
                         let task = PipelineTask { context };
 

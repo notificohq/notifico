@@ -72,7 +72,6 @@ impl EventHandler {
 
             let context = PipelineContext {
                 pipeline: pipeline.clone(),
-                step_number: 0,
 
                 project_id: msg.project_id,
                 recipient: Default::default(),

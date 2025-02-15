@@ -259,6 +259,7 @@ async fn main() {
                     Ok(task) = pipelines_rx.receive() => {
                         let executor = executor.clone();
                         let _handle = joinset.spawn(async move {
+                            let task = task.decode().unwrap();
                             executor.execute_pipeline(task.0).await;
                             task.1.send(Outcome::Accepted).unwrap();
                         });
