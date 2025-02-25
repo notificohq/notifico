@@ -1,7 +1,7 @@
 [package]
 name = "notifico-app"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 notifico-core = { path = "../notifico-core" }
@@ -12,8 +12,8 @@ notifico-attachment = { path = "../notifico-attachment" }
 
 notifico-migration = { path = "migration" }
 
-anyhow = "1.0.95"
-async-trait = "0.1.84"
+anyhow = "1.0.96"
+async-trait = "0.1.86"
 axum = { workspace = true }
 axum-extra = { workspace = true }
 axum-prometheus = "0.8.0"
@@ -24,15 +24,15 @@ dotenvy = "0.15.7"
 fe2o3-amqp = { version = "0.13.1" }
 flume = "0.11.1"
 futures = "0.3.31"
-jsonwebtoken = "9.3.0"
-log = "0.4.22"
+jsonwebtoken = "9.3.1"
+log = "0.4.26"
 metrics = { workspace = true }
 moka = "0.12.10"
 multimap = "0.10.0"
-rust-embed = { version = "8.5.0", features = ["mime-guess"] }
+rust-embed = { version = "8.6.0", features = ["mime-guess"] }
 sea-orm = { workspace = true }
-serde = { version = "1.0.217", features = ["derive"] }
-serde_json = "1.0.134"
+serde = { version = "1.0.218", features = ["derive"] }
+serde_json = "1.0.139"
 thiserror = "2.0.11"
 tokio = { workspace = true }
 tower-http = { version = "0.6.2", features = ["cors"] }

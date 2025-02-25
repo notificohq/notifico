@@ -85,7 +85,7 @@ async fn main() {
     let _ = dotenvy::dotenv();
 
     if std::env::var("RUST_LOG").is_err() {
-        std::env::set_var("RUST_LOG", "notificox=info,notifico_core=info,warn");
+        unsafe { std::env::set_var("RUST_LOG", "notificox=info,notifico_core=info,warn") };
     }
 
     tracing_subscriber::registry()

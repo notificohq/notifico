@@ -1,17 +1,17 @@
 [package]
 name = "notifico-slack"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 notifico-core = { path = "../../notifico-core" }
 notifico-attachment = { path = "../../notifico-attachment" }
 
 reqwest = { workspace = true }
-serde = "1.0.217"
-async-trait = "0.1.84"
-thiserror = "2.0.9"
-tokio = { version = "1.42.0", features = ["fs"] }
+serde = "1.0.218"
+async-trait = "0.1.86"
+thiserror = "2.0.11"
+tokio = { version = "1.43.0", features = ["fs"] }
 tokio-util = "0.7.13"
 url = { workspace = true }
 serde_urlencoded = "0.7.1"

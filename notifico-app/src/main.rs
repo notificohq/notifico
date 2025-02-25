@@ -88,7 +88,7 @@ async fn main() {
     let _ = dotenvy::dotenv();
 
     if std::env::var("RUST_LOG").is_err() {
-        std::env::set_var("RUST_LOG", "h2=warn,info");
+        unsafe { std::env::set_var("RUST_LOG", "h2=warn,info") };
     }
 
     let args = Args::parse();
