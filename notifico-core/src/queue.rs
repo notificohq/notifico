@@ -30,8 +30,7 @@ impl ReceivedMessageContainer {
         match self.kind {
             MessageKind::Json => {
                 let message = self.message.downcast::<String>().unwrap();
-                let mut message = message.into_bytes();
-                let message = simd_json::from_slice(&mut message);
+                let message = serde_json::from_str(&message);
                 match message {
                     Ok(message) => Ok((message, self.outcome_sender)),
                     Err(err) => {
@@ -63,7 +62,7 @@ impl dyn SenderChannel {
         object: impl Serialize + Send + Sync + 'static,
     ) -> Result<Outcome, Box<dyn Error>> {
         let boxed_object: Box<dyn Any + Send + Sync + 'static> = match self.message_kind() {
-            MessageKind::Json => Box::new(simd_json::to_string(&object)?),
+            MessageKind::Json => Box::new(serde_json::to_string(&object)?),
             MessageKind::Object => Box::new(object),
         };
         self.send_object(boxed_object).await
