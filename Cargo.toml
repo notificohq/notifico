@@ -24,21 +24,21 @@ members = [
 ]
 
 [workspace.dependencies]
-sea-orm = { version = "1.1.6", features = ["sqlx-sqlite", "sqlx-postgres", "sqlx-mysql", "runtime-tokio-native-tls", "macros"] }
-reqwest = { version = "0.12.12", default-features = false, features = ["json", "native-tls", "native-tls-alpn", "charset", "http2", "multipart", "stream"] }
-axum = { version = "0.8.1", features = ["macros"] }
-axum-extra = { version = "0.10.0", features = ["typed-header"] }
-clap = { version = "4.5.31", features = ["derive", "color", "usage", "env"] }
-metrics = "0.24.1"
-tokio = { version = "1.43", features = ["macros", "rt", "sync", "rt-multi-thread", "signal", "io-util"] }
+sea-orm = { version = "1.1.10", features = ["sqlx-sqlite", "sqlx-postgres", "sqlx-mysql", "runtime-tokio-native-tls", "macros"] }
+reqwest = { version = "0.12.15", default-features = false, features = ["json", "native-tls", "native-tls-alpn", "charset", "http2", "multipart", "stream"] }
+axum = { version = "0.8.3", features = ["macros"] }
+axum-extra = { version = "0.10.1", features = ["typed-header"] }
+clap = { version = "4.5.37", features = ["derive", "color", "usage", "env"] }
+metrics = "0.24.2"
+tokio = { version = "1.44", features = ["macros", "rt", "sync", "rt-multi-thread", "signal", "io-util"] }
 url = { version = "2.5.4", features = ["serde"] }
 utoipa = { version = "5.3.1", features = ["axum_extras", "chrono", "uuid", "url"] }
 utoipa-axum = "0.2"
 utoipa-swagger-ui = { version = "9", features = ["axum", "vendored"] }
-uuid = { version = "1.14.0", features = ["serde", "v4", "v7", "fast-rng"] }
+uuid = { version = "1.16.0", features = ["serde", "v4", "v7", "fast-rng"] }
 
 [workspace.dependencies.sea-orm-migration]
-version = "1.1.6"
+version = "1.1.10"
 features = [
     # Enable at least one `ASYNC_RUNTIME` and `DATABASE_DRIVER` feature if you want to run migration via CLI.
     # View the list of supported features at https://www.sea-ql.org/SeaORM/docs/install-and-config/database-and-async-runtime.

@@ -5,4 +5,4 @@ edition = "2024"
 
 [dependencies]
 notifico-core = { path = "../../notifico-core" }
-async-trait = "0.1.86"
+async-trait = "0.1.88"

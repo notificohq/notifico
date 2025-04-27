@@ -21,12 +21,12 @@ use crate::http::ui::HttpUiExtensions;
 use crate::plugin::SubscriptionPlugin;
 use axum_prometheus::{Handle, MakeDefaultHandle};
 use clap::{Parser, Subcommand};
+use http::SecretKey;
 use migration::{Migrator, MigratorTrait};
 use notifico_attachment::AttachmentPlugin;
 use notifico_core::credentials::env::EnvCredentialStorage;
 use notifico_core::engine::plugin::core::CorePlugin;
 use notifico_core::engine::Engine;
-use notifico_core::http::SecretKey;
 use notifico_core::pipeline::event::EventHandler;
 use notifico_core::pipeline::executor::PipelineExecutor;
 use notifico_core::queue::{Outcome, ReceiverChannel, SenderChannel};
@@ -105,10 +105,14 @@ async fn main() {
     match args.command {
         Commands::Run { components } => {
             if args.secret_key == WEAK_SECRET_KEY {
-                warn!("Weak secret key is not recommended for production environments. Please set NOTIFICO_SECRET_KEY to a stronger key.");
+                warn!(
+                    "Weak secret key is not recommended for production environments. Please set NOTIFICO_SECRET_KEY to a stronger key."
+                );
             }
             if args.public_url.is_none() {
-                warn!("NOTIFICO_PUBLIC_URL is not provided. Some features may not work: List-Unsubscribe");
+                warn!(
+                    "NOTIFICO_PUBLIC_URL is not provided. Some features may not work: List-Unsubscribe"
+                );
             }
 
             let components: HashSet<String> = components.into_iter().collect();

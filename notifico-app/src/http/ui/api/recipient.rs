@@ -1,12 +1,12 @@
 use crate::controllers::recipient::{RecipientDbController, RecipientItem};
 use crate::crud_table::{AdminCrudTable, ItemWithId, ListQueryParams, RefineListQueryParams};
 use crate::http::auth::Claims;
+use crate::http::SecretKey;
 use axum::extract::{Path, Query};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::{Extension, Json};
 use jsonwebtoken::{EncodingKey, Header};
-use notifico_core::http::SecretKey;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Arc;
