@@ -10,7 +10,6 @@ notifico-attachment = { path = "../notifico-attachment" }
 notifico-telegram = { path = "../transports/notifico-telegram" }
 notifico-smtp = { path = "../transports/notifico-smtp" }
 notifico-whatsapp = { path = "../transports/notifico-whatsapp" }
-notifico-smpp = { path = "../transports/notifico-smpp" }
 notifico-slack = { path = "../transports/notifico-slack" }
 notifico-pushover = { path = "../transports/notifico-pushover" }
 notifico-gotify = { path = "../transports/notifico-gotify" }

@@ -9,7 +9,6 @@ use notifico_noop::NoopTransport;
 use notifico_ntfy::NtfyTransport;
 use notifico_pushover::PushoverTransport;
 use notifico_slack::SlackTransport;
-use notifico_smpp::SmppPlugin;
 use notifico_smtp::EmailTransport;
 use notifico_telegram::TelegramTransport;
 use notifico_whatsapp::WabaTransport;
@@ -22,10 +21,6 @@ pub fn all_transports(
 ) -> Vec<(Arc<dyn EnginePlugin>, Arc<dyn Transport>)> {
     let mut plugins: Vec<(Arc<dyn EnginePlugin>, Arc<dyn Transport>)> = vec![];
     let http = reqwest::Client::builder().build().unwrap();
-
-    // Complicated transports
-    let smpp_plugin = Arc::new(SmppPlugin::new(credentials.clone()));
-    plugins.push((smpp_plugin.clone(), smpp_plugin.clone()));
 
     // Simple transports
     let email_transport = Arc::new(EmailTransport::new(attachments.clone()));

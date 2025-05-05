@@ -11,7 +11,6 @@ members = [
     "transports/notifico-smtp",
     "transports/notifico-telegram",
     "transports/notifico-whatsapp",
-    "transports/notifico-smpp",
     "transports/notifico-slack",
     "transports/notifico-pushover",
     "transports/notifico-gotify",
