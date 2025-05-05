@@ -5,10 +5,8 @@ edition = "2024"
 
 [dependencies]
 notifico-core = { path = "../notifico-core" }
-notifico-transports = { path = "../notifico-transports" }
 
 notifico-template = { path = "../notifico-template" }
-notifico-attachment = { path = "../notifico-attachment" }
 
 notifico-migration = { path = "migration" }
 
@@ -27,7 +25,7 @@ futures = "0.3.31"
 jsonwebtoken = "9.3.1"
 log = "0.4.27"
 metrics = { workspace = true }
-moka = "0.12.10"
+moka = { version = "0.12.10", features = ["future"] }
 multimap = "0.10.0"
 rust-embed = { version = "8.7.0", features = ["mime-guess"] }
 sea-orm = { workspace = true }

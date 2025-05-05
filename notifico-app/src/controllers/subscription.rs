@@ -6,11 +6,9 @@ use crate::entity::subscription::Entity as Subscription;
 use notifico_core::error::EngineError;
 use sea_orm::ActiveValue::Set;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityOrSelect, EntityTrait, PaginatorTrait,
-    QueryFilter,
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
 };
 use serde::Serialize;
-use tracing::error;
 use uuid::Uuid;
 
 pub struct SubscriptionDbController {
@@ -18,10 +16,6 @@ pub struct SubscriptionDbController {
 }
 
 impl SubscriptionDbController {
-    pub fn new(db: DatabaseConnection) -> Self {
-        Self { db }
-    }
-
     pub async fn set_subscribed(
         &self,
         recipient_id: Uuid,
@@ -60,23 +54,6 @@ impl SubscriptionDbController {
             }
         };
         Ok(())
-    }
-    pub async fn is_subscribed(&self, recipient_id: Uuid, event: &str, channel: &str) -> bool {
-        let result = Subscription
-            .select()
-            .filter(subscription::Column::RecipientId.eq(recipient_id))
-            .filter(subscription::Column::Event.eq(event))
-            .filter(subscription::Column::Channel.eq(channel))
-            .one(&self.db)
-            .await;
-        match result {
-            Ok(Some(subscription)) => subscription.is_subscribed,
-            Ok(None) => true,
-            Err(e) => {
-                error!("Error checking subscription: {}", e);
-                false
-            }
-        }
     }
 }
 

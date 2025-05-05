@@ -6,7 +6,6 @@ use crate::controllers::group::GroupDbController;
 use crate::controllers::pipeline::PipelineDbController;
 use crate::controllers::project::ProjectController;
 use crate::controllers::recipient::RecipientDbController;
-use crate::controllers::subscription::SubscriptionDbController;
 use crate::controllers::template::DbTemplateSource;
 use crate::http::SecretKey;
 use axum::http::header::CONTENT_TYPE;
@@ -24,7 +23,6 @@ use tokio::net::TcpListener;
 #[derive(Clone)]
 pub(crate) struct HttpUiExtensions {
     pub recipient_controller: Arc<RecipientDbController>,
-    pub subscription_controller: Arc<SubscriptionDbController>,
     pub pipeline_controller: Arc<PipelineDbController>,
     pub project_controller: Arc<ProjectController>,
     pub template_controller: Arc<DbTemplateSource>,

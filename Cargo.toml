@@ -6,20 +6,8 @@ members = [
     "notifico-app/migration",
     "notificox",
     # Libs
-    ## Transports
-    "notifico-transports",
-    "transports/notifico-smtp",
-    "transports/notifico-telegram",
-    "transports/notifico-whatsapp",
-    "transports/notifico-slack",
-    "transports/notifico-pushover",
-    "transports/notifico-gotify",
-    "transports/notifico-ntfy",
-    "transports/notifico-noop",
-    ## Other
     "notifico-core",
     "notifico-template",
-    "notifico-attachment",
 ]
 
 [workspace.dependencies]

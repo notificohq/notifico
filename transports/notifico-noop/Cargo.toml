@@ -1,8 +1,0 @@
-[package]
-name = "notifico-noop"
-version = "0.1.0"
-edition = "2024"
-
-[dependencies]
-notifico-core = { path = "../../notifico-core" }
-async-trait = "0.1.88"

@@ -4,8 +4,6 @@ mod crud_table;
 #[allow(unused_imports)]
 pub(crate) mod entity;
 mod http;
-mod plugin;
-
 use crate::amqp::AmqpClient;
 use crate::controllers::api_key::ApiKeyController;
 use crate::controllers::event::EventDbController;
@@ -13,27 +11,22 @@ use crate::controllers::group::GroupDbController;
 use crate::controllers::pipeline::PipelineDbController;
 use crate::controllers::project::ProjectController;
 use crate::controllers::recipient::RecipientDbController;
-use crate::controllers::subscription::SubscriptionDbController;
 use crate::controllers::template::DbTemplateSource;
 use crate::http::ingest::HttpIngestExtensions;
 use crate::http::public::HttpPublicExtensions;
 use crate::http::ui::HttpUiExtensions;
-use crate::plugin::SubscriptionPlugin;
 use axum_prometheus::{Handle, MakeDefaultHandle};
 use clap::{Parser, Subcommand};
 use http::SecretKey;
 use migration::{Migrator, MigratorTrait};
-use notifico_attachment::AttachmentPlugin;
 use notifico_core::credentials::env::EnvCredentialStorage;
 use notifico_core::engine::plugin::core::CorePlugin;
 use notifico_core::engine::Engine;
 use notifico_core::pipeline::event::EventHandler;
 use notifico_core::pipeline::executor::PipelineExecutor;
 use notifico_core::queue::{Outcome, ReceiverChannel, SenderChannel};
-use notifico_core::recorder::BaseRecorder;
 use notifico_core::transport::TransportRegistry;
 use notifico_template::Templater;
-use notifico_transports::all_transports;
 use sea_orm::{ConnectOptions, Database};
 use std::collections::HashSet;
 use std::fs::OpenOptions;
@@ -165,24 +158,14 @@ async fn main() {
             // Storages
             let credentials = Arc::new(EnvCredentialStorage::new());
             let pipeline_controller = Arc::new(PipelineDbController::new(db_connection.clone()));
-            let recorder = Arc::new(BaseRecorder::new());
             let templater_source = Arc::new(DbTemplateSource::new(db_connection.clone()));
             let recipient_controller = Arc::new(RecipientDbController::new(db_connection.clone()));
             let api_key_controller = Arc::new(ApiKeyController::new(db_connection.clone()));
 
-            let subscription_controller =
-                Arc::new(SubscriptionDbController::new(db_connection.clone()));
-
-            let subman = Arc::new(SubscriptionPlugin::new(
-                subscription_controller.clone(),
-                args.secret_key.as_bytes().to_vec(),
-                args.public_url,
-            ));
-
             let secret_key = Arc::new(SecretKey(args.secret_key.as_bytes().to_vec()));
 
             // Create Engine with plugins
-            let mut transport_registry = TransportRegistry::new();
+            let transport_registry = TransportRegistry::new();
 
             let engine = {
                 let mut engine = Engine::new();
@@ -191,19 +174,6 @@ async fn main() {
                     recipient_controller.clone(),
                 )));
                 engine.add_plugin(Arc::new(Templater::new(templater_source.clone())));
-                engine.add_plugin(subman.clone());
-
-                let attachment_plugin = Arc::new(AttachmentPlugin::new(false));
-                engine.add_plugin(attachment_plugin.clone());
-
-                for (engine_plugin, transport) in all_transports(
-                    credentials.clone(),
-                    recorder.clone(),
-                    attachment_plugin.clone(),
-                ) {
-                    engine.add_plugin(engine_plugin);
-                    transport_registry.register(transport);
-                }
                 engine
             };
 
@@ -227,7 +197,6 @@ async fn main() {
             if components.is_empty() || components.contains(COMPONENT_PUBLIC) {
                 info!("Starting HTTP public server on {}", args.public);
                 let ext = HttpPublicExtensions {
-                    subscription_controller: subscription_controller.clone(),
                     secret_key: secret_key.clone(),
                 };
                 http::public::start(args.public, ext).await;
@@ -242,7 +211,6 @@ async fn main() {
                 let ext = HttpUiExtensions {
                     recipient_controller: recipient_controller.clone(),
                     project_controller,
-                    subscription_controller: subscription_controller.clone(),
                     pipeline_controller: pipeline_controller.clone(),
                     template_controller: templater_source.clone(),
                     event_controller,

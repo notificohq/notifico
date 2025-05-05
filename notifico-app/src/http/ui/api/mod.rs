@@ -58,7 +58,6 @@ pub(crate) fn get_router(ext: HttpUiExtensions) -> Router {
         .routes(routes!(template::get, template::update, template::delete))
         // Layers
         .layer(Extension(ext.recipient_controller))
-        .layer(Extension(ext.subscription_controller))
         .layer(Extension(ext.pipeline_controller))
         .layer(Extension(ext.project_controller))
         .layer(Extension(ext.template_controller))

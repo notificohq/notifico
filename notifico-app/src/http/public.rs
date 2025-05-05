@@ -23,7 +23,6 @@ use utoipa_swagger_ui::SwaggerUi;
 
 #[derive(Clone)]
 pub(crate) struct HttpPublicExtensions {
-    pub subscription_controller: Arc<SubscriptionDbController>,
     pub secret_key: Arc<SecretKey>,
 }
 
@@ -50,8 +49,7 @@ pub(crate) async fn start(bind: SocketAddr, ext: HttpPublicExtensions) {
         .routes(routes!(list_unsubscribe))
         .routes(routes!(subscription_parameters))
         .layer(PrometheusMetricLayer::new())
-        .layer(Extension(ext.secret_key.clone()))
-        .layer(Extension(ext.subscription_controller.clone()));
+        .layer(Extension(ext.secret_key.clone()));
 
     let (app, api) = app.split_for_parts();
     let app = app.merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", api));
