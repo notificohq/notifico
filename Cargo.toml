@@ -7,7 +7,6 @@ members = [
     "notificox",
     # Libs
     "notifico-core",
-    "notifico-template",
 ]
 
 [workspace.dependencies]

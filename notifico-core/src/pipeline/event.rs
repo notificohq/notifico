@@ -3,7 +3,6 @@ use crate::pipeline::context::{EventContext, PipelineContext};
 use crate::pipeline::executor::PipelineTask;
 use crate::pipeline::storage::PipelineStorage;
 use crate::queue::SenderChannel;
-use crate::recipient::Recipient;
 use crate::step::SerializedStep;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -25,7 +24,6 @@ pub struct ProcessEventRequest {
 #[serde(rename_all = "snake_case", untagged)]
 pub enum RecipientSelector {
     Id(Uuid),
-    Recipient(Recipient),
 }
 
 pub struct EventHandler {
@@ -74,11 +72,9 @@ impl EventHandler {
                 pipeline: pipeline.clone(),
 
                 project_id: msg.project_id,
-                recipient: Default::default(),
                 event_name: msg.event.clone(),
                 event_context: msg.context.clone(),
                 plugin_contexts: Default::default(),
-                messages: Default::default(),
                 notification_id: Uuid::now_v7(),
                 event_id: msg.id,
             };

@@ -2,19 +2,13 @@ mod api;
 
 use crate::controllers::api_key::ApiKeyController;
 use crate::controllers::event::EventDbController;
-use crate::controllers::group::GroupDbController;
 use crate::controllers::pipeline::PipelineDbController;
 use crate::controllers::project::ProjectController;
-use crate::controllers::recipient::RecipientDbController;
-use crate::controllers::template::DbTemplateSource;
-use crate::http::SecretKey;
 use axum::http::header::CONTENT_TYPE;
 use axum::http::{StatusCode, Uri};
 use axum::response::{Html, IntoResponse, Response};
 use axum::Router;
 use axum_prometheus::PrometheusMetricLayer;
-use notifico_core::credentials::env::EnvCredentialStorage;
-use notifico_core::transport::TransportRegistry;
 use rust_embed::Embed;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -22,16 +16,10 @@ use tokio::net::TcpListener;
 
 #[derive(Clone)]
 pub(crate) struct HttpUiExtensions {
-    pub recipient_controller: Arc<RecipientDbController>,
     pub pipeline_controller: Arc<PipelineDbController>,
     pub project_controller: Arc<ProjectController>,
-    pub template_controller: Arc<DbTemplateSource>,
     pub event_controller: Arc<EventDbController>,
-    pub group_controller: Arc<GroupDbController>,
-    pub transport_registry: Arc<TransportRegistry>,
-    pub credential_controller: Arc<EnvCredentialStorage>,
     pub api_key_controller: Arc<ApiKeyController>,
-    pub secret_key: Arc<SecretKey>,
 }
 
 #[derive(Embed)]

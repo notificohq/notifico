@@ -6,8 +6,6 @@ edition = "2024"
 [dependencies]
 notifico-core = { path = "../notifico-core" }
 
-notifico-template = { path = "../notifico-template" }
-
 notifico-migration = { path = "migration" }
 
 anyhow = "1.0.98"

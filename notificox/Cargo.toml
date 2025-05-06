@@ -5,7 +5,6 @@ edition = "2024"
 
 [dependencies]
 notifico-core = { path = "../notifico-core" }
-notifico-template = { path = "../notifico-template" }
 # Other deps
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = { version = "1.0.140", features = ["preserve_order"] }
