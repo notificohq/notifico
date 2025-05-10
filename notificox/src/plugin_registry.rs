@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use std::collections::{HashMap, HashSet};
-use crate::plugin::{Plugin, NodeType};
+use crate::plugin::Plugin;
 use crate::workflow::{SerializedNode, ParsedWorkflow};
 use tracing;
 

@@ -10,15 +10,46 @@ pub struct SerializedNode {
     pub r#type: String,
 }
 
+#[derive(Serialize, Deserialize, Eq, PartialEq, Hash)]
+#[serde(untagged)]
+pub enum NodeSlot {
+    DefaultSlot(NodeId),
+    NamedSlot{node: NodeId, slot: String},
+}
+
+impl NodeSlot {
+    pub fn new(node: NodeId, slot: Option<String>) -> Self {
+        if let Some(slot) = slot {
+            Self::NamedSlot { node, slot }
+        } else {
+            Self::DefaultSlot(node)
+        }
+    }
+
+    pub fn node(&self) -> NodeId {
+        match self {
+            Self::NamedSlot { node, .. } => *node,
+            Self::DefaultSlot(node) => *node,
+        }
+    }
+
+    pub fn slot(&self) -> Option<&str> {
+        match self {
+            Self::NamedSlot { slot, .. } => Some(slot),
+            Self::DefaultSlot(_) => None,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct SerializedWorkflow {
     pub nodes: Vec<SerializedNode>,
-    pub connections: Vec<[NodeId; 2]>,
+    pub connections: Vec<[NodeSlot; 2]>,
 }
 
 pub struct ParsedWorkflow {
     pub nodes: HashMap<NodeId, SerializedNode>,
-    pub connections: HashMap<NodeId, Vec<NodeId>>,
+    pub connections: HashMap<NodeSlot, Vec<NodeSlot>>,
 }
 
 impl TryFrom<SerializedWorkflow> for ParsedWorkflow {
