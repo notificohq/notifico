@@ -19,10 +19,10 @@ impl WorkflowExecutor {
         })
     }
 
-    pub fn execute_node(&self, node: &SerializedNode, message: &mut Message) {
+    pub fn process_message(&self, node: &SerializedNode, message: &mut Message) {
         if let Some(plugin) = self.plugin_registry.nodes.get(&node.r#type) {
             tracing::info!("Executing node {} of type {}", node.id, node.r#type);
-            plugin.execute_node(node, message);
+            plugin.process_message(node, message);
         } else {
             tracing::warn!("No plugin found for node type: {}", node.r#type);
         }
@@ -36,7 +36,7 @@ impl WorkflowExecutor {
         };
 
         // Execute the trigger node
-        self.execute_node(trigger_node, &mut message);
+        self.process_message(trigger_node, &mut message);
 
         // Execute all connected nodes recursively
         self.execute_connected_nodes(workflow, &mut message, trigger_node.id);
@@ -47,7 +47,7 @@ impl WorkflowExecutor {
             for &target_node_id in target_nodes {
                 if let Some(target_node) = workflow.nodes.get(&target_node_id) {
                     message.node_id = target_node_id;
-                    self.execute_node(target_node, message);
+                    self.process_message(target_node, message);
                     // Recursively execute nodes connected to this target node
                     self.execute_connected_nodes(workflow, message, target_node_id);
                 } else {

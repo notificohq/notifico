@@ -6,7 +6,7 @@ use crate::message::Message;
 pub struct NoOpPlugin;
 
 impl Plugin for NoOpPlugin {
-    fn execute_node(&self, _node: &SerializedNode, _message: &mut Message) {
+    fn process_message(&self, _node: &SerializedNode, _message: &mut Message) {
         // Do nothing - this is a no-op plugin
     }
 

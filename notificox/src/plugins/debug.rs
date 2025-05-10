@@ -7,7 +7,7 @@ use tracing;
 pub struct DebugPlugin;
 
 impl Plugin for DebugPlugin {
-    fn execute_node(&self, _node: &SerializedNode, message: &mut Message) {
+    fn process_message(&self, _node: &SerializedNode, message: &mut Message) {
         tracing::info!("Debug Plugin - Message ID: {}, Node ID: {}, Data: {}", 
             message.id, 
             message.node_id, 
