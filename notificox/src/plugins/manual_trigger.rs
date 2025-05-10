@@ -1,16 +1,20 @@
-use crate::workflow::SerializedNode;
-use crate::plugin::{Plugin, NodeType, Outcome};
 use crate::message::Message;
+use crate::plugin::{NodeType, Outcome, Plugin};
+use crate::workflow::SerializedNode;
+use async_trait::async_trait;
 
 pub struct ManualTriggerPlugin;
 
+#[async_trait]
 impl Plugin for ManualTriggerPlugin {
-    fn process_message(&self, _node: &SerializedNode, message: Message, slot: Option<String>) -> Outcome {
+    async fn process_message(
+        &self,
+        _node: &SerializedNode,
+        message: Message,
+        slot: Option<String>,
+    ) -> Outcome {
         // Manual triggers don't need any execution logic
-        Outcome::Return {
-            message,
-            slot
-        }
+        Outcome::Return { message, slot }
     }
 
     fn all_node_types(&self) -> Vec<NodeType> {
@@ -19,4 +23,4 @@ impl Plugin for ManualTriggerPlugin {
             is_trigger: true,
         }]
     }
-} 
+}

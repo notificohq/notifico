@@ -1,5 +1,6 @@
 use crate::message::Message;
 use crate::workflow::SerializedNode;
+use async_trait::async_trait;
 
 pub struct NodeType {
     pub name: String,
@@ -16,8 +17,9 @@ pub enum Outcome {
     },
 }
 
+#[async_trait]
 pub trait Plugin {
-    fn process_message(
+    async fn process_message(
         &self,
         node: &SerializedNode,
         message: Message,

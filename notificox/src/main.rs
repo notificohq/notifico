@@ -1,24 +1,24 @@
-mod workflow;
-mod plugin_registry;
-mod plugin;
-mod plugins;
 mod message;
+mod plugin;
+mod plugin_registry;
+mod plugins;
+mod workflow;
 mod workflow_executor;
 
+use crate::message::Message;
+use crate::plugin_registry::PluginRegistry;
+use crate::plugins::debug::DebugPlugin;
+use crate::plugins::manual_trigger::ManualTriggerPlugin;
+use crate::plugins::noop::NoOpPlugin;
+use crate::workflow::{ParsedWorkflow, SerializedWorkflow};
+use crate::workflow_executor::WorkflowExecutor;
 use clap::{Parser, Subcommand};
+use std::fs;
+use std::sync::Arc;
+use tracing;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
-use tracing_subscriber::{fmt, EnvFilter};
-use std::fs;
-use tracing;
-use crate::workflow::{SerializedWorkflow, ParsedWorkflow};
-use crate::plugin_registry::PluginRegistry;
-use crate::plugins::noop::NoOpPlugin;
-use crate::plugins::manual_trigger::ManualTriggerPlugin;
-use crate::plugins::debug::DebugPlugin;
-use std::sync::Arc;
-use crate::workflow_executor::WorkflowExecutor;
-use crate::message::Message;
+use tracing_subscriber::{EnvFilter, fmt};
 
 #[derive(Parser, Debug)]
 struct Cli {
@@ -55,7 +55,7 @@ async fn main() {
                 tracing::error!("Failed to read file: {}", file);
                 std::process::exit(1);
             };
-            
+
             let json: SerializedWorkflow = serde_json::from_str(&contents).unwrap();
             let workflow = ParsedWorkflow::try_from(json).expect("Failed to parse workflow");
 
@@ -75,7 +75,7 @@ async fn main() {
 
             // Create message with trigger node ID
             let message = Message::new(trigger_node.id);
-            executor.execute_workflow(&workflow, message);
+            executor.execute_workflow(&workflow, message).await;
         }
     }
 }

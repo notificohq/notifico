@@ -1,16 +1,20 @@
-use crate::workflow::SerializedNode;
-use crate::plugin::{Plugin, NodeType, Outcome};
 use crate::message::Message;
+use crate::plugin::{NodeType, Outcome, Plugin};
+use crate::workflow::SerializedNode;
+use async_trait::async_trait;
 
 pub struct NoOpPlugin;
 
+#[async_trait]
 impl Plugin for NoOpPlugin {
-    fn process_message(&self, _node: &SerializedNode, message: Message, slot: Option<String>) -> Outcome {
+    async fn process_message(
+        &self,
+        _node: &SerializedNode,
+        message: Message,
+        slot: Option<String>,
+    ) -> Outcome {
         // Do nothing - this is a no-op plugin
-        Outcome::Return {
-            message,
-            slot
-        }
+        Outcome::Return { message, slot }
     }
 
     fn all_node_types(&self) -> Vec<NodeType> {
