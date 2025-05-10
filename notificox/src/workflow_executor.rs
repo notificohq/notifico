@@ -15,7 +15,7 @@ impl WorkflowExecutor {
 
     pub fn find_trigger_node<'a>(&self, workflow: &'a ParsedWorkflow) -> Option<&'a SerializedNode> {
         workflow.nodes.values().find(|node| {
-            self.plugin_registry.plugins.iter().any(|plugin| plugin.is_trigger(&node.r#type))
+            self.plugin_registry.triggers.contains(&node.r#type)
         })
     }
 
