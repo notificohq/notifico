@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use crate::workflow::{SerializedNode, ParsedWorkflow};
+use crate::workflow::{SerializedNode, ParsedWorkflow, NodeId};
 use crate::plugin_registry::PluginRegistry;
 use crate::message::Message;
 use tracing;
@@ -38,16 +38,21 @@ impl WorkflowExecutor {
         // Execute the trigger node
         self.execute_node(trigger_node, &mut message);
 
-        // Execute subsequent nodes in order
-        let mut current_node_id = trigger_node.id;
-        while let Some(&next_node_id) = workflow.connections.get(&current_node_id) {
-            if let Some(next_node) = workflow.nodes.get(&next_node_id) {
-                message.node_id = next_node_id;
-                self.execute_node(next_node, &mut message);
-                current_node_id = next_node_id;
-            } else {
-                tracing::error!("Node {} not found in workflow", next_node_id);
-                break;
+        // Execute all connected nodes recursively
+        self.execute_connected_nodes(workflow, &mut message, trigger_node.id);
+    }
+
+    fn execute_connected_nodes(&self, workflow: &ParsedWorkflow, message: &mut Message, current_node_id: NodeId) {
+        if let Some(target_nodes) = workflow.connections.get(&current_node_id) {
+            for &target_node_id in target_nodes {
+                if let Some(target_node) = workflow.nodes.get(&target_node_id) {
+                    message.node_id = target_node_id;
+                    self.execute_node(target_node, message);
+                    // Recursively execute nodes connected to this target node
+                    self.execute_connected_nodes(workflow, message, target_node_id);
+                } else {
+                    tracing::error!("Node {} not found in workflow", target_node_id);
+                }
             }
         }
     }

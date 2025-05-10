@@ -1,0 +1,27 @@
+{
+	"id": "example-workflow",
+	"nodes": [
+		{
+			"id": 1,
+			"type": "core.trigger.manual.v1"
+		},
+		{
+			"id": 2,
+			"type": "core.noop.v1"
+		},
+		{
+			"id": 3,
+			"type": "core.noop.v1"
+		}
+	],
+	"connections": [
+		[
+			1,
+			2
+		],
+		[
+			1,
+			3
+		]
+	]
+}

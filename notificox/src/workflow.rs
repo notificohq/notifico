@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::convert::TryFrom;
 
-type NodeId = u32;
+pub type NodeId = u32;
 
 #[derive(Serialize, Deserialize)]
 pub struct SerializedNode {
@@ -18,7 +18,7 @@ pub struct SerializedWorkflow {
 
 pub struct ParsedWorkflow {
     pub nodes: HashMap<NodeId, SerializedNode>,
-    pub connections: HashMap<NodeId, NodeId>,
+    pub connections: HashMap<NodeId, Vec<NodeId>>,
 }
 
 impl TryFrom<SerializedWorkflow> for ParsedWorkflow {
@@ -30,7 +30,12 @@ impl TryFrom<SerializedWorkflow> for ParsedWorkflow {
             .map(|node| (node.id, node))
             .collect();
 
-        let connections = workflow.connections.into_iter().map(|[source, target]| (source, target)).collect();
+        let mut connections = HashMap::new();
+        for [source, target] in workflow.connections {
+            connections.entry(source)
+                .or_insert_with(Vec::new)
+                .push(target);
+        }
 
         Ok(ParsedWorkflow { 
             nodes, 
