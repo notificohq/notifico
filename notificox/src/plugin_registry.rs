@@ -1,8 +1,6 @@
-use std::sync::Arc;
-use std::collections::{HashMap, HashSet};
 use crate::plugin::Plugin;
-use crate::workflow::{SerializedNode, ParsedWorkflow};
-use tracing;
+use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
 
 pub struct PluginRegistry {
     pub plugins: Vec<Arc<dyn Plugin>>,
@@ -22,7 +20,7 @@ impl PluginRegistry {
     pub fn load_plugin(&mut self, plugin: Arc<dyn Plugin>) {
         // Add to plugins list
         self.plugins.push(plugin.clone());
-        
+
         // Add to nodes mapping and triggers set
         for node_type in plugin.all_node_types() {
             self.nodes.insert(node_type.name.clone(), plugin.clone());
@@ -31,4 +29,4 @@ impl PluginRegistry {
             }
         }
     }
-} 
+}
