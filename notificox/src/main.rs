@@ -15,6 +15,7 @@ use crate::workflow::{SerializedWorkflow, ParsedWorkflow};
 use crate::plugin_registry::PluginRegistry;
 use crate::plugins::noop::NoOpPlugin;
 use crate::plugins::manual_trigger::ManualTriggerPlugin;
+use crate::plugins::debug::DebugPlugin;
 use std::sync::Arc;
 use crate::workflow_executor::WorkflowExecutor;
 use crate::message::Message;
@@ -61,6 +62,7 @@ async fn main() {
             let mut registry = PluginRegistry::new();
             registry.load_plugin(Arc::new(NoOpPlugin));
             registry.load_plugin(Arc::new(ManualTriggerPlugin));
+            registry.load_plugin(Arc::new(DebugPlugin));
 
             let executor = WorkflowExecutor::new(Arc::new(registry));
             tracing::info!("Successfully loaded JSON file from: {}", file);

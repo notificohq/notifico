@@ -8,7 +8,7 @@ pub struct Message {
 impl Message {
     pub fn new(node_id: u32) -> Self {
         Self {
-            id: uuid::Uuid::new_v4().to_string(),
+            id: uuid::Uuid::now_v7().to_string(),
             node_id,
             data: serde_json::json!({}),
         }
