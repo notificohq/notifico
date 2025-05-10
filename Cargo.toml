@@ -2,11 +2,7 @@
 resolver = "3"
 members = [
     # Binaries
-    "notifico-app",
-    "notifico-app/migration",
     "notificox",
-    # Libs
-    "notifico-core",
 ]
 
 [workspace.dependencies]
