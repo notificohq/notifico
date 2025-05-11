@@ -3,9 +3,9 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 pub struct PluginRegistry {
-    pub plugins: Vec<Arc<dyn Plugin>>,
-    pub nodes: HashMap<String, Arc<dyn Plugin>>,
-    pub triggers: HashSet<String>,
+    plugins: Vec<Arc<dyn Plugin>>,
+    nodes: HashMap<String, Arc<dyn Plugin>>,
+    triggers: HashSet<String>,
 }
 
 impl PluginRegistry {
@@ -28,5 +28,13 @@ impl PluginRegistry {
                 self.triggers.insert(node_type.name);
             }
         }
+    }
+
+    pub fn get_plugin(&self, node_type: &str) -> Option<&Arc<dyn Plugin>> {
+        self.nodes.get(node_type)
+    }
+
+    pub fn is_trigger(&self, node_type: &str) -> bool {
+        self.triggers.contains(node_type)
     }
 }

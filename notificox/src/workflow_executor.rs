@@ -19,7 +19,7 @@ impl WorkflowExecutor {
         workflow
             .nodes
             .values()
-            .filter(|node| self.plugin_registry.triggers.contains(&node.r#type))
+            .filter(|node| self.plugin_registry.is_trigger(&node.r#type))
             .collect()
     }
 
@@ -29,7 +29,7 @@ impl WorkflowExecutor {
         message: Message,
         slot: Option<String>,
     ) -> Outcome {
-        if let Some(plugin) = self.plugin_registry.nodes.get(&node.r#type) {
+        if let Some(plugin) = self.plugin_registry.get_plugin(&node.r#type) {
             tracing::info!(
                 "Executing node {} of type {} with slot {:?}",
                 node.id,
