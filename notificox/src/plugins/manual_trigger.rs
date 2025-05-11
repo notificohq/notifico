@@ -11,10 +11,13 @@ impl Plugin for ManualTriggerPlugin {
         &self,
         _node: &SerializedNode,
         message: Message,
-        slot: Option<String>,
+        _slot: Option<String>,
     ) -> Outcome {
         // Manual triggers don't need any execution logic
-        Outcome::Return { message, slot }
+        Outcome::Return {
+            message,
+            slot: None,
+        }
     }
 
     fn all_node_types(&self) -> Vec<NodeType> {

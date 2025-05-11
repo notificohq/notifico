@@ -21,7 +21,10 @@ impl Plugin for DebugPlugin {
             slot,
             message.data
         );
-        Outcome::Return { message, slot }
+        Outcome::Return {
+            message,
+            slot: None,
+        }
     }
 
     fn all_node_types(&self) -> Vec<NodeType> {

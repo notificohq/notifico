@@ -15,14 +15,12 @@ impl WorkflowExecutor {
         Self { plugin_registry }
     }
 
-    pub fn find_trigger_node<'a>(
-        &self,
-        workflow: &'a ParsedWorkflow,
-    ) -> Option<&'a SerializedNode> {
+    pub fn find_trigger_nodes<'a>(&self, workflow: &'a ParsedWorkflow) -> Vec<&'a SerializedNode> {
         workflow
             .nodes
             .values()
-            .find(|node| self.plugin_registry.triggers.contains(&node.r#type))
+            .filter(|node| self.plugin_registry.triggers.contains(&node.r#type))
+            .collect()
     }
 
     pub async fn process_message(
@@ -48,28 +46,39 @@ impl WorkflowExecutor {
     }
 
     pub async fn execute_workflow(&self, workflow: &ParsedWorkflow, message: Message) {
-        // Find the trigger node
-        let Some(trigger_node) = self.find_trigger_node(workflow) else {
-            tracing::error!("No trigger node found in workflow");
-            return;
-        };
+        // Find all trigger nodes
+        let trigger_nodes = self.find_trigger_nodes(workflow);
 
-        // Execute the trigger node
-        match self.process_message(trigger_node, message, None).await {
-            Outcome::Return {
-                message: new_message,
-                slot,
-            } => {
-                // Execute all connected nodes iteratively
-                self.execute_connected_nodes(
-                    workflow,
-                    new_message,
-                    NodeSlot::new(trigger_node.id, slot),
-                )
-                .await;
-            }
-            Outcome::Error { error, .. } => {
-                tracing::error!("Error executing trigger node: {}", error);
+        if trigger_nodes.is_empty() {
+            tracing::error!("No trigger nodes found in workflow");
+            return;
+        }
+
+        // Execute each trigger node
+        for trigger_node in trigger_nodes {
+            match self
+                .process_message(trigger_node, message.clone(), None)
+                .await
+            {
+                Outcome::Return {
+                    message: new_message,
+                    slot,
+                } => {
+                    // Execute all connected nodes iteratively
+                    self.execute_connected_nodes(
+                        workflow,
+                        new_message,
+                        NodeSlot::new(trigger_node.id, slot),
+                    )
+                    .await;
+                }
+                Outcome::Error { error, .. } => {
+                    tracing::error!(
+                        "Error executing trigger node {}: {}",
+                        trigger_node.id,
+                        error
+                    );
+                }
             }
         }
     }

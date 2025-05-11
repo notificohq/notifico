@@ -11,10 +11,13 @@ impl Plugin for NoOpPlugin {
         &self,
         _node: &SerializedNode,
         message: Message,
-        slot: Option<String>,
+        _slot: Option<String>,
     ) -> Outcome {
         // Do nothing - this is a no-op plugin
-        Outcome::Return { message, slot }
+        Outcome::Return {
+            message,
+            slot: None,
+        }
     }
 
     fn all_node_types(&self) -> Vec<NodeType> {

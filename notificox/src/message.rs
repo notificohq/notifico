@@ -10,7 +10,7 @@ impl Message {
         Self {
             id: uuid::Uuid::now_v7().to_string(),
             node_id,
-            data: serde_json::json!({}),
+            data: serde_json::json!([]),
         }
     }
-} 
+}

@@ -51,6 +51,11 @@ async fn main() {
 
     match cli.command {
         Command::Run { file } => {
+            let mut registry = PluginRegistry::new();
+            registry.load_plugin(Arc::new(NoOpPlugin));
+            registry.load_plugin(Arc::new(ManualTriggerPlugin));
+            registry.load_plugin(Arc::new(DebugPlugin));
+
             let Ok(contents) = fs::read_to_string(&file) else {
                 tracing::error!("Failed to read file: {}", file);
                 std::process::exit(1);
@@ -59,23 +64,22 @@ async fn main() {
             let json: SerializedWorkflow = serde_json::from_str(&contents).unwrap();
             let workflow = ParsedWorkflow::try_from(json).expect("Failed to parse workflow");
 
-            let mut registry = PluginRegistry::new();
-            registry.load_plugin(Arc::new(NoOpPlugin));
-            registry.load_plugin(Arc::new(ManualTriggerPlugin));
-            registry.load_plugin(Arc::new(DebugPlugin));
-
             let executor = WorkflowExecutor::new(Arc::new(registry));
             tracing::info!("Successfully loaded JSON file from: {}", file);
 
-            // Find trigger node to get its ID
-            let Some(trigger_node) = executor.find_trigger_node(&workflow) else {
-                tracing::error!("No trigger node found in workflow");
+            // Find all trigger nodes
+            let trigger_nodes = executor.find_trigger_nodes(&workflow);
+            if trigger_nodes.is_empty() {
+                tracing::error!("No trigger nodes found in workflow");
                 std::process::exit(1);
-            };
+            }
 
-            // Create message with trigger node ID
-            let message = Message::new(trigger_node.id);
-            executor.execute_workflow(&workflow, message).await;
+            // Create and execute messages for each trigger node
+            for trigger_node in trigger_nodes {
+                tracing::info!("Executing workflow with trigger node: {}", trigger_node.id);
+                let message = Message::new(trigger_node.id);
+                executor.execute_workflow(&workflow, message).await;
+            }
         }
     }
 }
