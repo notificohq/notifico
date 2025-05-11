@@ -14,7 +14,7 @@ pub struct SerializedNode {
 #[serde(untagged)]
 pub enum NodeSlot {
     DefaultSlot(NodeId),
-    NamedSlot{node: NodeId, slot: String},
+    NamedSlot { node: NodeId, slot: String },
 }
 
 impl NodeSlot {
@@ -56,21 +56,32 @@ impl TryFrom<SerializedWorkflow> for ParsedWorkflow {
     type Error = String;
 
     fn try_from(workflow: SerializedWorkflow) -> Result<Self, Self::Error> {
-        let nodes = workflow.nodes
+        let nodes = workflow
+            .nodes
             .into_iter()
             .map(|node| (node.id, node))
             .collect();
 
         let mut connections = HashMap::new();
         for [source, target] in workflow.connections {
-            connections.entry(source)
+            connections
+                .entry(source)
                 .or_insert_with(Vec::new)
                 .push(target);
         }
 
-        Ok(ParsedWorkflow { 
-            nodes, 
-            connections 
-        })
+        Ok(ParsedWorkflow { nodes, connections })
+    }
+}
+
+impl ParsedWorkflow {
+    pub fn find_trigger_nodes<'a>(
+        &'a self,
+        plugin_registry: &'a crate::plugin_registry::PluginRegistry,
+    ) -> Vec<&'a SerializedNode> {
+        self.nodes
+            .values()
+            .filter(|node| plugin_registry.is_trigger(&node.r#type))
+            .collect()
     }
 }

@@ -1,7 +1,7 @@
 use crate::message::Message;
 use crate::plugin::Outcome;
 use crate::plugin_registry::PluginRegistry;
-use crate::workflow::{NodeSlot, ParsedWorkflow, SerializedNode};
+use crate::workflow::{NodeId, NodeSlot, ParsedWorkflow, SerializedNode};
 use std::collections::VecDeque;
 use std::sync::Arc;
 use tracing;
@@ -13,14 +13,6 @@ pub struct WorkflowExecutor {
 impl WorkflowExecutor {
     pub fn new(plugin_registry: Arc<PluginRegistry>) -> Self {
         Self { plugin_registry }
-    }
-
-    pub fn find_trigger_nodes<'a>(&self, workflow: &'a ParsedWorkflow) -> Vec<&'a SerializedNode> {
-        workflow
-            .nodes
-            .values()
-            .filter(|node| self.plugin_registry.is_trigger(&node.r#type))
-            .collect()
     }
 
     pub async fn process_message(
@@ -45,40 +37,50 @@ impl WorkflowExecutor {
         }
     }
 
-    pub async fn execute_workflow(&self, workflow: &ParsedWorkflow, message: Message) {
-        // Find all trigger nodes
-        let trigger_nodes = self.find_trigger_nodes(workflow);
+    pub async fn execute_workflow(
+        &self,
+        workflow: &ParsedWorkflow,
+        message: Message,
+        trigger_node_id: NodeId,
+    ) {
+        // Get the trigger node
+        let trigger_node = match workflow.nodes.get(&trigger_node_id) {
+            Some(node) => node,
+            None => {
+                tracing::error!("Trigger node {} not found in workflow", trigger_node_id);
+                return;
+            }
+        };
 
-        if trigger_nodes.is_empty() {
-            tracing::error!("No trigger nodes found in workflow");
+        // Verify the node is a trigger node
+        if !self.plugin_registry.is_trigger(&trigger_node.r#type) {
+            tracing::error!("Node {} is not a trigger node", trigger_node_id);
             return;
         }
 
-        // Execute each trigger node
-        for trigger_node in trigger_nodes {
-            match self
-                .process_message(trigger_node, message.clone(), None)
-                .await
-            {
-                Outcome::Return {
-                    message: new_message,
-                    slot,
-                } => {
-                    // Execute all connected nodes iteratively
-                    self.execute_connected_nodes(
-                        workflow,
-                        new_message,
-                        NodeSlot::new(trigger_node.id, slot),
-                    )
-                    .await;
-                }
-                Outcome::Error { error, .. } => {
-                    tracing::error!(
-                        "Error executing trigger node {}: {}",
-                        trigger_node.id,
-                        error
-                    );
-                }
+        // Execute the trigger node
+        match self
+            .process_message(trigger_node, message.clone(), None)
+            .await
+        {
+            Outcome::Return {
+                message: new_message,
+                slot,
+            } => {
+                // Execute all connected nodes iteratively
+                self.execute_connected_nodes(
+                    workflow,
+                    new_message,
+                    NodeSlot::new(trigger_node_id, slot),
+                )
+                .await;
+            }
+            Outcome::Error { error, .. } => {
+                tracing::error!(
+                    "Error executing trigger node {}: {}",
+                    trigger_node_id,
+                    error
+                );
             }
         }
     }

@@ -64,11 +64,12 @@ async fn main() {
             let json: SerializedWorkflow = serde_json::from_str(&contents).unwrap();
             let workflow = ParsedWorkflow::try_from(json).expect("Failed to parse workflow");
 
-            let executor = WorkflowExecutor::new(Arc::new(registry));
+            let registry = Arc::new(registry);
+            let executor = WorkflowExecutor::new(registry.clone());
             tracing::info!("Successfully loaded JSON file from: {}", file);
 
             // Find all trigger nodes
-            let trigger_nodes = executor.find_trigger_nodes(&workflow);
+            let trigger_nodes = workflow.find_trigger_nodes(&registry);
             if trigger_nodes.is_empty() {
                 tracing::error!("No trigger nodes found in workflow");
                 std::process::exit(1);
@@ -78,7 +79,9 @@ async fn main() {
             for trigger_node in trigger_nodes {
                 tracing::info!("Executing workflow with trigger node: {}", trigger_node.id);
                 let message = Message::new(trigger_node.id);
-                executor.execute_workflow(&workflow, message).await;
+                executor
+                    .execute_workflow(&workflow, message, trigger_node.id)
+                    .await;
             }
         }
     }
