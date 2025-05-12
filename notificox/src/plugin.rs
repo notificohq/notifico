@@ -1,6 +1,7 @@
 use crate::message::Message;
 use crate::workflow::SerializedNode;
 use async_trait::async_trait;
+use uuid::Uuid;
 
 pub struct NodeType {
     pub name: String,
@@ -18,7 +19,7 @@ pub enum Outcome {
 }
 
 #[async_trait]
-pub trait Plugin {
+pub trait Plugin: Send + Sync + 'static {
     async fn process_message(
         &self,
         node: &SerializedNode,
@@ -26,4 +27,6 @@ pub trait Plugin {
         slot: Option<String>,
     ) -> Outcome;
     fn all_node_types(&self) -> Vec<NodeType>;
+
+    fn register_trigger(&self, node: &SerializedNode, token: u32, workflow_id: Uuid) {}
 }

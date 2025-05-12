@@ -4,13 +4,13 @@ use std::convert::TryFrom;
 
 pub type NodeId = u32;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct SerializedNode {
     pub id: NodeId,
     pub r#type: String,
 }
 
-#[derive(Serialize, Deserialize, Eq, PartialEq, Hash)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Hash, Clone)]
 #[serde(untagged)]
 pub enum NodeSlot {
     DefaultSlot(NodeId),
@@ -47,6 +47,7 @@ pub struct SerializedWorkflow {
     pub connections: Vec<[NodeSlot; 2]>,
 }
 
+#[derive(Clone)]
 pub struct ParsedWorkflow {
     pub nodes: HashMap<NodeId, SerializedNode>,
     pub connections: HashMap<NodeSlot, Vec<NodeSlot>>,
