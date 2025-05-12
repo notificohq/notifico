@@ -29,11 +29,16 @@ impl ManualTriggerService {
         }
     }
 
-    pub fn register_trigger(&self, node: &SerializedNode, token: u32, workflow_id: Uuid) {
+    pub fn register_trigger(&self, _node: &SerializedNode, token: u32, workflow_id: Uuid) {
         self.registered_tokens
             .lock()
             .unwrap()
             .insert(workflow_id, token);
+    }
+
+    pub fn unregister_trigger(&self, token: u32) {
+        let mut tokens = self.registered_tokens.lock().unwrap();
+        tokens.retain(|_, &mut t| t != token);
     }
 }
 
@@ -74,6 +79,12 @@ impl Plugin for ManualTriggerPlugin {
     fn register_trigger(&self, node: &SerializedNode, token: u32, workflow_id: Uuid) {
         if let Some(service) = self.service.upgrade() {
             service.register_trigger(node, token, workflow_id);
+        }
+    }
+
+    fn unregister_trigger(&self, token: u32) {
+        if let Some(service) = self.service.upgrade() {
+            service.unregister_trigger(token);
         }
     }
 }

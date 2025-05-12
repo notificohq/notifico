@@ -7,7 +7,6 @@ mod trigger_service;
 mod workflow;
 mod workflow_executor;
 
-use crate::message::Message;
 use crate::plugin_registry::PluginRegistry;
 use crate::plugins::debug::DebugPlugin;
 use crate::plugins::manual_trigger::ManualTriggerPlugin;
@@ -19,7 +18,6 @@ use crate::workflow_executor::WorkflowExecutor;
 use clap::{Parser, Subcommand};
 use std::fs;
 use std::sync::Arc;
-use tokio::sync::broadcast;
 use tracing;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;

@@ -28,6 +28,8 @@ impl TriggerService {
     }
 
     pub async fn register_workflow(&self, workflow: &ParsedWorkflow, workflow_id: Uuid) -> Uuid {
+        tracing::info!("Registering workflow with ID: {}", workflow_id);
+
         // Find all trigger nodes
         let trigger_nodes = workflow.find_trigger_nodes(&self.registry);
         if trigger_nodes.is_empty() {
@@ -46,9 +48,11 @@ impl TriggerService {
 
                 plugin.register_trigger(trigger_node, token, workflow_id);
                 tracing::info!(
-                    "Registered trigger node {} with plugin {}",
+                    "Registered trigger node {} with plugin {} (token: {}, workflow_id: {})",
                     trigger_node.id,
-                    trigger_node.r#type
+                    trigger_node.r#type,
+                    token,
+                    workflow_id
                 );
             } else {
                 tracing::error!(
@@ -67,6 +71,13 @@ impl TriggerService {
         let workflows = self.workflows.lock().await;
         let (workflow_id, trigger_node_id) =
             self.tokens.lock().await.get(token as _).cloned().unwrap();
+
+        tracing::info!(
+            "Triggering workflow (token: {}, workflow_id: {})",
+            token,
+            workflow_id
+        );
+
         let workflow = workflows.get(&workflow_id).cloned().unwrap();
 
         self.workflow_executor

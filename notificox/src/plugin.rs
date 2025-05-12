@@ -29,4 +29,6 @@ pub trait Plugin: Send + Sync + 'static {
     fn all_node_types(&self) -> Vec<NodeType>;
 
     fn register_trigger(&self, node: &SerializedNode, token: u32, workflow_id: Uuid) {}
+
+    fn unregister_trigger(&self, token: u32) {}
 }
