@@ -80,8 +80,10 @@ impl TriggerService {
 
         let workflow = workflows.get(&workflow_id).cloned().unwrap();
 
+        let message = Message::default();
+
         self.workflow_executor
-            .execute_workflow(&workflow, Message::new(trigger_node_id), trigger_node_id)
+            .execute_workflow(&workflow, message, trigger_node_id)
             .await;
     }
 }

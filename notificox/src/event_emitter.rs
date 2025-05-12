@@ -1,11 +1,11 @@
 use tokio::sync::broadcast;
 
 #[derive(Clone)]
-pub struct TriggerEventEmitter {
+pub struct EventEmitter {
     sender: broadcast::Sender<u32>,
 }
 
-impl TriggerEventEmitter {
+impl EventEmitter {
     pub(crate) fn new() -> Self {
         let (sender, _) = broadcast::channel(100);
         Self { sender }

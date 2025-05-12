@@ -3,19 +3,19 @@ use std::sync::{Arc, Weak};
 
 use crate::message::Message;
 use crate::plugin::{NodeType, Outcome, Plugin};
-use crate::trigger_event_emitter::TriggerEventEmitter;
+use crate::event_emitter::EventEmitter;
 use crate::workflow::SerializedNode;
 use async_trait::async_trait;
 use std::sync::Mutex;
 use uuid::Uuid;
 
 pub struct ManualTriggerService {
-    trigger_event_emitter: TriggerEventEmitter,
+    trigger_event_emitter: EventEmitter,
     registered_tokens: Mutex<HashMap<Uuid, u32>>,
 }
 
 impl ManualTriggerService {
-    pub fn new(trigger_event_emitter: TriggerEventEmitter) -> Self {
+    pub fn new(trigger_event_emitter: EventEmitter) -> Self {
         Self {
             trigger_event_emitter,
             registered_tokens: Mutex::new(HashMap::new()),

@@ -100,8 +100,7 @@ impl WorkflowExecutor {
             if let Some(target_slots) = workflow.connections.get(&node_slot) {
                 for target_slot in target_slots {
                     if let Some(target_node) = workflow.nodes.get(&target_slot.node()) {
-                        let mut new_message = message.clone();
-                        new_message.node_id = target_slot.node();
+                        let new_message = message.clone();
                         match self
                             .process_message(
                                 target_node,

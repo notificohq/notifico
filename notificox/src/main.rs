@@ -1,8 +1,8 @@
+mod event_emitter;
 mod message;
 mod plugin;
 mod plugin_registry;
 mod plugins;
-mod trigger_event_emitter;
 mod trigger_service;
 mod workflow;
 mod workflow_executor;
@@ -16,13 +16,13 @@ use crate::trigger_service::TriggerService;
 use crate::workflow::{ParsedWorkflow, SerializedWorkflow};
 use crate::workflow_executor::WorkflowExecutor;
 use clap::{Parser, Subcommand};
+use event_emitter::EventEmitter;
 use std::fs;
 use std::sync::Arc;
 use tracing;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{EnvFilter, fmt};
-use trigger_event_emitter::TriggerEventEmitter;
 use uuid::Uuid;
 
 #[derive(Parser, Debug)]
@@ -56,9 +56,8 @@ async fn main() {
 
     match cli.command {
         Command::Run { file } => {
-            let trigger_event_emitter = TriggerEventEmitter::new();
-            let manual_trigger_service =
-                Arc::new(ManualTriggerService::new(trigger_event_emitter.clone()));
+            let event_emitter = EventEmitter::new();
+            let manual_trigger_service = Arc::new(ManualTriggerService::new(event_emitter.clone()));
 
             let mut registry = PluginRegistry::new();
             registry.load_plugin(Arc::new(NoOpPlugin));
@@ -73,7 +72,7 @@ async fn main() {
 
             let trigger_service_clone = trigger_service.clone();
             tokio::spawn(async move {
-                let mut receiver = trigger_event_emitter.subscribe();
+                let mut receiver = event_emitter.subscribe();
                 while let Ok(token) = receiver.recv().await {
                     tracing::info!("Received trigger token: {}", token);
                     trigger_service_clone.trigger(token).await;

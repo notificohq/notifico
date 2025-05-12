@@ -10,16 +10,16 @@ pub struct DebugPlugin;
 impl Plugin for DebugPlugin {
     async fn process_message(
         &self,
-        _node: &SerializedNode,
+        node: &SerializedNode,
         message: Message,
         slot: Option<String>,
     ) -> Outcome {
         tracing::info!(
-            "Debug Plugin - Message ID: {}, Node ID: {}, Slot: {:?}, Data: {}",
+            "Debug Plugin - Message ID: {}, Node ID: {}, Slot: {:?}, Data: {:?}",
             message.id,
-            message.node_id,
+            node.id,
             slot,
-            message.data
+            message.items
         );
         Outcome::Return {
             message,

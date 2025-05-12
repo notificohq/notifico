@@ -1,3 +1,3 @@
-pub mod noop;
+pub mod debug;
 pub mod manual_trigger;
-pub mod debug; 
+pub mod noop;
