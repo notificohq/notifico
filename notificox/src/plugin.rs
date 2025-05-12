@@ -1,5 +1,5 @@
 use crate::message::Message;
-use crate::workflow::SerializedNode;
+use crate::schemas::SerializedNode;
 use async_trait::async_trait;
 use uuid::Uuid;
 

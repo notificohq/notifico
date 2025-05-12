@@ -1,6 +1,6 @@
 use crate::message::Message;
 use crate::plugin::{NodeType, Outcome, Plugin};
-use crate::workflow::SerializedNode;
+use crate::schemas::SerializedNode;
 use async_trait::async_trait;
 use tracing;
 

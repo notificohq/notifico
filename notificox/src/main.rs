@@ -3,20 +3,18 @@ mod message;
 mod plugin;
 mod plugin_registry;
 mod plugins;
-mod trigger_service;
+mod schemas;
 mod workflow;
-mod workflow_executor;
 
 use crate::plugin_registry::PluginRegistry;
 use crate::plugins::debug::DebugPlugin;
 use crate::plugins::manual_trigger::ManualTriggerPlugin;
 use crate::plugins::manual_trigger::ManualTriggerService;
 use crate::plugins::noop::NoOpPlugin;
-use crate::trigger_service::TriggerService;
-use crate::workflow::{ParsedWorkflow, SerializedWorkflow};
-use crate::workflow_executor::WorkflowExecutor;
+use crate::workflow::ParsedWorkflow;
 use clap::{Parser, Subcommand};
 use event_emitter::EventEmitter;
+use schemas::SerializedWorkflow;
 use std::fs;
 use std::sync::Arc;
 use tracing;
@@ -67,30 +65,16 @@ async fn main() {
             registry.load_plugin(Arc::new(DebugPlugin));
 
             let registry = Arc::new(registry);
-            let executor = Arc::new(WorkflowExecutor::new(registry.clone()));
-            let trigger_service = Arc::new(TriggerService::new(registry.clone(), executor.clone()));
-
-            let trigger_service_clone = trigger_service.clone();
-            tokio::spawn(async move {
-                let mut receiver = event_emitter.subscribe();
-                while let Ok(token) = receiver.recv().await {
-                    tracing::info!("Received trigger token: {}", token);
-                    trigger_service_clone.trigger(token).await;
-                }
-            });
 
             let Ok(contents) = fs::read_to_string(&file) else {
                 tracing::error!("Failed to read file: {}", file);
                 std::process::exit(1);
             };
             let json: SerializedWorkflow = serde_json::from_str(&contents).unwrap();
-            let workflow = ParsedWorkflow::try_from(json).expect("Failed to parse workflow");
+            let workflow = ParsedWorkflow::new(json);
             tracing::info!("Successfully loaded JSON file from: {}", file);
 
             let workflow_id = Uuid::now_v7();
-            trigger_service
-                .register_workflow(&workflow, workflow_id)
-                .await;
             manual_trigger_service.trigger(workflow_id);
 
             let _ = tokio::signal::ctrl_c().await;

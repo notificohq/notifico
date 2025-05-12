@@ -3,11 +3,13 @@
 	"nodes": [
 		{
 			"id": 1,
-			"type": "core.trigger.manual.v1"
+			"type": "core.trigger.manual.v1",
+			"kind": "trigger"
 		},
 		{
 			"id": 2,
-			"type": "core.noop.v1"
+			"type": "core.noop.v1",
+			"kind": "action"
 		}
 	],
 	"connections": [

@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
 
+use crate::event_emitter::EventEmitter;
 use crate::message::Message;
 use crate::plugin::{NodeType, Outcome, Plugin};
-use crate::event_emitter::EventEmitter;
-use crate::workflow::SerializedNode;
+use crate::schemas::SerializedNode;
 use async_trait::async_trait;
 use std::sync::Mutex;
 use uuid::Uuid;
