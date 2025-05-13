@@ -3,7 +3,7 @@ use std::sync::{Arc, Weak};
 
 use crate::event_emitter::EventEmitter;
 use crate::message::Message;
-use crate::plugin::{NodeType, Outcome, Plugin};
+use crate::plugin::{NodeStaticContext, NodeType, Plugin};
 use crate::schemas::SerializedNode;
 use async_trait::async_trait;
 use std::sync::Mutex;
@@ -29,14 +29,14 @@ impl ManualTriggerService {
         }
     }
 
-    pub fn register_trigger(&self, _node: &SerializedNode, token: u32, workflow_id: Uuid) {
+    pub fn register_node(&self, _node: &SerializedNode, token: u32, workflow_id: Uuid) {
         self.registered_tokens
             .lock()
             .unwrap()
             .insert(workflow_id, token);
     }
 
-    pub fn unregister_trigger(&self, token: u32) {
+    pub fn unregister_node(&self, token: u32) {
         let mut tokens = self.registered_tokens.lock().unwrap();
         tokens.retain(|_, &mut t| t != token);
     }
@@ -56,19 +56,6 @@ impl ManualTriggerPlugin {
 
 #[async_trait]
 impl Plugin for ManualTriggerPlugin {
-    async fn process_message(
-        &self,
-        _node: &SerializedNode,
-        message: Message,
-        _slot: Option<String>,
-    ) -> Outcome {
-        // Manual triggers don't need any execution logic
-        Outcome::Return {
-            message,
-            slot: None,
-        }
-    }
-
     fn all_node_types(&self) -> Vec<NodeType> {
         vec![NodeType {
             name: "core.trigger.manual.v1".to_string(),
@@ -76,15 +63,15 @@ impl Plugin for ManualTriggerPlugin {
         }]
     }
 
-    fn register_trigger(&self, node: &SerializedNode, token: u32, workflow_id: Uuid) {
+    fn run_node(&self, token: u32, node: &SerializedNode, context: NodeStaticContext) {
         if let Some(service) = self.service.upgrade() {
-            service.register_trigger(node, token, workflow_id);
+            service.register_node(node, token, context.workflow_id);
         }
     }
 
-    fn unregister_trigger(&self, token: u32) {
+    fn shutdown_node(&self, token: u32) {
         if let Some(service) = self.service.upgrade() {
-            service.unregister_trigger(token);
+            service.unregister_node(token);
         }
     }
 }

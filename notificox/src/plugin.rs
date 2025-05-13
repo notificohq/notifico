@@ -1,5 +1,5 @@
 use crate::message::Message;
-use crate::schemas::SerializedNode;
+use crate::schemas::{NodeId, SerializedNode};
 use async_trait::async_trait;
 use uuid::Uuid;
 
@@ -8,27 +8,23 @@ pub struct NodeType {
     pub is_trigger: bool,
 }
 
-pub enum Outcome {
-    Return {
-        slot: Option<String>,
-        message: Message,
-    },
-    Error {
-        error: String,
-    },
+pub struct NodeEvent {
+    pub token: u32,
+    pub message: Message,
+    pub slot: Option<String>,
+}
+
+pub struct NodeStaticContext {
+    pub node_id: NodeId,
+    pub workflow_id: Uuid,
 }
 
 #[async_trait]
 pub trait Plugin: Send + Sync + 'static {
-    async fn process_message(
-        &self,
-        node: &SerializedNode,
-        message: Message,
-        slot: Option<String>,
-    ) -> Outcome;
     fn all_node_types(&self) -> Vec<NodeType>;
 
-    fn register_trigger(&self, _node: &SerializedNode, _token: u32, _workflow_id: Uuid) {}
+    fn run_node(&self, token: u32, node: &SerializedNode, context: NodeStaticContext) {}
+    fn shutdown_node(&self, token: u32) {}
 
-    fn unregister_trigger(&self, _token: u32) {}
+    async fn handle_message(&self, token: u32, event: NodeEvent) {}
 }
