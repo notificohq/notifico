@@ -1,4 +1,5 @@
 pub mod migration;
+pub mod repo;
 
 use sea_orm::{ConnectOptions, Database, DatabaseConnection, DbErr};
 use sea_orm_migration::MigratorTrait;
