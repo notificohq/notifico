@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "notifico-core",
     "notifico-db",
+    "notifico-template",
     "notifico-server",
 ]
 
@@ -38,9 +39,13 @@ sea-orm-migration = "1.1"
 toml = "1.0"
 figment = { version = "0.10", features = ["toml", "env"] }
 
+# Template
+minijinja = { version = "2.16", features = ["builtins"] }
+
 # Internal crates
 notifico-core = { path = "notifico-core" }
 notifico-db = { path = "notifico-db" }
+notifico-template = { path = "notifico-template" }
 
 [profile.release]
 opt-level = 3
