@@ -27,13 +27,15 @@ Notifico v2 is a self-hosted notification server that solves this universally.
 | Cache | Valkey 9 |
 | Templates | minijinja (Jinja2), versioning, multilingual |
 | Channels | Registry-based `Transport` trait, extensible (WASM/WASI future) |
-| v1 Transports | email, sms (Twilio), push (FCM, APNs, Web Push), telegram, max, discord, slack |
+| In-App Inbox | First-class channel, WebSocket real-time, headless JS SDK + React UI kit |
+| v1 Transports | email, sms (Twilio), push (FCM, APNs, Web Push), telegram, max, discord, slack, **inbox** |
 | API | REST + OpenAPI (utoipa) -> autogen TypeScript client |
 | Auth | API keys + JWT + OIDC optional |
 | User preferences | Public API + admin panel |
 | Observability | Prometheus `/metrics` + OpenTelemetry (metrics + traces) |
 | Deploy | Docker, self-hosted, prepared for SaaS |
-| Roadmap | OTP/Magic Link module, MySQL support, WASM/WASI plugins |
+| Differentiation | Lightweight single-binary, Telegram full + MAX, template versioning + multilingual |
+| Roadmap | OTP/Magic Link module, MySQL support, WASM/WASI plugins, WebTransport |
 
 ---
 
@@ -406,6 +408,7 @@ Channels are String-based (not enum) for extensibility. Future: WASM/WASI plugin
 | `notifico-max` | `max` | VK MAX Bot API | text |
 | `notifico-discord` | `discord` | Discord Webhook/Bot API | text, embeds |
 | `notifico-slack` | `slack` | Slack Web API/Webhook | text, blocks |
+| `notifico-inbox` | `inbox` | Local DB + WebSocket | title, body (md), redirect_url, tags, actions, data |
 
 ### Credentials
 
@@ -594,6 +597,10 @@ notifico/
 |   +-- notifico-max/
 |   +-- notifico-discord/
 |   +-- notifico-slack/
+|   +-- notifico-inbox/       # In-app inbox transport + WS + REST
++-- sdks/
+|   +-- js/                   # @notifico/js (headless, framework-agnostic)
+|   +-- react/                # @notifico/react (UI kit)
 +-- notifico-admin-api/       # Admin REST API
 +-- notifico-public-api/      # Public REST API
 +-- notifico-ingest-api/      # Ingest REST API
@@ -603,10 +610,24 @@ notifico/
 
 ---
 
+## Differentiation & In-App Inbox
+
+See `2026-03-03-notifico-v2-differentiation-inbox.md` for full design:
+- Lightweight single-binary (SQLite for dev, PG for prod, vs Novu's MongoDB + 2 Redis + Node.js)
+- Russian-language messengers (Telegram full feature set + VK MAX)
+- Template versioning + multilingual (no competitor has both natively)
+- In-App Inbox as first-class channel with WebSocket real-time, headless JS SDK, React UI kit
+
+---
+
 ## Roadmap (post-v1)
 
 - **notifico-otp** — OTP codes and magic link module
 - **MySQL support** — via sea-orm + apalis-mysql
 - **WASM/WASI plugin system** — custom transports as WASM modules
+- **WebTransport** — alternative to WebSocket for inbox real-time
 - **WhatsApp Business** transport
 - **Additional SMS providers** (MessageBird, Vonage)
+- **Vue/Svelte SDK** — UI kits beyond React
+- **Mobile SDKs** — React Native, Flutter wrappers
+- **Digest/batching** — combine multiple inbox notifications
