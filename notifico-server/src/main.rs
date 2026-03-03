@@ -1,3 +1,7 @@
+mod config;
+
+use config::Config;
+
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt()
@@ -7,5 +11,12 @@ async fn main() {
         )
         .init();
 
-    tracing::info!("Notifico v2 starting...");
+    let config = Config::load(None).expect("Failed to load configuration");
+
+    tracing::info!(
+        mode = ?config.server.mode,
+        port = config.server.port,
+        db = config.database.backend.as_str(),
+        "Notifico v2 starting"
+    );
 }
