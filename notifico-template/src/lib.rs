@@ -43,12 +43,13 @@ pub fn render_body(
         .as_object()
         .ok_or_else(|| TemplateError::InvalidBody("body must be a JSON object".to_string()))?;
 
+    let env = Environment::new();
     let mut result = serde_json::Map::new();
 
     for (key, value) in obj {
         match value {
             Value::String(template_str) => {
-                let rendered = render_string(template_str, context)?;
+                let rendered = env.render_str(template_str, context)?;
                 result.insert(key.clone(), Value::String(rendered));
             }
             other => {
