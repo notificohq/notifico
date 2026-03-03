@@ -1,21 +1,12 @@
 [package]
 name = "notifico-core"
-version = "0.1.0"
-edition = "2024"
+version.workspace = true
+edition.workspace = true
 
 [dependencies]
-async-trait = "0.1.88"
-serde = { version = "1.0.219", features = ["derive", "rc"] }
-serde_json = "1.0.140"
+serde = { workspace = true }
+serde_json = { workspace = true }
 uuid = { workspace = true }
-tracing = "0.1.41"
-tokio = { workspace = true }
-url = { workspace = true }
-anyhow = "1.0.98"
-utoipa = { workspace = true }
-flume = "0.11.1"
-thiserror = "2.0.12"
-regex = "1.11.1"
-serde_with = "3.12.0"
-futures = "0.3.31"
-natord = "1.0.9"
+chrono = { workspace = true }
+async-trait = { workspace = true }
+thiserror = { workspace = true }

@@ -1,0 +1,16 @@
+[package]
+name = "notifico-server"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "notifico"
+path = "src/main.rs"
+
+[dependencies]
+tokio = { workspace = true }
+axum = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+notifico-core = { workspace = true }
+notifico-db = { workspace = true }

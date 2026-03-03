@@ -1,0 +1,13 @@
+[package]
+name = "notifico-db"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+sea-orm = { workspace = true }
+sea-orm-migration = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+notifico-core = { workspace = true }
