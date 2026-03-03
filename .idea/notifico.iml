@@ -33,6 +33,8 @@
       <sourceFolder url="file://$MODULE_DIR$/notifico-bounce/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/notifico-app/migration/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/transports/notifico-noop/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/notifico-db/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/notifico-server/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.idea/dataSources" />
       <excludeFolder url="file://$MODULE_DIR$/example/rabbitmq/mnesia" />
       <excludeFolder url="file://$MODULE_DIR$/target" />

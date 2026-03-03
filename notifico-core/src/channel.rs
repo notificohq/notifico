@@ -19,3 +19,43 @@ impl std::fmt::Display for ChannelId {
         write!(f, "{}", self.0)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn channel_id_creation_and_display() {
+        let ch = ChannelId::new("email");
+        assert_eq!(ch.as_str(), "email");
+        assert_eq!(ch.to_string(), "email");
+    }
+
+    #[test]
+    fn channel_id_equality() {
+        let a = ChannelId::new("sms");
+        let b = ChannelId::new("sms");
+        let c = ChannelId::new("email");
+        assert_eq!(a, b);
+        assert_ne!(a, c);
+    }
+
+    #[test]
+    fn channel_id_serialization() {
+        let ch = ChannelId::new("telegram");
+        let json = serde_json::to_string(&ch).unwrap();
+        assert_eq!(json, "\"telegram\"");
+        let deserialized: ChannelId = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized, ch);
+    }
+
+    #[test]
+    fn channel_id_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(ChannelId::new("email"));
+        set.insert(ChannelId::new("email"));
+        set.insert(ChannelId::new("sms"));
+        assert_eq!(set.len(), 2);
+    }
+}
