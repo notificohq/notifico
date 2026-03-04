@@ -12,6 +12,7 @@ async-trait = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 lettre = { workspace = true }
+reqwest = { workspace = true }
 notifico-template = { workspace = true }
 
 [dev-dependencies]

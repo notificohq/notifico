@@ -1,4 +1,5 @@
 pub mod email;
+pub mod telegram;
 
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};

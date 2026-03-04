@@ -1,0 +1,7 @@
+target/
+.git/
+.idea/
+.env
+*.swp
+*.swo
+docs/

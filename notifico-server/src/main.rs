@@ -2,12 +2,13 @@ mod admin;
 mod auth;
 mod config;
 mod ingest;
+mod metrics;
 mod public;
 mod worker;
 
 use std::sync::Arc;
 
-use axum::{Router, extract::State, routing::{get, post}};
+use axum::{Router, extract::State, middleware, routing::{get, post}};
 use sea_orm::DatabaseConnection;
 use tower_http::trace::TraceLayer;
 
@@ -21,6 +22,7 @@ pub(crate) struct AppState {
     pub(crate) config: Config,
     pub(crate) registry: TransportRegistry,
     pub(crate) encryption_key: Option<[u8; 32]>,
+    pub(crate) metrics_handle: Option<metrics_exporter_prometheus::PrometheusHandle>,
 }
 
 #[tokio::main]
@@ -68,11 +70,14 @@ async fn main() {
         key
     });
 
+    let metrics_handle = metrics::install_prometheus_recorder();
+
     let state = Arc::new(AppState {
         db,
         config: config.clone(),
         registry,
         encryption_key,
+        metrics_handle: Some(metrics_handle),
     });
 
     match config.server.mode {
@@ -97,9 +102,11 @@ pub(crate) fn build_router(state: Arc<AppState>) -> Router {
     Router::new()
         .route("/health", get(health))
         .route("/ready", get(ready))
+        .route("/metrics", get(metrics::metrics_handler))
         .route("/api/v1/events", post(ingest::handle_ingest))
         .nest("/admin/api/v1", admin::admin_router())
         .nest("/api/v1/public", public::public_router())
+        .layer(middleware::from_fn(metrics::track_metrics))
         .layer(TraceLayer::new_for_http())
         .with_state(state)
 }
@@ -226,6 +233,7 @@ mod integration_tests {
             config,
             registry,
             encryption_key: None,
+            metrics_handle: None,
         });
 
         (build_router(state), raw_key.to_string())
@@ -295,6 +303,7 @@ mod integration_tests {
             config,
             registry,
             encryption_key: None,
+            metrics_handle: None,
         });
 
         (build_router(state), raw_key.to_string())

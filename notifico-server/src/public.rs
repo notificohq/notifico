@@ -5,10 +5,9 @@ use axum::{
     extract::{Query, State},
     http::StatusCode,
     response::{IntoResponse, Response},
-    routing::{get, post, put},
+    routing::get,
 };
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 use notifico_db::repo::{preference, recipient};
 
