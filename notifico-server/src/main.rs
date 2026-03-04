@@ -445,6 +445,138 @@ mod integration_tests {
     }
 
     #[tokio::test]
+    async fn admin_recipient_and_contact_crud() {
+        let (app, key) = setup_admin_app().await;
+
+        // Create recipient
+        let req = Request::builder()
+            .method("POST")
+            .uri("/admin/api/v1/recipients")
+            .header("content-type", "application/json")
+            .header("authorization", format!("Bearer {key}"))
+            .body(Body::from(r#"{"external_id":"user-42","locale":"fr"}"#))
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::CREATED);
+        let body = json_body(resp).await;
+        assert_eq!(body["external_id"], "user-42");
+        assert_eq!(body["locale"], "fr");
+        let recipient_id = body["id"].as_str().unwrap().to_string();
+
+        // Add contact
+        let req = Request::builder()
+            .method("POST")
+            .uri(format!("/admin/api/v1/recipients/{recipient_id}/contacts"))
+            .header("content-type", "application/json")
+            .header("authorization", format!("Bearer {key}"))
+            .body(Body::from(
+                r#"{"channel":"email","value":"user@test.com"}"#,
+            ))
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::CREATED);
+        let body = json_body(resp).await;
+        let contact_id = body["id"].as_str().unwrap().to_string();
+        assert_eq!(body["channel"], "email");
+
+        // List contacts
+        let req = Request::builder()
+            .uri(format!("/admin/api/v1/recipients/{recipient_id}/contacts"))
+            .header("authorization", format!("Bearer {key}"))
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = json_body(resp).await;
+        assert_eq!(body.as_array().unwrap().len(), 1);
+
+        // Delete contact
+        let req = Request::builder()
+            .method("DELETE")
+            .uri(format!("/admin/api/v1/contacts/{contact_id}"))
+            .header("authorization", format!("Bearer {key}"))
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::NO_CONTENT);
+
+        // Delete recipient
+        let req = Request::builder()
+            .method("DELETE")
+            .uri(format!("/admin/api/v1/recipients/{recipient_id}"))
+            .header("authorization", format!("Bearer {key}"))
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::NO_CONTENT);
+    }
+
+    #[tokio::test]
+    async fn admin_api_keys_and_channels() {
+        let (app, key) = setup_admin_app().await;
+
+        // Create API key
+        let req = Request::builder()
+            .method("POST")
+            .uri("/admin/api/v1/api-keys")
+            .header("content-type", "application/json")
+            .header("authorization", format!("Bearer {key}"))
+            .body(Body::from(r#"{"name":"Ingest Key"}"#))
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::CREATED);
+        let body = json_body(resp).await;
+        assert_eq!(body["name"], "Ingest Key");
+        assert_eq!(body["scope"], "ingest");
+        assert!(body["raw_key"].as_str().unwrap().starts_with("nk_live_"));
+        let key_id = body["id"].as_str().unwrap().to_string();
+
+        // List API keys (should have 2: admin + new ingest)
+        let req = Request::builder()
+            .uri("/admin/api/v1/api-keys")
+            .header("authorization", format!("Bearer {key}"))
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = json_body(resp).await;
+        assert_eq!(body.as_array().unwrap().len(), 2);
+
+        // Delete API key
+        let req = Request::builder()
+            .method("DELETE")
+            .uri(format!("/admin/api/v1/api-keys/{key_id}"))
+            .header("authorization", format!("Bearer {key}"))
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::NO_CONTENT);
+
+        // List channels (empty since no transports registered in test)
+        let req = Request::builder()
+            .uri("/admin/api/v1/channels")
+            .header("authorization", format!("Bearer {key}"))
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = json_body(resp).await;
+        assert!(body.as_array().unwrap().is_empty());
+
+        // Delivery log (empty)
+        let req = Request::builder()
+            .uri("/admin/api/v1/delivery-log")
+            .header("authorization", format!("Bearer {key}"))
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = json_body(resp).await;
+        assert_eq!(body["total"], 0);
+        assert!(body["items"].as_array().unwrap().is_empty());
+    }
+
+    #[tokio::test]
     async fn admin_requires_admin_scope() {
         let (app, ingest_key) = setup_app().await;
 

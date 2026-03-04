@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use sea_orm::{ConnectionTrait, DatabaseConnection};
+use sea_orm::DatabaseConnection;
 use uuid::Uuid;
 
 use notifico_core::channel::ChannelId;
@@ -186,21 +186,19 @@ async fn log_delivery(
     status: &str,
     error_message: Option<&str>,
 ) {
-    let id = Uuid::now_v7();
-    let error_msg = error_message.unwrap_or("");
-    let delivered_at = if status == "delivered" {
-        "CURRENT_TIMESTAMP"
-    } else {
-        "NULL"
-    };
-
-    let sql = format!(
-        "INSERT INTO delivery_log (id, project_id, event_name, recipient_id, channel, status, error_message, attempts, delivered_at) \
-         VALUES ('{id}', '{}', '{}', '{}', '{}', '{status}', '{error_msg}', {}, {delivered_at})",
-        task.project_id, task.event_name, task.recipient_id, task.channel, task.attempt + 1,
-    );
-
-    if let Err(e) = db.execute_unprepared(&sql).await {
+    if let Err(e) = repo::delivery_log::insert_log(
+        db,
+        Uuid::now_v7(),
+        task.project_id,
+        &task.event_name,
+        task.recipient_id,
+        &task.channel,
+        status,
+        error_message,
+        (task.attempt + 1) as i32,
+    )
+    .await
+    {
         tracing::error!(error = %e, "Failed to log delivery result");
     }
 }

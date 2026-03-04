@@ -11,7 +11,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
 
-use notifico_db::repo::{admin, credential};
+use axum::extract::Query;
+
+use notifico_db::repo::{admin, api_key, credential, delivery_log};
 
 use crate::AppState;
 use crate::auth::AuthContext;
@@ -43,6 +45,27 @@ pub fn admin_router() -> Router<Arc<AppState>> {
             get(list_credentials).post(create_credential),
         )
         .route("/credentials/{id}", delete(delete_credential))
+        // Recipients
+        .route(
+            "/recipients",
+            get(list_recipients).post(create_recipient),
+        )
+        .route(
+            "/recipients/{id}",
+            get(get_recipient).put(update_recipient).delete(delete_recipient),
+        )
+        .route(
+            "/recipients/{recipient_id}/contacts",
+            get(list_contacts).post(add_contact),
+        )
+        .route("/contacts/{id}", delete(delete_contact))
+        // Delivery log
+        .route("/delivery-log", get(query_delivery_log))
+        // API keys
+        .route("/api-keys", get(list_api_keys).post(create_api_key))
+        .route("/api-keys/{id}", delete(delete_api_key))
+        // Channels
+        .route("/channels", get(list_channels))
 }
 
 fn require_admin(auth: &AuthContext) -> Result<(), Response> {
@@ -574,4 +597,419 @@ async fn delete_credential(
         .await
         .map_err(db_err)?;
     Ok(StatusCode::NO_CONTENT.into_response())
+}
+
+// ── Recipients ──────────────────────────────────────────────────────
+
+#[derive(Serialize)]
+struct RecipientResponse {
+    id: Uuid,
+    external_id: String,
+    locale: String,
+    timezone: String,
+    metadata: Value,
+}
+
+#[derive(Deserialize)]
+struct CreateRecipientRequest {
+    external_id: String,
+    #[serde(default = "default_locale")]
+    locale: String,
+    #[serde(default = "default_timezone")]
+    timezone: String,
+}
+
+fn default_timezone() -> String {
+    "UTC".into()
+}
+
+#[derive(Deserialize)]
+struct UpdateRecipientRequest {
+    locale: String,
+    timezone: String,
+    #[serde(default)]
+    metadata: Value,
+}
+
+async fn list_recipients(
+    State(state): State<Arc<AppState>>,
+    auth: AuthContext,
+) -> ApiResult {
+    require_admin(&auth)?;
+    let recipients = admin::list_recipients(&state.db, auth.project_id)
+        .await
+        .map_err(db_err)?;
+    Ok(Json(
+        recipients
+            .into_iter()
+            .map(|r| RecipientResponse {
+                id: r.id,
+                external_id: r.external_id,
+                locale: r.locale,
+                timezone: r.timezone,
+                metadata: r.metadata,
+            })
+            .collect::<Vec<_>>(),
+    )
+    .into_response())
+}
+
+async fn get_recipient(
+    State(state): State<Arc<AppState>>,
+    auth: AuthContext,
+    Path(id): Path<Uuid>,
+) -> ApiResult {
+    require_admin(&auth)?;
+    let recipient = admin::get_recipient(&state.db, id)
+        .await
+        .map_err(db_err)?
+        .ok_or_else(|| not_found("Recipient not found"))?;
+    Ok(Json(RecipientResponse {
+        id: recipient.id,
+        external_id: recipient.external_id,
+        locale: recipient.locale,
+        timezone: recipient.timezone,
+        metadata: recipient.metadata,
+    })
+    .into_response())
+}
+
+async fn create_recipient(
+    State(state): State<Arc<AppState>>,
+    auth: AuthContext,
+    Json(body): Json<CreateRecipientRequest>,
+) -> ApiResult {
+    require_admin(&auth)?;
+    let id = Uuid::now_v7();
+    admin::create_recipient(
+        &state.db,
+        id,
+        auth.project_id,
+        &body.external_id,
+        &body.locale,
+        &body.timezone,
+    )
+    .await
+    .map_err(db_err)?;
+    Ok((
+        StatusCode::CREATED,
+        Json(RecipientResponse {
+            id,
+            external_id: body.external_id,
+            locale: body.locale,
+            timezone: body.timezone,
+            metadata: Value::Object(Default::default()),
+        }),
+    )
+        .into_response())
+}
+
+async fn update_recipient(
+    State(state): State<Arc<AppState>>,
+    auth: AuthContext,
+    Path(id): Path<Uuid>,
+    Json(body): Json<UpdateRecipientRequest>,
+) -> ApiResult {
+    require_admin(&auth)?;
+    admin::update_recipient(&state.db, id, &body.locale, &body.timezone, &body.metadata)
+        .await
+        .map_err(db_err)?;
+    Ok(Json(serde_json::json!({"id": id, "updated": true})).into_response())
+}
+
+async fn delete_recipient(
+    State(state): State<Arc<AppState>>,
+    auth: AuthContext,
+    Path(id): Path<Uuid>,
+) -> ApiResult {
+    require_admin(&auth)?;
+    admin::delete_recipient(&state.db, id)
+        .await
+        .map_err(db_err)?;
+    Ok(StatusCode::NO_CONTENT.into_response())
+}
+
+// ── Contacts ────────────────────────────────────────────────────────
+
+#[derive(Serialize)]
+struct ContactResponse {
+    id: Uuid,
+    channel: String,
+    value: String,
+    verified: bool,
+}
+
+#[derive(Deserialize)]
+struct AddContactRequest {
+    channel: String,
+    value: String,
+}
+
+async fn list_contacts(
+    State(state): State<Arc<AppState>>,
+    auth: AuthContext,
+    Path(recipient_id): Path<Uuid>,
+) -> ApiResult {
+    require_admin(&auth)?;
+    let contacts = admin::list_contacts(&state.db, recipient_id)
+        .await
+        .map_err(db_err)?;
+    Ok(Json(
+        contacts
+            .into_iter()
+            .map(|c| ContactResponse {
+                id: c.id,
+                channel: c.channel,
+                value: c.value,
+                verified: c.verified,
+            })
+            .collect::<Vec<_>>(),
+    )
+    .into_response())
+}
+
+async fn add_contact(
+    State(state): State<Arc<AppState>>,
+    auth: AuthContext,
+    Path(recipient_id): Path<Uuid>,
+    Json(body): Json<AddContactRequest>,
+) -> ApiResult {
+    require_admin(&auth)?;
+    let id = Uuid::now_v7();
+    admin::add_contact(&state.db, id, recipient_id, &body.channel, &body.value)
+        .await
+        .map_err(db_err)?;
+    Ok((
+        StatusCode::CREATED,
+        Json(ContactResponse {
+            id,
+            channel: body.channel,
+            value: body.value,
+            verified: false,
+        }),
+    )
+        .into_response())
+}
+
+async fn delete_contact(
+    State(state): State<Arc<AppState>>,
+    auth: AuthContext,
+    Path(id): Path<Uuid>,
+) -> ApiResult {
+    require_admin(&auth)?;
+    admin::delete_contact(&state.db, id)
+        .await
+        .map_err(db_err)?;
+    Ok(StatusCode::NO_CONTENT.into_response())
+}
+
+// ── Delivery Log ────────────────────────────────────────────────────
+
+#[derive(Deserialize)]
+struct DeliveryLogQuery {
+    #[serde(default)]
+    status: Option<String>,
+    #[serde(default)]
+    event: Option<String>,
+    #[serde(default = "default_limit")]
+    limit: u64,
+    #[serde(default)]
+    offset: u64,
+}
+
+fn default_limit() -> u64 {
+    50
+}
+
+#[derive(Serialize)]
+struct DeliveryLogResponse {
+    id: Uuid,
+    event_name: String,
+    recipient_id: Uuid,
+    channel: String,
+    status: String,
+    error_message: Option<String>,
+    attempts: i32,
+    created_at: String,
+    delivered_at: Option<String>,
+}
+
+#[derive(Serialize)]
+struct DeliveryLogPage {
+    items: Vec<DeliveryLogResponse>,
+    total: i64,
+    limit: u64,
+    offset: u64,
+}
+
+async fn query_delivery_log(
+    State(state): State<Arc<AppState>>,
+    auth: AuthContext,
+    Query(q): Query<DeliveryLogQuery>,
+) -> ApiResult {
+    require_admin(&auth)?;
+    let logs = delivery_log::list_logs(
+        &state.db,
+        auth.project_id,
+        q.status.as_deref(),
+        q.event.as_deref(),
+        q.limit.min(200),
+        q.offset,
+    )
+    .await
+    .map_err(db_err)?;
+
+    let total = delivery_log::count_logs(
+        &state.db,
+        auth.project_id,
+        q.status.as_deref(),
+        q.event.as_deref(),
+    )
+    .await
+    .map_err(db_err)?;
+
+    Ok(Json(DeliveryLogPage {
+        items: logs
+            .into_iter()
+            .map(|l| DeliveryLogResponse {
+                id: l.id,
+                event_name: l.event_name,
+                recipient_id: l.recipient_id,
+                channel: l.channel,
+                status: l.status,
+                error_message: l.error_message,
+                attempts: l.attempts,
+                created_at: l.created_at,
+                delivered_at: l.delivered_at,
+            })
+            .collect(),
+        total,
+        limit: q.limit,
+        offset: q.offset,
+    })
+    .into_response())
+}
+
+// ── API Keys ────────────────────────────────────────────────────────
+
+#[derive(Serialize)]
+struct ApiKeyResponse {
+    id: Uuid,
+    name: String,
+    key_prefix: String,
+    scope: String,
+    enabled: bool,
+}
+
+#[derive(Serialize)]
+struct ApiKeyCreatedResponse {
+    id: Uuid,
+    name: String,
+    scope: String,
+    raw_key: String,
+}
+
+#[derive(Deserialize)]
+struct CreateApiKeyRequest {
+    name: String,
+    #[serde(default = "default_scope")]
+    scope: String,
+}
+
+fn default_scope() -> String {
+    "ingest".into()
+}
+
+async fn list_api_keys(
+    State(state): State<Arc<AppState>>,
+    auth: AuthContext,
+) -> ApiResult {
+    require_admin(&auth)?;
+    let keys = admin::list_api_keys(&state.db, auth.project_id)
+        .await
+        .map_err(db_err)?;
+    Ok(Json(
+        keys.into_iter()
+            .map(|k| ApiKeyResponse {
+                id: k.id,
+                name: k.name,
+                key_prefix: k.key_prefix,
+                scope: k.scope,
+                enabled: k.enabled,
+            })
+            .collect::<Vec<_>>(),
+    )
+    .into_response())
+}
+
+async fn create_api_key(
+    State(state): State<Arc<AppState>>,
+    auth: AuthContext,
+    Json(body): Json<CreateApiKeyRequest>,
+) -> ApiResult {
+    require_admin(&auth)?;
+    let id = Uuid::now_v7();
+    let raw_key = format!("nk_live_{}", Uuid::now_v7().simple());
+    api_key::insert_api_key(
+        &state.db,
+        id,
+        auth.project_id,
+        &body.name,
+        &raw_key,
+        &body.scope,
+    )
+    .await
+    .map_err(db_err)?;
+    Ok((
+        StatusCode::CREATED,
+        Json(ApiKeyCreatedResponse {
+            id,
+            name: body.name,
+            scope: body.scope,
+            raw_key,
+        }),
+    )
+        .into_response())
+}
+
+async fn delete_api_key(
+    State(state): State<Arc<AppState>>,
+    auth: AuthContext,
+    Path(id): Path<Uuid>,
+) -> ApiResult {
+    require_admin(&auth)?;
+    admin::delete_api_key(&state.db, id)
+        .await
+        .map_err(db_err)?;
+    Ok(StatusCode::NO_CONTENT.into_response())
+}
+
+// ── Channels ────────────────────────────────────────────────────────
+
+#[derive(Serialize)]
+struct ChannelResponse {
+    channel_id: String,
+    display_name: String,
+    content_schema: Value,
+    credential_schema: Value,
+}
+
+async fn list_channels(
+    State(state): State<Arc<AppState>>,
+    auth: AuthContext,
+) -> ApiResult {
+    require_admin(&auth)?;
+    let info = state.registry.channel_info();
+    Ok(Json(
+        info.into_iter()
+            .map(|ch| ChannelResponse {
+                channel_id: ch.channel_id.to_string(),
+                display_name: ch.display_name,
+                content_schema: serde_json::to_value(&ch.content_schema).unwrap_or_default(),
+                credential_schema: serde_json::to_value(&ch.credential_schema)
+                    .unwrap_or_default(),
+            })
+            .collect::<Vec<_>>(),
+    )
+    .into_response())
 }

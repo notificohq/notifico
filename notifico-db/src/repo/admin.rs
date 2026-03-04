@@ -488,6 +488,264 @@ pub async fn set_template_content(
     Ok(())
 }
 
+// ── Recipient ─────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone)]
+pub struct RecipientAdminRow {
+    pub id: Uuid,
+    pub external_id: String,
+    pub locale: String,
+    pub timezone: String,
+    pub metadata: Value,
+}
+
+#[derive(Debug, Clone, FromQueryResult)]
+struct RecipientAdminRaw {
+    id: String,
+    external_id: String,
+    locale: String,
+    timezone: String,
+    metadata: String,
+}
+
+impl RecipientAdminRaw {
+    fn into_row(self) -> Result<RecipientAdminRow, DbErr> {
+        Ok(RecipientAdminRow {
+            id: Uuid::parse_str(&self.id)
+                .map_err(|e| DbErr::Custom(format!("invalid UUID: {e}")))?,
+            external_id: self.external_id,
+            locale: self.locale,
+            timezone: self.timezone,
+            metadata: serde_json::from_str(&self.metadata)
+                .unwrap_or(Value::Object(Default::default())),
+        })
+    }
+}
+
+pub async fn list_recipients(
+    db: &DatabaseConnection,
+    project_id: Uuid,
+) -> Result<Vec<RecipientAdminRow>, DbErr> {
+    let rows = RecipientAdminRaw::find_by_statement(Statement::from_sql_and_values(
+        db.get_database_backend(),
+        "SELECT id, external_id, locale, timezone, metadata FROM recipient WHERE project_id = ? ORDER BY external_id",
+        [project_id.to_string().into()],
+    ))
+    .all(db)
+    .await?;
+    rows.into_iter().map(|r| r.into_row()).collect()
+}
+
+pub async fn get_recipient(
+    db: &DatabaseConnection,
+    id: Uuid,
+) -> Result<Option<RecipientAdminRow>, DbErr> {
+    let raw = RecipientAdminRaw::find_by_statement(Statement::from_sql_and_values(
+        db.get_database_backend(),
+        "SELECT id, external_id, locale, timezone, metadata FROM recipient WHERE id = ?",
+        [id.to_string().into()],
+    ))
+    .one(db)
+    .await?;
+    match raw {
+        Some(r) => Ok(Some(r.into_row()?)),
+        None => Ok(None),
+    }
+}
+
+pub async fn create_recipient(
+    db: &DatabaseConnection,
+    id: Uuid,
+    project_id: Uuid,
+    external_id: &str,
+    locale: &str,
+    timezone: &str,
+) -> Result<(), DbErr> {
+    db.execute_raw(Statement::from_sql_and_values(
+        db.get_database_backend(),
+        "INSERT INTO recipient (id, project_id, external_id, locale, timezone) VALUES (?, ?, ?, ?, ?)",
+        [
+            id.to_string().into(),
+            project_id.to_string().into(),
+            external_id.into(),
+            locale.into(),
+            timezone.into(),
+        ],
+    ))
+    .await?;
+    Ok(())
+}
+
+pub async fn update_recipient(
+    db: &DatabaseConnection,
+    id: Uuid,
+    locale: &str,
+    timezone: &str,
+    metadata: &Value,
+) -> Result<(), DbErr> {
+    let meta_json =
+        serde_json::to_string(metadata).map_err(|e| DbErr::Custom(format!("JSON error: {e}")))?;
+    db.execute_raw(Statement::from_sql_and_values(
+        db.get_database_backend(),
+        "UPDATE recipient SET locale = ?, timezone = ?, metadata = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        [locale.into(), timezone.into(), meta_json.into(), id.to_string().into()],
+    ))
+    .await?;
+    Ok(())
+}
+
+pub async fn delete_recipient(db: &DatabaseConnection, id: Uuid) -> Result<(), DbErr> {
+    db.execute_raw(Statement::from_sql_and_values(
+        db.get_database_backend(),
+        "DELETE FROM recipient WHERE id = ?",
+        [id.to_string().into()],
+    ))
+    .await?;
+    Ok(())
+}
+
+#[derive(Debug, Clone)]
+pub struct ContactAdminRow {
+    pub id: Uuid,
+    pub channel: String,
+    pub value: String,
+    pub verified: bool,
+}
+
+#[derive(Debug, Clone, FromQueryResult)]
+struct ContactAdminRaw {
+    id: String,
+    channel: String,
+    value: String,
+    verified: bool,
+}
+
+pub async fn list_contacts(
+    db: &DatabaseConnection,
+    recipient_id: Uuid,
+) -> Result<Vec<ContactAdminRow>, DbErr> {
+    let rows = ContactAdminRaw::find_by_statement(Statement::from_sql_and_values(
+        db.get_database_backend(),
+        "SELECT id, channel, value, verified FROM recipient_contact WHERE recipient_id = ? ORDER BY channel, value",
+        [recipient_id.to_string().into()],
+    ))
+    .all(db)
+    .await?;
+
+    rows.into_iter()
+        .map(|r| {
+            Ok(ContactAdminRow {
+                id: Uuid::parse_str(&r.id)
+                    .map_err(|e| DbErr::Custom(format!("invalid UUID: {e}")))?,
+                channel: r.channel,
+                value: r.value,
+                verified: r.verified,
+            })
+        })
+        .collect()
+}
+
+pub async fn add_contact(
+    db: &DatabaseConnection,
+    id: Uuid,
+    recipient_id: Uuid,
+    channel: &str,
+    value: &str,
+) -> Result<(), DbErr> {
+    db.execute_raw(Statement::from_sql_and_values(
+        db.get_database_backend(),
+        "INSERT INTO recipient_contact (id, recipient_id, channel, value) VALUES (?, ?, ?, ?)",
+        [
+            id.to_string().into(),
+            recipient_id.to_string().into(),
+            channel.into(),
+            value.into(),
+        ],
+    ))
+    .await?;
+    Ok(())
+}
+
+pub async fn delete_contact(db: &DatabaseConnection, id: Uuid) -> Result<(), DbErr> {
+    db.execute_raw(Statement::from_sql_and_values(
+        db.get_database_backend(),
+        "DELETE FROM recipient_contact WHERE id = ?",
+        [id.to_string().into()],
+    ))
+    .await?;
+    Ok(())
+}
+
+// ── API Key admin ─────────────────────────────────────────────────────
+
+#[derive(Debug, Clone)]
+pub struct ApiKeySummary {
+    pub id: Uuid,
+    pub name: String,
+    pub key_prefix: String,
+    pub scope: String,
+    pub enabled: bool,
+}
+
+#[derive(Debug, Clone, FromQueryResult)]
+struct ApiKeySummaryRaw {
+    id: String,
+    name: String,
+    key_prefix: String,
+    scope: String,
+    enabled: bool,
+}
+
+pub async fn list_api_keys(
+    db: &DatabaseConnection,
+    project_id: Uuid,
+) -> Result<Vec<ApiKeySummary>, DbErr> {
+    let rows = ApiKeySummaryRaw::find_by_statement(Statement::from_sql_and_values(
+        db.get_database_backend(),
+        "SELECT id, name, key_prefix, scope, enabled FROM api_key WHERE project_id = ? ORDER BY name",
+        [project_id.to_string().into()],
+    ))
+    .all(db)
+    .await?;
+
+    rows.into_iter()
+        .map(|r| {
+            Ok(ApiKeySummary {
+                id: Uuid::parse_str(&r.id)
+                    .map_err(|e| DbErr::Custom(format!("invalid UUID: {e}")))?,
+                name: r.name,
+                key_prefix: r.key_prefix,
+                scope: r.scope,
+                enabled: r.enabled,
+            })
+        })
+        .collect()
+}
+
+pub async fn delete_api_key(db: &DatabaseConnection, id: Uuid) -> Result<(), DbErr> {
+    db.execute_raw(Statement::from_sql_and_values(
+        db.get_database_backend(),
+        "DELETE FROM api_key WHERE id = ?",
+        [id.to_string().into()],
+    ))
+    .await?;
+    Ok(())
+}
+
+pub async fn toggle_api_key(
+    db: &DatabaseConnection,
+    id: Uuid,
+    enabled: bool,
+) -> Result<(), DbErr> {
+    db.execute_raw(Statement::from_sql_and_values(
+        db.get_database_backend(),
+        "UPDATE api_key SET enabled = ? WHERE id = ?",
+        [enabled.into(), id.to_string().into()],
+    ))
+    .await?;
+    Ok(())
+}
+
 // ── Credential summary ───────────────────────────────────────────────
 
 #[derive(Debug, Clone)]
@@ -687,5 +945,80 @@ mod tests {
 
         delete_template(&db, template_id).await.unwrap();
         assert!(get_template(&db, template_id).await.unwrap().is_none());
+    }
+
+    #[tokio::test]
+    async fn crud_recipient_with_contacts() {
+        let db = setup().await;
+        let project_id = Uuid::now_v7();
+        create_project(&db, project_id, "P1", "en").await.unwrap();
+
+        let recipient_id = Uuid::now_v7();
+        create_recipient(&db, recipient_id, project_id, "user-42", "en", "UTC")
+            .await
+            .unwrap();
+
+        let recipients = list_recipients(&db, project_id).await.unwrap();
+        assert_eq!(recipients.len(), 1);
+        assert_eq!(recipients[0].external_id, "user-42");
+
+        let r = get_recipient(&db, recipient_id).await.unwrap().unwrap();
+        assert_eq!(r.locale, "en");
+
+        update_recipient(&db, recipient_id, "fr", "Europe/Paris", &json!({"vip": true}))
+            .await
+            .unwrap();
+        let updated = get_recipient(&db, recipient_id).await.unwrap().unwrap();
+        assert_eq!(updated.locale, "fr");
+        assert_eq!(updated.timezone, "Europe/Paris");
+        assert_eq!(updated.metadata["vip"], true);
+
+        // Add contacts
+        let c1 = Uuid::now_v7();
+        add_contact(&db, c1, recipient_id, "email", "user@test.com")
+            .await
+            .unwrap();
+        let c2 = Uuid::now_v7();
+        add_contact(&db, c2, recipient_id, "sms", "+1234567890")
+            .await
+            .unwrap();
+
+        let contacts = list_contacts(&db, recipient_id).await.unwrap();
+        assert_eq!(contacts.len(), 2);
+
+        delete_contact(&db, c1).await.unwrap();
+        let contacts = list_contacts(&db, recipient_id).await.unwrap();
+        assert_eq!(contacts.len(), 1);
+
+        delete_recipient(&db, recipient_id).await.unwrap();
+        assert!(get_recipient(&db, recipient_id).await.unwrap().is_none());
+    }
+
+    #[tokio::test]
+    async fn crud_api_key() {
+        let db = setup().await;
+        let project_id = Uuid::now_v7();
+        create_project(&db, project_id, "P1", "en").await.unwrap();
+
+        let key_id = Uuid::now_v7();
+        crate::repo::api_key::insert_api_key(
+            &db, key_id, project_id, "Test Key", "nk_live_testkey123", "admin",
+        )
+        .await
+        .unwrap();
+
+        let keys = list_api_keys(&db, project_id).await.unwrap();
+        assert_eq!(keys.len(), 1);
+        assert_eq!(keys[0].name, "Test Key");
+        assert_eq!(keys[0].scope, "admin");
+        assert!(keys[0].enabled);
+
+        toggle_api_key(&db, key_id, false).await.unwrap();
+        let keys = list_api_keys(&db, project_id).await.unwrap();
+        assert!(!keys[0].enabled);
+
+        delete_api_key(&db, key_id).await.unwrap();
+        let keys = list_api_keys(&db, project_id).await.unwrap();
+        assert!(keys.is_empty());
     }
 }
