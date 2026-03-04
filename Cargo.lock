@@ -1351,6 +1351,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "notifico-queue"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror",
+ "uuid",
+]
+
+[[package]]
 name = "notifico-server"
 version = "0.1.0"
 dependencies = [

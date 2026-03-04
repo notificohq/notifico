@@ -4,6 +4,7 @@ members = [
     "notifico-core",
     "notifico-db",
     "notifico-template",
+    "notifico-queue",
     "notifico-server",
 ]
 
@@ -46,6 +47,7 @@ minijinja = { version = "2.16", features = ["builtins"] }
 notifico-core = { path = "notifico-core" }
 notifico-db = { path = "notifico-db" }
 notifico-template = { path = "notifico-template" }
+notifico-queue = { path = "notifico-queue" }
 
 [profile.release]
 opt-level = 3
