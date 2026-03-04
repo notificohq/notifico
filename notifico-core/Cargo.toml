@@ -11,6 +11,7 @@ chrono = { workspace = true }
 async-trait = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
+lettre = { workspace = true }
 notifico-template = { workspace = true }
 
 [dev-dependencies]

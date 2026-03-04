@@ -44,8 +44,15 @@ figment = { version = "0.10", features = ["toml", "env"] }
 # Template
 minijinja = { version = "2.16", features = ["builtins"] }
 
+# Email
+lettre = { version = "0.11", default-features = false, features = ["tokio1-rustls-tls", "smtp-transport", "builder"] }
+
 # Crypto
 sha2 = "0.10"
+aes-gcm = "0.10"
+base64 = "0.22"
+rand = "0.9"
+hex = "0.4"
 
 # Internal crates
 notifico-core = { path = "notifico-core" }

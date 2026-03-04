@@ -37,7 +37,7 @@ pub async fn run_worker_loop(state: Arc<AppState>) {
         for task_row in &tasks {
             let delivery_task = task_row_to_delivery_task(task_row);
 
-            match process_delivery(&delivery_task, &state.registry, &state.db).await {
+            match process_delivery(&delivery_task, &state.registry, &state.db, state.encryption_key.as_ref()).await {
                 Ok(()) => {
                     if let Err(e) =
                         repo::queue::mark_completed(&state.db, task_row.id).await
@@ -90,6 +90,7 @@ pub async fn process_delivery(
     task: &DeliveryTask,
     registry: &TransportRegistry,
     db: &DatabaseConnection,
+    encryption_key: Option<&[u8; 32]>,
 ) -> Result<(), String> {
     tracing::info!(
         task_id = %task.id,
@@ -105,12 +106,36 @@ pub async fn process_delivery(
         .get(&channel_id)
         .ok_or_else(|| format!("Transport not found for channel: {}", task.channel))?;
 
+    // Resolve credentials for this transport
+    let credentials = if let Some(key) = encryption_key {
+        match repo::credential::find_credential(db, task.project_id, &task.channel, key).await {
+            Ok(Some(cred)) => cred.data,
+            Ok(None) => {
+                // Check if transport requires credentials
+                let schema = transport.credential_schema();
+                if schema.fields.iter().any(|f| f.required) {
+                    return Err(format!(
+                        "No credentials configured for channel '{}' in project {}",
+                        task.channel, task.project_id
+                    ));
+                }
+                serde_json::json!({})
+            }
+            Err(e) => {
+                tracing::warn!(error = %e, "Failed to resolve credentials, proceeding without");
+                serde_json::json!({})
+            }
+        }
+    } else {
+        serde_json::json!({})
+    };
+
     // Build RenderedMessage from task
     let message = RenderedMessage {
         channel: channel_id,
         recipient_contact: task.contact_value.clone(),
         content: task.rendered_body.clone(),
-        credentials: serde_json::json!({}), // Credentials will be resolved in a later phase
+        credentials,
         attachments: vec![],
     };
 

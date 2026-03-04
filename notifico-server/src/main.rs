@@ -12,11 +12,13 @@ use tower_http::trace::TraceLayer;
 use config::{Config, ServerMode};
 use notifico_core::registry::TransportRegistry;
 use notifico_core::transport::ConsoleTransport;
+use notifico_core::transport::email::EmailTransport;
 
 pub(crate) struct AppState {
     pub(crate) db: DatabaseConnection,
     pub(crate) config: Config,
     pub(crate) registry: TransportRegistry,
+    pub(crate) encryption_key: Option<[u8; 32]>,
 }
 
 #[tokio::main]
@@ -53,11 +55,22 @@ async fn main() {
 
     let mut registry = TransportRegistry::new();
     registry.register(Arc::new(ConsoleTransport));
+    registry.register(Arc::new(EmailTransport));
+
+    // Parse encryption key from config (hex-encoded 32-byte key)
+    let encryption_key = config.auth.encryption_key.as_ref().map(|hex_key| {
+        let bytes = hex::decode(hex_key).expect("NOTIFICO_AUTH_ENCRYPTION_KEY must be valid hex");
+        let key: [u8; 32] = bytes
+            .try_into()
+            .expect("NOTIFICO_AUTH_ENCRYPTION_KEY must be exactly 32 bytes (64 hex chars)");
+        key
+    });
 
     let state = Arc::new(AppState {
         db,
         config: config.clone(),
         registry,
+        encryption_key,
     });
 
     match config.server.mode {
@@ -208,6 +221,7 @@ mod integration_tests {
             db,
             config,
             registry,
+            encryption_key: None,
         });
 
         (build_router(state), raw_key.to_string())
