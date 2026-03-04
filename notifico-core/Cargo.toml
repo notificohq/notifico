@@ -10,4 +10,8 @@ uuid = { workspace = true }
 chrono = { workspace = true }
 async-trait = { workspace = true }
 thiserror = { workspace = true }
+tracing = { workspace = true }
 notifico-template = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }

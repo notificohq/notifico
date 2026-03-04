@@ -1,10 +1,89 @@
+use std::sync::Arc;
+
 use sea_orm::{ConnectionTrait, DatabaseConnection};
 use uuid::Uuid;
 
 use notifico_core::channel::ChannelId;
 use notifico_core::registry::TransportRegistry;
 use notifico_core::transport::{DeliveryResult, RenderedMessage};
+use notifico_db::repo;
 use notifico_queue::DeliveryTask;
+
+use crate::AppState;
+
+/// Run the worker loop: poll queue, claim tasks, process, update status.
+pub async fn run_worker_loop(state: Arc<AppState>) {
+    let poll_interval = std::time::Duration::from_secs(2);
+
+    tracing::info!("Worker loop started");
+
+    loop {
+        let tasks = match repo::queue::claim_pending(&state.db, 10).await {
+            Ok(t) => t,
+            Err(e) => {
+                tracing::error!(error = %e, "Failed to claim tasks");
+                tokio::time::sleep(poll_interval).await;
+                continue;
+            }
+        };
+
+        if tasks.is_empty() {
+            tokio::time::sleep(poll_interval).await;
+            continue;
+        }
+
+        tracing::info!(count = tasks.len(), "Claimed delivery tasks");
+
+        for task_row in &tasks {
+            let delivery_task = task_row_to_delivery_task(task_row);
+
+            match process_delivery(&delivery_task, &state.registry, &state.db).await {
+                Ok(()) => {
+                    if let Err(e) =
+                        repo::queue::mark_completed(&state.db, task_row.id).await
+                    {
+                        tracing::error!(
+                            task_id = %task_row.id, error = %e,
+                            "Failed to mark completed"
+                        );
+                    }
+                }
+                Err(reason) => {
+                    if let Err(e) = repo::queue::mark_failed(
+                        &state.db,
+                        task_row.id,
+                        &reason,
+                        true,
+                        task_row.attempt,
+                        task_row.max_attempts,
+                    )
+                    .await
+                    {
+                        tracing::error!(
+                            task_id = %task_row.id, error = %e,
+                            "Failed to mark failed"
+                        );
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn task_row_to_delivery_task(row: &repo::queue::TaskRow) -> DeliveryTask {
+    DeliveryTask {
+        id: row.id,
+        project_id: row.project_id,
+        event_name: row.event_name.clone(),
+        recipient_id: row.recipient_id,
+        channel: row.channel.clone(),
+        rendered_body: row.rendered_body.clone(),
+        contact_value: row.contact_value.clone(),
+        idempotency_key: row.idempotency_key.clone(),
+        attempt: row.attempt as u32,
+        max_attempts: row.max_attempts as u32,
+    }
+}
 
 /// Process a single delivery task.
 pub async fn process_delivery(

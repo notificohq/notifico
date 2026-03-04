@@ -194,14 +194,34 @@ pub async fn handle_ingest(
 
             match execute_pipeline(pipeline_input) {
                 Ok(output) => {
+                    if let Err(e) = repo::queue::enqueue(
+                        &state.db,
+                        output.id,
+                        output.project_id,
+                        &output.event_name,
+                        output.recipient_id,
+                        &output.channel,
+                        &output.contact_value,
+                        &output.rendered_body,
+                        output.idempotency_key.as_deref(),
+                        output.max_attempts as i32,
+                    )
+                    .await
+                    {
+                        errors.push(format!(
+                            "Failed to enqueue task for recipient {} channel {}: {}",
+                            recipient_input.id, rule.channel, e
+                        ));
+                        continue;
+                    }
+
                     task_ids.push(output.id);
                     tracing::info!(
                         task_id = %output.id,
                         channel = %output.channel,
                         recipient = %recipient_input.id,
-                        "Delivery task created"
+                        "Delivery task enqueued"
                     );
-                    // TODO: enqueue output as DeliveryTask via apalis in a future phase
                 }
                 Err(e) => {
                     errors.push(format!(

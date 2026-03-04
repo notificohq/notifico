@@ -11,11 +11,11 @@ use tower_http::trace::TraceLayer;
 
 use config::{Config, ServerMode};
 use notifico_core::registry::TransportRegistry;
+use notifico_core::transport::ConsoleTransport;
 
 pub(crate) struct AppState {
     pub(crate) db: DatabaseConnection,
     pub(crate) config: Config,
-    #[allow(dead_code)]
     pub(crate) registry: TransportRegistry,
 }
 
@@ -51,7 +51,8 @@ async fn main() {
 
     tracing::info!("Database migrations complete");
 
-    let registry = TransportRegistry::new();
+    let mut registry = TransportRegistry::new();
+    registry.register(Arc::new(ConsoleTransport));
 
     let state = Arc::new(AppState {
         db,
@@ -60,15 +61,19 @@ async fn main() {
     });
 
     match config.server.mode {
-        ServerMode::All | ServerMode::Api => {
+        ServerMode::All => {
+            let worker_state = state.clone();
+            tokio::spawn(async move {
+                worker::run_worker_loop(worker_state).await;
+            });
+            start_api_server(state).await;
+        }
+        ServerMode::Api => {
             start_api_server(state).await;
         }
         ServerMode::Worker => {
             tracing::info!("Worker mode — HTTP server not started");
-            // Worker loop will go here in future phases
-            tokio::signal::ctrl_c()
-                .await
-                .expect("Failed to listen for ctrl+c");
+            worker::run_worker_loop(state).await;
         }
     }
 }

@@ -7,6 +7,7 @@ mod m20260303_000004_create_recipients;
 mod m20260303_000005_create_delivery_log;
 mod m20260303_000006_create_api_keys;
 mod m20260303_000007_create_idempotency;
+mod m20260304_000008_create_delivery_task;
 
 pub struct Migrator;
 
@@ -21,6 +22,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20260303_000005_create_delivery_log::Migration),
             Box::new(m20260303_000006_create_api_keys::Migration),
             Box::new(m20260303_000007_create_idempotency::Migration),
+            Box::new(m20260304_000008_create_delivery_task::Migration),
         ]
     }
 }
