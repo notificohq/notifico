@@ -1,3 +1,4 @@
+mod admin;
 mod auth;
 mod config;
 mod ingest;
@@ -96,6 +97,7 @@ pub(crate) fn build_router(state: Arc<AppState>) -> Router {
         .route("/health", get(health))
         .route("/ready", get(ready))
         .route("/api/v1/events", post(ingest::handle_ingest))
+        .nest("/admin/api/v1", admin::admin_router())
         .layer(TraceLayer::new_for_http())
         .with_state(state)
 }
@@ -255,6 +257,205 @@ mod integration_tests {
 
         assert_eq!(json["accepted"], 1);
         assert_eq!(json["task_ids"].as_array().unwrap().len(), 1);
+    }
+
+    async fn setup_admin_app() -> (Router, String) {
+        let db = notifico_db::connect("sqlite::memory:").await.unwrap();
+        notifico_db::run_migrations(&db).await.unwrap();
+
+        let project_id = Uuid::now_v7();
+
+        // Seed project
+        db.execute_unprepared(&format!(
+            "INSERT INTO project (id, name) VALUES ('{project_id}', 'test')"
+        ))
+        .await
+        .unwrap();
+
+        // Seed admin API key
+        let raw_key = "nk_live_admin_test_key_1234";
+        notifico_db::repo::api_key::insert_api_key(
+            &db,
+            Uuid::now_v7(),
+            project_id,
+            "Admin Key",
+            raw_key,
+            "admin",
+        )
+        .await
+        .unwrap();
+
+        let config = Config::load(None).unwrap();
+        let registry = TransportRegistry::new();
+
+        let state = Arc::new(AppState {
+            db,
+            config,
+            registry,
+            encryption_key: None,
+        });
+
+        (build_router(state), raw_key.to_string())
+    }
+
+    async fn json_body(resp: axum::http::Response<Body>) -> serde_json::Value {
+        let bytes = resp.into_body().collect().await.unwrap().to_bytes();
+        serde_json::from_slice(&bytes).unwrap()
+    }
+
+    #[tokio::test]
+    async fn admin_project_crud() {
+        let (app, key) = setup_admin_app().await;
+
+        // Create project
+        let req = Request::builder()
+            .method("POST")
+            .uri("/admin/api/v1/projects")
+            .header("content-type", "application/json")
+            .header("authorization", format!("Bearer {key}"))
+            .body(Body::from(r#"{"name":"My Project"}"#))
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::CREATED);
+        let body = json_body(resp).await;
+        assert_eq!(body["name"], "My Project");
+        assert_eq!(body["default_locale"], "en");
+        let project_id = body["id"].as_str().unwrap().to_string();
+
+        // List projects (should include the seeded one + newly created)
+        let req = Request::builder()
+            .uri("/admin/api/v1/projects")
+            .header("authorization", format!("Bearer {key}"))
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = json_body(resp).await;
+        assert_eq!(body.as_array().unwrap().len(), 2);
+
+        // Get project
+        let req = Request::builder()
+            .uri(format!("/admin/api/v1/projects/{project_id}"))
+            .header("authorization", format!("Bearer {key}"))
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = json_body(resp).await;
+        assert_eq!(body["name"], "My Project");
+
+        // Update project
+        let req = Request::builder()
+            .method("PUT")
+            .uri(format!("/admin/api/v1/projects/{project_id}"))
+            .header("content-type", "application/json")
+            .header("authorization", format!("Bearer {key}"))
+            .body(Body::from(
+                r#"{"name":"Updated","default_locale":"fr"}"#,
+            ))
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = json_body(resp).await;
+        assert_eq!(body["name"], "Updated");
+        assert_eq!(body["default_locale"], "fr");
+
+        // Delete project
+        let req = Request::builder()
+            .method("DELETE")
+            .uri(format!("/admin/api/v1/projects/{project_id}"))
+            .header("authorization", format!("Bearer {key}"))
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::NO_CONTENT);
+    }
+
+    #[tokio::test]
+    async fn admin_event_and_rule_crud() {
+        let (app, key) = setup_admin_app().await;
+
+        // Create event
+        let req = Request::builder()
+            .method("POST")
+            .uri("/admin/api/v1/events")
+            .header("content-type", "application/json")
+            .header("authorization", format!("Bearer {key}"))
+            .body(Body::from(
+                r#"{"name":"order.created","category":"transactional"}"#,
+            ))
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::CREATED);
+        let body = json_body(resp).await;
+        let event_id = body["id"].as_str().unwrap().to_string();
+
+        // Create template (needed for rule)
+        let req = Request::builder()
+            .method("POST")
+            .uri("/admin/api/v1/templates")
+            .header("content-type", "application/json")
+            .header("authorization", format!("Bearer {key}"))
+            .body(Body::from(
+                r#"{"name":"order_tpl","channel":"email"}"#,
+            ))
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::CREATED);
+        let body = json_body(resp).await;
+        let template_id = body["id"].as_str().unwrap().to_string();
+
+        // Create rule
+        let req = Request::builder()
+            .method("POST")
+            .uri(format!("/admin/api/v1/events/{event_id}/rules"))
+            .header("content-type", "application/json")
+            .header("authorization", format!("Bearer {key}"))
+            .body(Body::from(format!(
+                r#"{{"channel":"email","template_id":"{template_id}","priority":5}}"#
+            )))
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::CREATED);
+        let body = json_body(resp).await;
+        assert_eq!(body["channel"], "email");
+        assert_eq!(body["enabled"], true);
+        let rule_id = body["id"].as_str().unwrap().to_string();
+
+        // List rules
+        let req = Request::builder()
+            .uri(format!("/admin/api/v1/events/{event_id}/rules"))
+            .header("authorization", format!("Bearer {key}"))
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = json_body(resp).await;
+        assert_eq!(body.as_array().unwrap().len(), 1);
+
+        // Delete rule
+        let req = Request::builder()
+            .method("DELETE")
+            .uri(format!("/admin/api/v1/rules/{rule_id}"))
+            .header("authorization", format!("Bearer {key}"))
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::NO_CONTENT);
+    }
+
+    #[tokio::test]
+    async fn admin_requires_admin_scope() {
+        let (app, ingest_key) = setup_app().await;
+
+        // Ingest-scoped key should get 403 on admin endpoints
+        let req = Request::builder()
+            .uri("/admin/api/v1/projects")
+            .header("authorization", format!("Bearer {ingest_key}"))
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::FORBIDDEN);
     }
 
     #[tokio::test]
