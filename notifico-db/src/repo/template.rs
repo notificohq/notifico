@@ -229,6 +229,7 @@ pub async fn find_event_by_name(
 mod tests {
     use super::*;
     use crate::{connect, run_migrations};
+    use sea_orm::ConnectionTrait;
 
     async fn setup_db() -> DatabaseConnection {
         let db = connect("sqlite::memory:").await.unwrap();

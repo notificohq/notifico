@@ -20,3 +20,5 @@ figment = { workspace = true }
 toml = { workspace = true }
 notifico-core = { workspace = true }
 notifico-db = { workspace = true }
+notifico-queue = { workspace = true }
+uuid = { workspace = true }

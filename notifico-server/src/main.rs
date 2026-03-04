@@ -1,4 +1,5 @@
 mod config;
+mod worker;
 
 use std::sync::Arc;
 
@@ -7,10 +8,12 @@ use sea_orm::DatabaseConnection;
 use tower_http::trace::TraceLayer;
 
 use config::{Config, ServerMode};
+use notifico_core::registry::TransportRegistry;
 
 struct AppState {
     db: DatabaseConnection,
     config: Config,
+    registry: TransportRegistry,
 }
 
 #[tokio::main]
@@ -45,9 +48,12 @@ async fn main() {
 
     tracing::info!("Database migrations complete");
 
+    let registry = TransportRegistry::new();
+
     let state = Arc::new(AppState {
         db,
         config: config.clone(),
+        registry,
     });
 
     match config.server.mode {

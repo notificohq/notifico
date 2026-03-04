@@ -1653,6 +1653,7 @@ dependencies = [
  "figment",
  "notifico-core",
  "notifico-db",
+ "notifico-queue",
  "sea-orm",
  "serde",
  "serde_json",
@@ -1661,6 +1662,7 @@ dependencies = [
  "tower-http",
  "tracing",
  "tracing-subscriber",
+ "uuid",
 ]
 
 [[package]]
