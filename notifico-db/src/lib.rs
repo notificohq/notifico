@@ -54,6 +54,7 @@ mod tests {
         assert!(table_names.contains(&"unsubscribe".to_string()));
         assert!(table_names.contains(&"delivery_log".to_string()));
         assert!(table_names.contains(&"api_key".to_string()));
+        assert!(table_names.contains(&"idempotency_record".to_string()));
     }
 
     #[tokio::test]
