@@ -134,6 +134,32 @@ pub async fn handle_ingest(
                 }
             };
 
+            // Check recipient preferences (skip if opted out)
+            if event_row.category != "transactional" {
+                match repo::preference::is_opted_out(
+                    &state.db,
+                    recipient_id,
+                    &event_row.category,
+                    &rule.channel,
+                )
+                .await
+                {
+                    Ok(true) => {
+                        tracing::debug!(
+                            recipient = %recipient_input.id,
+                            category = %event_row.category,
+                            channel = %rule.channel,
+                            "Skipping delivery — recipient opted out"
+                        );
+                        continue;
+                    }
+                    Ok(false) => {}
+                    Err(e) => {
+                        tracing::warn!(error = %e, "Preference check failed, proceeding with delivery");
+                    }
+                }
+            }
+
             // Check idempotency
             if let Some(ref client_key) = event.idempotency_key {
                 let idem_key = repo::idempotency::make_idempotency_key(

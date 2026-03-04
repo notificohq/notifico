@@ -2,6 +2,7 @@ mod admin;
 mod auth;
 mod config;
 mod ingest;
+mod public;
 mod worker;
 
 use std::sync::Arc;
@@ -98,6 +99,7 @@ pub(crate) fn build_router(state: Arc<AppState>) -> Router {
         .route("/ready", get(ready))
         .route("/api/v1/events", post(ingest::handle_ingest))
         .nest("/admin/api/v1", admin::admin_router())
+        .nest("/api/v1/public", public::public_router())
         .layer(TraceLayer::new_for_http())
         .with_state(state)
 }
@@ -588,6 +590,98 @@ mod integration_tests {
             .unwrap();
         let resp = app.oneshot(req).await.unwrap();
         assert_eq!(resp.status(), StatusCode::FORBIDDEN);
+    }
+
+    #[tokio::test]
+    async fn public_preferences_and_unsubscribe() {
+        let (app, api_key) = setup_app().await;
+
+        // First, ingest an event to create the recipient "user-123"
+        let ingest_body = serde_json::json!({
+            "event": "order.confirmed",
+            "recipients": [{"id": "user-123", "contacts": {"email": "test@example.com"}}],
+            "data": {"order_id": 1, "name": "Test"}
+        });
+        let req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/events")
+            .header("content-type", "application/json")
+            .header("authorization", format!("Bearer {api_key}"))
+            .body(Body::from(serde_json::to_string(&ingest_body).unwrap()))
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        // Set a preference (opt out of marketing email)
+        let req = Request::builder()
+            .method("PUT")
+            .uri("/api/v1/public/preferences")
+            .header("content-type", "application/json")
+            .header("authorization", format!("Bearer {api_key}"))
+            .body(Body::from(serde_json::to_string(&serde_json::json!({
+                "recipient": "user-123",
+                "category": "marketing",
+                "channel": "email",
+                "enabled": false
+            })).unwrap()))
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        // Get preferences
+        let req = Request::builder()
+            .uri("/api/v1/public/preferences?recipient=user-123")
+            .header("authorization", format!("Bearer {api_key}"))
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = json_body(resp).await;
+        let prefs = body.as_array().unwrap();
+        assert_eq!(prefs.len(), 1);
+        assert_eq!(prefs[0]["category"], "marketing");
+        assert_eq!(prefs[0]["enabled"], false);
+
+        // Re-enable preference
+        let req = Request::builder()
+            .method("PUT")
+            .uri("/api/v1/public/preferences")
+            .header("content-type", "application/json")
+            .header("authorization", format!("Bearer {api_key}"))
+            .body(Body::from(serde_json::to_string(&serde_json::json!({
+                "recipient": "user-123",
+                "category": "marketing",
+                "channel": "email",
+                "enabled": true
+            })).unwrap()))
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn public_unsubscribe_via_token() {
+        let (app, _) = setup_app().await;
+
+        // Unsubscribe with an invalid token (POST)
+        let req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/public/unsubscribe")
+            .header("content-type", "application/json")
+            .body(Body::from(r#"{"token":"invalid_token"}"#))
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = json_body(resp).await;
+        assert_eq!(body["unsubscribed"], false);
+
+        // Unsubscribe with an invalid token (GET)
+        let req = Request::builder()
+            .uri("/api/v1/public/unsubscribe?token=invalid_token")
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
