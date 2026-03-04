@@ -1631,6 +1631,7 @@ dependencies = [
  "sea-orm-migration",
  "serde",
  "serde_json",
+ "sha2",
  "tokio",
  "uuid",
 ]
@@ -1651,6 +1652,7 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "figment",
+ "http-body-util",
  "notifico-core",
  "notifico-db",
  "notifico-queue",
@@ -1659,6 +1661,7 @@ dependencies = [
  "serde_json",
  "tokio",
  "toml 1.0.3+spec-1.1.0",
+ "tower",
  "tower-http",
  "tracing",
  "tracing-subscriber",

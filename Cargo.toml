@@ -29,8 +29,9 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 
 # Web
 axum = { version = "0.8", features = ["macros"] }
-tower = "0.5"
+tower = { version = "0.5", features = ["util"] }
 tower-http = { version = "0.6", features = ["cors", "trace"] }
+http-body-util = "0.1"
 
 # Database
 sea-orm = { version = "2.0.0-rc.35", features = ["sqlx-postgres", "sqlx-sqlite", "runtime-tokio-rustls", "macros"] }
@@ -42,6 +43,9 @@ figment = { version = "0.10", features = ["toml", "env"] }
 
 # Template
 minijinja = { version = "2.16", features = ["builtins"] }
+
+# Crypto
+sha2 = "0.10"
 
 # Internal crates
 notifico-core = { path = "notifico-core" }
