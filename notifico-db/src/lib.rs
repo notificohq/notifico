@@ -30,7 +30,7 @@ mod tests {
         // Verify tables exist by querying sqlite_master
         use sea_orm::{ConnectionTrait, Statement};
         let result = db
-            .query_all(Statement::from_string(
+            .query_all_raw(Statement::from_string(
                 sea_orm::DatabaseBackend::Sqlite,
                 "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name",
             ))

@@ -1,4 +1,4 @@
-use sea_orm::{ConnectionTrait, DatabaseConnection, DbErr, FromQueryResult, Statement};
+use sea_orm::{DatabaseConnection, DbErr, FromQueryResult, Statement};
 use serde_json::Value;
 use uuid::Uuid;
 
