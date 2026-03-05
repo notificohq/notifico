@@ -12,61 +12,92 @@ use notifico_queue::DeliveryTask;
 use crate::AppState;
 
 /// Run the worker loop: poll queue, claim tasks, process, update status.
+/// Shuts down gracefully on SIGTERM or SIGINT (Ctrl+C).
 pub async fn run_worker_loop(state: Arc<AppState>) {
     let poll_interval = std::time::Duration::from_secs(2);
 
     tracing::info!("Worker loop started");
 
+    let mut shutdown = std::pin::pin!(shutdown_signal());
+
     loop {
-        let tasks = match repo::queue::claim_pending(&state.db, 10).await {
-            Ok(t) => t,
-            Err(e) => {
-                tracing::error!(error = %e, "Failed to claim tasks");
-                tokio::time::sleep(poll_interval).await;
-                continue;
+        // Check for shutdown between batches
+        tokio::select! {
+            _ = &mut shutdown => {
+                tracing::info!("Worker shutting down gracefully");
+                return;
             }
-        };
+            tasks_result = repo::queue::claim_pending(&state.db, 10) => {
+                let tasks = match tasks_result {
+                    Ok(t) => t,
+                    Err(e) => {
+                        tracing::error!(error = %e, "Failed to claim tasks");
+                        tokio::time::sleep(poll_interval).await;
+                        continue;
+                    }
+                };
 
-        if tasks.is_empty() {
-            tokio::time::sleep(poll_interval).await;
-            continue;
-        }
+                if tasks.is_empty() {
+                    tokio::time::sleep(poll_interval).await;
+                    continue;
+                }
 
-        tracing::info!(count = tasks.len(), "Claimed delivery tasks");
+                tracing::info!(count = tasks.len(), "Claimed delivery tasks");
 
-        for task_row in &tasks {
-            let delivery_task = task_row_to_delivery_task(task_row);
+                // Process the entire batch before checking shutdown again
+                for task_row in &tasks {
+                    let delivery_task = task_row_to_delivery_task(task_row);
 
-            match process_delivery(&delivery_task, &state.registry, &state.db, state.encryption_key.as_ref()).await {
-                Ok(()) => {
-                    if let Err(e) =
-                        repo::queue::mark_completed(&state.db, task_row.id).await
-                    {
-                        tracing::error!(
-                            task_id = %task_row.id, error = %e,
-                            "Failed to mark completed"
-                        );
+                    match process_delivery(&delivery_task, &state.registry, &state.db, state.encryption_key.as_ref()).await {
+                        Ok(()) => {
+                            if let Err(e) =
+                                repo::queue::mark_completed(&state.db, task_row.id).await
+                            {
+                                tracing::error!(
+                                    task_id = %task_row.id, error = %e,
+                                    "Failed to mark completed"
+                                );
+                            }
+                        }
+                        Err(reason) => {
+                            if let Err(e) = repo::queue::mark_failed(
+                                &state.db,
+                                task_row.id,
+                                &reason,
+                                true,
+                                task_row.attempt,
+                                task_row.max_attempts,
+                            )
+                            .await
+                            {
+                                tracing::error!(
+                                    task_id = %task_row.id, error = %e,
+                                    "Failed to mark failed"
+                                );
+                            }
+                        }
                     }
                 }
-                Err(reason) => {
-                    if let Err(e) = repo::queue::mark_failed(
-                        &state.db,
-                        task_row.id,
-                        &reason,
-                        true,
-                        task_row.attempt,
-                        task_row.max_attempts,
-                    )
-                    .await
-                    {
-                        tracing::error!(
-                            task_id = %task_row.id, error = %e,
-                            "Failed to mark failed"
-                        );
-                    }
-                }
             }
         }
+    }
+}
+
+async fn shutdown_signal() {
+    let ctrl_c = tokio::signal::ctrl_c();
+    #[cfg(unix)]
+    {
+        let mut sigterm =
+            tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+                .expect("Failed to register SIGTERM handler");
+        tokio::select! {
+            _ = ctrl_c => {}
+            _ = sigterm.recv() => {}
+        }
+    }
+    #[cfg(not(unix))]
+    {
+        ctrl_c.await.ok();
     }
 }
 

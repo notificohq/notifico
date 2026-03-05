@@ -1,5 +1,6 @@
 pub mod email;
 pub mod telegram;
+pub mod webhook;
 
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};

@@ -13,6 +13,9 @@ thiserror = { workspace = true }
 tracing = { workspace = true }
 lettre = { workspace = true }
 reqwest = { workspace = true }
+sha2 = { workspace = true }
+hmac = { workspace = true }
+hex = { workspace = true }
 notifico-template = { workspace = true }
 
 [dev-dependencies]

@@ -101,7 +101,7 @@ async fn main() {
 pub(crate) fn build_router(state: Arc<AppState>) -> Router {
     Router::new()
         .route("/health", get(health))
-        .route("/ready", get(ready))
+        .route("/ready", get(health))
         .route("/metrics", get(metrics::metrics_handler))
         .route("/api/v1/events", post(ingest::handle_ingest))
         .nest("/admin/api/v1", admin::admin_router())
@@ -127,16 +127,19 @@ async fn start_api_server(state: Arc<AppState>) {
         .expect("Server error");
 }
 
-async fn health() -> &'static str {
-    "ok"
-}
-
-async fn ready(State(state): State<Arc<AppState>>) -> (axum::http::StatusCode, &'static str) {
-    // Check DB connectivity
+async fn health(
+    State(state): State<Arc<AppState>>,
+) -> (axum::http::StatusCode, axum::Json<serde_json::Value>) {
     use sea_orm::ConnectionTrait;
     match state.db.execute_unprepared("SELECT 1").await {
-        Ok(_) => (axum::http::StatusCode::OK, "ready"),
-        Err(_) => (axum::http::StatusCode::SERVICE_UNAVAILABLE, "not ready"),
+        Ok(_) => (
+            axum::http::StatusCode::OK,
+            axum::Json(serde_json::json!({"status": "ok", "db": "connected"})),
+        ),
+        Err(_) => (
+            axum::http::StatusCode::SERVICE_UNAVAILABLE,
+            axum::Json(serde_json::json!({"status": "degraded", "db": "unreachable"})),
+        ),
     }
 }
 
@@ -712,5 +715,23 @@ mod integration_tests {
 
         let resp = app.oneshot(req).await.unwrap();
         assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn health_returns_ok_with_db_status() {
+        let (app, _) = setup_app().await;
+
+        let req = Request::builder()
+            .method("GET")
+            .uri("/health")
+            .body(Body::empty())
+            .unwrap();
+
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        let body = json_body(resp).await;
+        assert_eq!(body["status"], "ok");
+        assert_eq!(body["db"], "connected");
     }
 }
