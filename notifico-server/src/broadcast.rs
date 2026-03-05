@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 use notifico_core::pipeline::{PipelineInput, execute_pipeline};
@@ -10,7 +11,7 @@ use notifico_db::repo;
 use crate::AppState;
 use crate::auth::AuthContext;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct BroadcastRequest {
     /// Event name to trigger
     pub event: String,
@@ -22,7 +23,7 @@ pub struct BroadcastRequest {
     pub recipients: Option<Vec<String>>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct BroadcastResponse {
     pub broadcast_id: Uuid,
     pub recipient_count: usize,
@@ -31,6 +32,19 @@ pub struct BroadcastResponse {
     pub errors: Vec<String>,
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/v1/broadcasts",
+    tag = "broadcasts",
+    request_body = BroadcastRequest,
+    responses(
+        (status = 200, description = "Broadcast enqueued", body = BroadcastResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Event not found"),
+        (status = 429, description = "Rate limited"),
+    ),
+    security(("bearer" = []))
+)]
 pub async fn handle_broadcast(
     State(state): State<Arc<AppState>>,
     auth: AuthContext,

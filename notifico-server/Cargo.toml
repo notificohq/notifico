@@ -25,6 +25,8 @@ uuid = { workspace = true }
 hex = { workspace = true }
 metrics = { workspace = true }
 metrics-exporter-prometheus = { workspace = true }
+utoipa = { workspace = true }
+utoipa-axum = { workspace = true }
 
 [dev-dependencies]
 tower = { workspace = true }

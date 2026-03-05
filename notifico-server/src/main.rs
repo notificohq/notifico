@@ -4,6 +4,7 @@ mod broadcast;
 mod config;
 mod ingest;
 mod metrics;
+mod openapi;
 mod public;
 mod rate_limit;
 mod worker;
@@ -119,6 +120,7 @@ pub(crate) fn build_router(state: Arc<AppState>) -> Router {
         .route("/metrics", get(metrics::metrics_handler))
         .route("/api/v1/events", post(ingest::handle_ingest))
         .route("/api/v1/broadcasts", post(broadcast::handle_broadcast))
+        .route("/api/openapi.json", get(openapi::openapi_json))
         .nest("/admin/api/v1", admin::admin_router())
         .nest("/api/v1/public", public::public_router())
         .layer(middleware::from_fn(metrics::track_metrics))
@@ -795,5 +797,24 @@ mod integration_tests {
         assert!(body["broadcast_id"].is_string());
         assert!(body["recipient_count"].as_u64().unwrap() >= 2);
         assert!(body["task_count"].as_u64().unwrap() >= 2);
+    }
+
+    #[tokio::test]
+    async fn openapi_spec_is_valid() {
+        let (app, _) = setup_app().await;
+
+        let req = Request::builder()
+            .method("GET")
+            .uri("/api/openapi.json")
+            .body(Body::empty())
+            .unwrap();
+
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        let body = json_body(resp).await;
+        assert_eq!(body["info"]["title"], "Notifico API");
+        assert!(body["paths"]["/api/v1/events"].is_object());
+        assert!(body["paths"]["/api/v1/broadcasts"].is_object());
     }
 }

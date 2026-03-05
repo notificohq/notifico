@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use serde::Serialize;
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 use notifico_core::event::IngestEvent;
@@ -11,7 +12,7 @@ use notifico_db::repo;
 use crate::AppState;
 use crate::auth::AuthContext;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct IngestResponse {
     pub accepted: usize,
     pub task_ids: Vec<Uuid>,
@@ -19,6 +20,19 @@ pub struct IngestResponse {
     pub errors: Vec<String>,
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/v1/events",
+    tag = "events",
+    request_body(content = serde_json::Value, description = "Ingest event payload"),
+    responses(
+        (status = 200, description = "Event accepted", body = IngestResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Event not found"),
+        (status = 429, description = "Rate limited"),
+    ),
+    security(("bearer" = []))
+)]
 pub async fn handle_ingest(
     State(state): State<Arc<AppState>>,
     auth: AuthContext,

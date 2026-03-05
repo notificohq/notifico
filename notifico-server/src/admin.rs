@@ -64,6 +64,10 @@ pub fn admin_router() -> Router<Arc<AppState>> {
         // API keys
         .route("/api-keys", get(list_api_keys).post(create_api_key))
         .route("/api-keys/{id}", delete(delete_api_key))
+        // Template preview
+        .route("/templates/{id}/preview", axum::routing::post(preview_template))
+        // Event stats
+        .route("/events/{id}/stats", get(event_stats))
         // Channels
         .route("/channels", get(list_channels))
 }
@@ -1011,5 +1015,95 @@ async fn list_channels(
             })
             .collect::<Vec<_>>(),
     )
+    .into_response())
+}
+
+// --- Template Preview ---
+
+#[derive(Deserialize)]
+struct PreviewRequest {
+    locale: Option<String>,
+    data: Value,
+}
+
+#[derive(Serialize)]
+struct PreviewResponse {
+    rendered: Value,
+}
+
+async fn preview_template(
+    State(state): State<Arc<AppState>>,
+    auth: AuthContext,
+    Path(template_id): Path<Uuid>,
+    Json(req): Json<PreviewRequest>,
+) -> ApiResult {
+    require_admin(&auth)?;
+
+    let locale = req.locale.as_deref().unwrap_or("en");
+    let default_locale = &state.config.project.default_locale;
+
+    let template = notifico_db::repo::template::resolve_template(
+        &state.db,
+        template_id,
+        locale,
+        default_locale,
+    )
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response())?
+    .ok_or_else(|| {
+        (
+            StatusCode::NOT_FOUND,
+            format!("Template not found: {template_id} locale {locale}"),
+        )
+            .into_response()
+    })?;
+
+    let rendered = notifico_template::render_body(&template.body, &req.data)
+        .map_err(|e| (StatusCode::BAD_REQUEST, format!("Render error: {e}")).into_response())?;
+
+    Ok(Json(PreviewResponse {
+        rendered: Value::Object(rendered),
+    })
+    .into_response())
+}
+
+// --- Event Stats ---
+
+#[derive(Serialize)]
+struct EventStatsResponse {
+    event_id: Uuid,
+    stats: Vec<StatusCount>,
+}
+
+#[derive(Serialize)]
+struct StatusCount {
+    status: String,
+    count: i64,
+}
+
+async fn event_stats(
+    State(state): State<Arc<AppState>>,
+    auth: AuthContext,
+    Path(event_id): Path<Uuid>,
+) -> ApiResult {
+    require_admin(&auth)?;
+
+    // Look up the event to get its name
+    let event = admin::get_event(&state.db, event_id)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response())?
+        .ok_or_else(|| (StatusCode::NOT_FOUND, "Event not found").into_response())?;
+
+    let counts = delivery_log::count_by_event_name(&state.db, auth.project_id, &event.name)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response())?;
+
+    Ok(Json(EventStatsResponse {
+        event_id,
+        stats: counts
+            .into_iter()
+            .map(|(status, count)| StatusCount { status, count })
+            .collect(),
+    })
     .into_response())
 }

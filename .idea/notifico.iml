@@ -35,6 +35,7 @@
       <sourceFolder url="file://$MODULE_DIR$/transports/notifico-noop/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/notifico-db/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/notifico-server/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/notifico-queue/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.idea/dataSources" />
       <excludeFolder url="file://$MODULE_DIR$/example/rabbitmq/mnesia" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
