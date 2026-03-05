@@ -27,6 +27,13 @@ pub async fn handle_ingest(
     auth.require_scope("ingest")
         .map_err(|e| (StatusCode::FORBIDDEN, format!("{e:?}")))?;
 
+    if let Err(retry_after) = state.rate_limiter.check(auth.api_key_id) {
+        return Err((
+            StatusCode::TOO_MANY_REQUESTS,
+            format!("Rate limit exceeded. Retry after {retry_after}s"),
+        ));
+    }
+
     let project_id = auth.project_id;
     let default_locale = &state.config.project.default_locale;
 

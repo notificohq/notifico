@@ -30,6 +30,8 @@ pub struct ServerConfig {
     pub port: u16,
     #[serde(default = "default_admin_port")]
     pub admin_port: u16,
+    #[serde(default)]
+    pub log_format: LogFormat,
 }
 
 #[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq)]
@@ -38,6 +40,14 @@ pub enum ServerMode {
     All,
     Api,
     Worker,
+}
+
+#[derive(Debug, Clone, Copy, Default, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum LogFormat {
+    #[default]
+    Text,
+    Json,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -132,6 +142,7 @@ impl Default for ServerConfig {
             host: default_host(),
             port: default_port(),
             admin_port: default_admin_port(),
+            log_format: LogFormat::default(),
         }
     }
 }
@@ -237,5 +248,20 @@ mod tests {
         assert_eq!(config.server.port, 9000);
         assert_eq!(config.server.admin_port, 8001); // default
         assert_eq!(config.project.default_locale, "ru");
+    }
+
+    #[test]
+    fn config_log_format_json() {
+        let toml_str = r#"
+            [server]
+            log_format = "json"
+        "#;
+
+        let config: Config = Figment::new()
+            .merge(Toml::string(toml_str))
+            .extract()
+            .unwrap();
+
+        assert_eq!(config.server.log_format, LogFormat::Json);
     }
 }

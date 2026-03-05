@@ -1,9 +1,11 @@
 mod admin;
 mod auth;
+mod broadcast;
 mod config;
 mod ingest;
 mod metrics;
 mod public;
+mod rate_limit;
 mod worker;
 
 use std::sync::Arc;
@@ -23,18 +25,29 @@ pub(crate) struct AppState {
     pub(crate) registry: TransportRegistry,
     pub(crate) encryption_key: Option<[u8; 32]>,
     pub(crate) metrics_handle: Option<metrics_exporter_prometheus::PrometheusHandle>,
+    pub(crate) rate_limiter: rate_limit::RateLimiter,
 }
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt()
-        .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "info".parse().unwrap()),
-        )
-        .init();
-
     let config = Config::load(None).expect("Failed to load configuration");
+
+    let env_filter = tracing_subscriber::EnvFilter::try_from_default_env()
+        .unwrap_or_else(|_| "info".parse().unwrap());
+
+    match config.server.log_format {
+        config::LogFormat::Json => {
+            tracing_subscriber::fmt()
+                .json()
+                .with_env_filter(env_filter)
+                .init();
+        }
+        config::LogFormat::Text => {
+            tracing_subscriber::fmt()
+                .with_env_filter(env_filter)
+                .init();
+        }
+    }
 
     tracing::info!(
         mode = ?config.server.mode,
@@ -78,6 +91,7 @@ async fn main() {
         registry,
         encryption_key,
         metrics_handle: Some(metrics_handle),
+        rate_limiter: rate_limit::RateLimiter::new(100, 60),
     });
 
     match config.server.mode {
@@ -104,6 +118,7 @@ pub(crate) fn build_router(state: Arc<AppState>) -> Router {
         .route("/ready", get(health))
         .route("/metrics", get(metrics::metrics_handler))
         .route("/api/v1/events", post(ingest::handle_ingest))
+        .route("/api/v1/broadcasts", post(broadcast::handle_broadcast))
         .nest("/admin/api/v1", admin::admin_router())
         .nest("/api/v1/public", public::public_router())
         .layer(middleware::from_fn(metrics::track_metrics))
@@ -237,6 +252,7 @@ mod integration_tests {
             registry,
             encryption_key: None,
             metrics_handle: None,
+            rate_limiter: rate_limit::RateLimiter::new(1000, 60),
         });
 
         (build_router(state), raw_key.to_string())
@@ -307,6 +323,7 @@ mod integration_tests {
             registry,
             encryption_key: None,
             metrics_handle: None,
+            rate_limiter: rate_limit::RateLimiter::new(1000, 60),
         });
 
         (build_router(state), raw_key.to_string())
@@ -733,5 +750,50 @@ mod integration_tests {
         let body = json_body(resp).await;
         assert_eq!(body["status"], "ok");
         assert_eq!(body["db"], "connected");
+    }
+
+    #[tokio::test]
+    async fn broadcast_sends_to_all_recipients() {
+        let (app, api_key) = setup_app().await;
+
+        // First, ingest events to create two recipients with contacts
+        for user in &["bcast-user-1", "bcast-user-2"] {
+            let body = serde_json::json!({
+                "event": "order.confirmed",
+                "recipients": [
+                    {"id": user, "contacts": {"email": format!("{}@example.com", user)}}
+                ],
+                "data": {"order_id": 1}
+            });
+            let req = Request::builder()
+                .method("POST")
+                .uri("/api/v1/events")
+                .header("content-type", "application/json")
+                .header("authorization", format!("Bearer {api_key}"))
+                .body(Body::from(serde_json::to_string(&body).unwrap()))
+                .unwrap();
+            let resp = app.clone().oneshot(req).await.unwrap();
+            assert_eq!(resp.status(), StatusCode::OK);
+        }
+
+        // Now broadcast to all recipients
+        let body = serde_json::json!({
+            "event": "order.confirmed",
+            "data": {"order_id": 99}
+        });
+        let req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/broadcasts")
+            .header("content-type", "application/json")
+            .header("authorization", format!("Bearer {api_key}"))
+            .body(Body::from(serde_json::to_string(&body).unwrap()))
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        let body = json_body(resp).await;
+        assert!(body["broadcast_id"].is_string());
+        assert!(body["recipient_count"].as_u64().unwrap() >= 2);
+        assert!(body["task_count"].as_u64().unwrap() >= 2);
     }
 }
