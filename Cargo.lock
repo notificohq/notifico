@@ -1989,8 +1989,10 @@ name = "notifico-server"
 version = "0.1.0"
 dependencies = [
  "axum",
+ "base64",
  "figment",
  "hex",
+ "hmac",
  "http-body-util",
  "metrics",
  "metrics-exporter-prometheus",
@@ -2001,6 +2003,7 @@ dependencies = [
  "sea-orm",
  "serde",
  "serde_json",
+ "sha2",
  "tokio",
  "toml 1.0.3+spec-1.1.0",
  "tower",

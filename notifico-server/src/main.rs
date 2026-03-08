@@ -7,6 +7,7 @@ mod metrics;
 mod openapi;
 mod public;
 mod rate_limit;
+mod tracking;
 mod worker;
 
 use std::sync::Arc;
@@ -132,6 +133,8 @@ pub(crate) fn build_router(state: Arc<AppState>) -> Router {
         .merge(openapi::swagger_ui_router())
         .nest("/admin/api/v1", admin::admin_router())
         .nest("/api/v1/public", public::public_router())
+        .route("/t/open/{token}", get(tracking::handle_open))
+        .route("/t/click/{token}", get(tracking::handle_click))
         .layer(middleware::from_fn(metrics::track_metrics))
         .layer(TraceLayer::new_for_http())
         .with_state(state)
@@ -1025,5 +1028,91 @@ mod integration_tests {
         assert_eq!(resp.status(), StatusCode::OK);
         let body = json_body(resp).await;
         assert_eq!(body.as_array().unwrap().len(), 0);
+    }
+
+    async fn setup_tracking_app() -> (Router, [u8; 32]) {
+        let db = notifico_db::connect("sqlite::memory:").await.unwrap();
+        notifico_db::run_migrations(&db).await.unwrap();
+
+        let config = Config::load(None).unwrap();
+        let registry = TransportRegistry::new();
+        let key: [u8; 32] = [0xAB; 32];
+
+        let state = Arc::new(AppState {
+            db,
+            config,
+            registry,
+            middleware_registry: MiddlewareRegistry::new(),
+            encryption_key: Some(key),
+            metrics_handle: None,
+            rate_limiter: rate_limit::RateLimiter::new(1000, 60),
+        });
+
+        (build_router(state), key)
+    }
+
+    #[tokio::test]
+    async fn tracking_open_returns_gif() {
+        let (app, key) = setup_tracking_app().await;
+
+        let token = tracking::create_tracking_token("dlv-001", None, &key);
+        let req = Request::builder()
+            .uri(format!("/t/open/{token}"))
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        assert_eq!(
+            resp.headers().get("content-type").unwrap(),
+            "image/gif"
+        );
+        let body = resp.into_body().collect().await.unwrap().to_bytes();
+        assert_eq!(body.len(), 43);
+    }
+
+    #[tokio::test]
+    async fn tracking_open_invalid_token_still_returns_gif() {
+        let (app, _key) = setup_tracking_app().await;
+
+        let req = Request::builder()
+            .uri("/t/open/invalid_token")
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        assert_eq!(
+            resp.headers().get("content-type").unwrap(),
+            "image/gif"
+        );
+    }
+
+    #[tokio::test]
+    async fn tracking_click_redirects() {
+        let (app, key) = setup_tracking_app().await;
+
+        let url = "https://example.com/landing";
+        let token = tracking::create_tracking_token("dlv-002", Some(url), &key);
+        let req = Request::builder()
+            .uri(format!("/t/click/{token}"))
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::TEMPORARY_REDIRECT);
+        assert_eq!(
+            resp.headers().get("location").unwrap(),
+            url
+        );
+    }
+
+    #[tokio::test]
+    async fn tracking_click_invalid_token_returns_400() {
+        let (app, _key) = setup_tracking_app().await;
+
+        let req = Request::builder()
+            .uri("/t/click/invalid_token")
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
     }
 }

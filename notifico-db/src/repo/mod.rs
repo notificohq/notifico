@@ -8,3 +8,4 @@ pub mod preference;
 pub mod queue;
 pub mod recipient;
 pub mod template;
+pub mod tracking;

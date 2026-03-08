@@ -11,6 +11,7 @@ mod m20260304_000008_create_delivery_task;
 mod m20260304_000009_create_credentials;
 mod m20260308_000010_create_pipeline_middleware;
 mod m20260308_000011_add_rule_id_to_delivery_task;
+mod m20260308_000012_create_tracking_event;
 
 pub struct Migrator;
 
@@ -29,6 +30,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20260304_000009_create_credentials::Migration),
             Box::new(m20260308_000010_create_pipeline_middleware::Migration),
             Box::new(m20260308_000011_add_rule_id_to_delivery_task::Migration),
+            Box::new(m20260308_000012_create_tracking_event::Migration),
         ]
     }
 }
