@@ -13,6 +13,8 @@ pub struct DeliveryTask {
     pub rendered_body: Value,
     pub contact_value: String,
     pub idempotency_key: Option<String>,
+    #[serde(default)]
+    pub rule_id: Option<Uuid>,
     pub attempt: u32,
     pub max_attempts: u32,
 }
@@ -32,6 +34,7 @@ mod tests {
             rendered_body: serde_json::json!({"subject": "Hi", "text": "Hello"}),
             contact_value: "user@example.com".into(),
             idempotency_key: Some("key-123".into()),
+            rule_id: None,
             attempt: 0,
             max_attempts: 5,
         };
@@ -53,6 +56,7 @@ mod tests {
             rendered_body: serde_json::json!({"text": "Welcome!"}),
             contact_value: "+1234567890".into(),
             idempotency_key: None,
+            rule_id: None,
             attempt: 0,
             max_attempts: 3,
         };
@@ -73,6 +77,7 @@ mod tests {
             rendered_body: serde_json::json!({}),
             contact_value: "test@test.com".into(),
             idempotency_key: None,
+            rule_id: None,
             attempt: 0,
             max_attempts: 5,
         };

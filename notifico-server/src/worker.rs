@@ -4,6 +4,7 @@ use sea_orm::DatabaseConnection;
 use uuid::Uuid;
 
 use notifico_core::channel::ChannelId;
+use notifico_core::middleware::MiddlewareRegistry;
 use notifico_core::registry::TransportRegistry;
 use notifico_core::transport::{DeliveryResult, RenderedMessage};
 use notifico_db::repo;
@@ -48,7 +49,7 @@ pub async fn run_worker_loop(state: Arc<AppState>) {
                 for task_row in &tasks {
                     let delivery_task = task_row_to_delivery_task(task_row);
 
-                    match process_delivery(&delivery_task, &state.registry, &state.db, state.encryption_key.as_ref()).await {
+                    match process_delivery(&delivery_task, &state.registry, &state.middleware_registry, &state.db, state.encryption_key.as_ref()).await {
                         Ok(()) => {
                             if let Err(e) =
                                 repo::queue::mark_completed(&state.db, task_row.id).await
@@ -111,6 +112,7 @@ fn task_row_to_delivery_task(row: &repo::queue::TaskRow) -> DeliveryTask {
         rendered_body: row.rendered_body.clone(),
         contact_value: row.contact_value.clone(),
         idempotency_key: row.idempotency_key.clone(),
+        rule_id: row.rule_id,
         attempt: row.attempt as u32,
         max_attempts: row.max_attempts as u32,
     }
@@ -120,6 +122,7 @@ fn task_row_to_delivery_task(row: &repo::queue::TaskRow) -> DeliveryTask {
 pub async fn process_delivery(
     task: &DeliveryTask,
     registry: &TransportRegistry,
+    middleware_registry: &MiddlewareRegistry,
     db: &DatabaseConnection,
     encryption_key: Option<&[u8; 32]>,
 ) -> Result<(), String> {
@@ -161,8 +164,21 @@ pub async fn process_delivery(
         serde_json::json!({})
     };
 
+    // Fetch middleware config if the task has a rule_id
+    let mw_entries = if let Some(rule_id) = task.rule_id {
+        match repo::middleware::list_by_rule(db, rule_id).await {
+            Ok(entries) => entries,
+            Err(e) => {
+                tracing::warn!(error = %e, "Failed to fetch middleware config, proceeding without");
+                vec![]
+            }
+        }
+    } else {
+        vec![]
+    };
+
     // Build RenderedMessage from task
-    let message = RenderedMessage {
+    let mut message = RenderedMessage {
         channel: channel_id,
         recipient_contact: task.contact_value.clone(),
         content: task.rendered_body.clone(),
@@ -170,8 +186,63 @@ pub async fn process_delivery(
         attachments: vec![],
     };
 
+    // Run pre-send middleware
+    for entry in &mw_entries {
+        if let Some(mw) = middleware_registry.get(&entry.middleware_name) {
+            let config = match entry.config_value() {
+                Ok(c) => c,
+                Err(e) => {
+                    tracing::warn!(
+                        middleware = %entry.middleware_name,
+                        error = %e,
+                        "Invalid middleware config, skipping"
+                    );
+                    continue;
+                }
+            };
+            if let Err(e) = mw.pre_send(&mut message, &config).await {
+                tracing::warn!(
+                    middleware = %entry.middleware_name,
+                    error = %e,
+                    "pre_send middleware error, skipping"
+                );
+            }
+        } else {
+            tracing::warn!(
+                middleware = %entry.middleware_name,
+                "Middleware not found in registry, skipping"
+            );
+        }
+    }
+
     // Send via transport
     let result = transport.send(&message).await;
+
+    // Run post-send middleware
+    if let Ok(ref delivery_result) = result {
+        for entry in &mw_entries {
+            if let Some(mw) = middleware_registry.get(&entry.middleware_name) {
+                let config = match entry.config_value() {
+                    Ok(c) => c,
+                    Err(e) => {
+                        tracing::warn!(
+                            middleware = %entry.middleware_name,
+                            error = %e,
+                            "Invalid middleware config, skipping"
+                        );
+                        continue;
+                    }
+                };
+                if let Err(e) = mw.post_send(&message, delivery_result, &config).await {
+                    tracing::warn!(
+                        middleware = %entry.middleware_name,
+                        error = %e,
+                        "post_send middleware error"
+                    );
+                }
+            }
+        }
+    }
 
     match result {
         Ok(delivery_result) => match delivery_result {

@@ -240,7 +240,45 @@ pub async fn handle_ingest(
             };
 
             match execute_pipeline(pipeline_input) {
-                Ok(output) => {
+                Ok(mut output) => {
+                    // Run post-render middleware for this rule
+                    let rule_id = rule.id;
+                    if let Ok(mw_entries) =
+                        repo::middleware::list_by_rule(&state.db, rule_id).await
+                    {
+                        for entry in &mw_entries {
+                            if let Some(mw) =
+                                state.middleware_registry.get(&entry.middleware_name)
+                            {
+                                let config = match entry.config_value() {
+                                    Ok(c) => c,
+                                    Err(e) => {
+                                        tracing::warn!(
+                                            middleware = %entry.middleware_name,
+                                            error = %e,
+                                            "Invalid middleware config, skipping"
+                                        );
+                                        continue;
+                                    }
+                                };
+                                if let Err(e) =
+                                    mw.post_render(&mut output, &config).await
+                                {
+                                    tracing::warn!(
+                                        middleware = %entry.middleware_name,
+                                        error = %e,
+                                        "post_render middleware error, skipping"
+                                    );
+                                }
+                            } else {
+                                tracing::warn!(
+                                    middleware = %entry.middleware_name,
+                                    "Middleware not found in registry, skipping"
+                                );
+                            }
+                        }
+                    }
+
                     if let Err(e) = repo::queue::enqueue(
                         &state.db,
                         output.id,
@@ -252,6 +290,7 @@ pub async fn handle_ingest(
                         &output.rendered_body,
                         output.idempotency_key.as_deref(),
                         output.max_attempts as i32,
+                        Some(rule_id),
                     )
                     .await
                     {

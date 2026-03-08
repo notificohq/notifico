@@ -12,6 +12,7 @@ pub struct TaskRow {
     pub contact_value: String,
     pub rendered_body: Value,
     pub idempotency_key: Option<String>,
+    pub rule_id: Option<Uuid>,
     pub status: String,
     pub attempt: i32,
     pub max_attempts: i32,
@@ -28,6 +29,7 @@ struct TaskRaw {
     contact_value: String,
     rendered_body: String,
     idempotency_key: Option<String>,
+    rule_id: Option<String>,
     status: String,
     attempt: i32,
     max_attempts: i32,
@@ -44,6 +46,12 @@ impl TaskRaw {
             .map_err(|e| DbErr::Custom(format!("invalid recipient_id UUID: {e}")))?;
         let rendered_body: Value = serde_json::from_str(&self.rendered_body)
             .map_err(|e| DbErr::Custom(format!("invalid rendered_body JSON: {e}")))?;
+        let rule_id = self
+            .rule_id
+            .as_deref()
+            .map(Uuid::parse_str)
+            .transpose()
+            .map_err(|e| DbErr::Custom(format!("invalid rule_id UUID: {e}")))?;
         Ok(TaskRow {
             id,
             project_id,
@@ -53,6 +61,7 @@ impl TaskRaw {
             contact_value: self.contact_value,
             rendered_body,
             idempotency_key: self.idempotency_key,
+            rule_id,
             status: self.status,
             attempt: self.attempt,
             max_attempts: self.max_attempts,
@@ -73,6 +82,7 @@ pub async fn enqueue(
     rendered_body: &Value,
     idempotency_key: Option<&str>,
     max_attempts: i32,
+    rule_id: Option<Uuid>,
 ) -> Result<(), DbErr> {
     let body_json = serde_json::to_string(rendered_body)
         .map_err(|e| DbErr::Custom(format!("JSON serialize error: {e}")))?;
@@ -81,7 +91,7 @@ pub async fn enqueue(
 
     db.execute_raw(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO delivery_task (id, project_id, event_name, recipient_id, channel, contact_value, rendered_body, idempotency_key, status, attempt, max_attempts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', 0, ?)",
+        "INSERT INTO delivery_task (id, project_id, event_name, recipient_id, channel, contact_value, rendered_body, idempotency_key, rule_id, status, attempt, max_attempts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 0, ?)",
         [
             id.to_string().into(),
             project_id.to_string().into(),
@@ -91,6 +101,7 @@ pub async fn enqueue(
             contact_value.into(),
             body_json.into(),
             if has_idem { sea_orm::Value::from(idem) } else { sea_orm::Value::from(None::<String>) },
+            rule_id.map(|r| r.to_string()).map(sea_orm::Value::from).unwrap_or(sea_orm::Value::from(None::<String>)),
             max_attempts.into(),
         ],
     ))
@@ -108,7 +119,7 @@ pub async fn claim_pending(
     // Step 1: Find pending task IDs ready to process
     let rows = TaskRaw::find_by_statement(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "SELECT id, project_id, event_name, recipient_id, channel, contact_value, rendered_body, idempotency_key, status, attempt, max_attempts, error_message FROM delivery_task WHERE status = 'pending' AND next_retry_at <= CURRENT_TIMESTAMP ORDER BY next_retry_at ASC LIMIT ?",
+        "SELECT id, project_id, event_name, recipient_id, channel, contact_value, rendered_body, idempotency_key, rule_id, status, attempt, max_attempts, error_message FROM delivery_task WHERE status = 'pending' AND next_retry_at <= CURRENT_TIMESTAMP ORDER BY next_retry_at ASC LIMIT ?",
         [limit.into()],
     ))
     .all(db)
@@ -246,7 +257,7 @@ mod tests {
             &db, task_id, test_project_id(), "order.confirmed",
             test_recipient_id(), "email", "test@example.com",
             &json!({"subject": "Hi", "text": "Hello"}),
-            None, 5,
+            None, 5, None,
         )
         .await
         .unwrap();
@@ -268,7 +279,7 @@ mod tests {
         enqueue(
             &db, task_id, test_project_id(), "test",
             test_recipient_id(), "email", "a@b.com",
-            &json!({}), None, 5,
+            &json!({}), None, 5, None,
         )
         .await
         .unwrap();
@@ -292,7 +303,7 @@ mod tests {
         enqueue(
             &db, task_id, test_project_id(), "test",
             test_recipient_id(), "email", "a@b.com",
-            &json!({}), None, 5,
+            &json!({}), None, 5, None,
         )
         .await
         .unwrap();
@@ -319,7 +330,7 @@ mod tests {
         enqueue(
             &db, task_id, test_project_id(), "test",
             test_recipient_id(), "email", "a@b.com",
-            &json!({}), None, 5,
+            &json!({}), None, 5, None,
         )
         .await
         .unwrap();
@@ -342,7 +353,7 @@ mod tests {
         enqueue(
             &db, task_id, test_project_id(), "test",
             test_recipient_id(), "email", "a@b.com",
-            &json!({}), None, 2,
+            &json!({}), None, 2, None,
         )
         .await
         .unwrap();

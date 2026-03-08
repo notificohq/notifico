@@ -16,6 +16,7 @@ use sea_orm::DatabaseConnection;
 use tower_http::trace::TraceLayer;
 
 use config::{Config, ServerMode};
+use notifico_core::middleware::MiddlewareRegistry;
 use notifico_core::registry::TransportRegistry;
 use notifico_core::transport::ConsoleTransport;
 use notifico_core::transport::discord::DiscordTransport;
@@ -27,6 +28,7 @@ pub(crate) struct AppState {
     pub(crate) db: DatabaseConnection,
     pub(crate) config: Config,
     pub(crate) registry: TransportRegistry,
+    pub(crate) middleware_registry: MiddlewareRegistry,
     pub(crate) encryption_key: Option<[u8; 32]>,
     pub(crate) metrics_handle: Option<metrics_exporter_prometheus::PrometheusHandle>,
     pub(crate) rate_limiter: rate_limit::RateLimiter,
@@ -96,6 +98,7 @@ async fn main() {
         db,
         config: config.clone(),
         registry,
+        middleware_registry: MiddlewareRegistry::new(),
         encryption_key,
         metrics_handle: Some(metrics_handle),
         rate_limiter: rate_limit::RateLimiter::new(100, 60),
@@ -258,6 +261,7 @@ mod integration_tests {
             db,
             config,
             registry,
+            middleware_registry: MiddlewareRegistry::new(),
             encryption_key: None,
             metrics_handle: None,
             rate_limiter: rate_limit::RateLimiter::new(1000, 60),
@@ -329,6 +333,7 @@ mod integration_tests {
             db,
             config,
             registry,
+            middleware_registry: MiddlewareRegistry::new(),
             encryption_key: None,
             metrics_handle: None,
             rate_limiter: rate_limit::RateLimiter::new(1000, 60),
