@@ -823,4 +823,87 @@ mod integration_tests {
         assert!(body["paths"]["/api/v1/events"].is_object());
         assert!(body["paths"]["/api/v1/broadcasts"].is_object());
     }
+
+    #[tokio::test]
+    async fn template_preview_renders_without_sending() {
+        let (app, key) = setup_admin_app().await;
+
+        // Create template
+        let req = Request::builder()
+            .method("POST")
+            .uri("/admin/api/v1/templates")
+            .header("content-type", "application/json")
+            .header("authorization", format!("Bearer {key}"))
+            .body(Body::from(r#"{"name":"preview_tpl","channel":"email"}"#))
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::CREATED);
+        let body = json_body(resp).await;
+        let template_id = body["id"].as_str().unwrap().to_string();
+
+        // Set template content (wrapped in "body" field per SetContentRequest)
+        let req = Request::builder()
+            .method("PUT")
+            .uri(format!(
+                "/admin/api/v1/templates/{template_id}/content/en"
+            ))
+            .header("content-type", "application/json")
+            .header("authorization", format!("Bearer {key}"))
+            .body(Body::from(
+                r#"{"body":{"subject":"Hello {{ name }}","text":"Order #{{ order_id }} confirmed"}}"#,
+            ))
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        // Preview the template
+        let req = Request::builder()
+            .method("POST")
+            .uri(format!("/admin/api/v1/templates/{template_id}/preview"))
+            .header("content-type", "application/json")
+            .header("authorization", format!("Bearer {key}"))
+            .body(Body::from(
+                r#"{"locale":"en","data":{"name":"Alice","order_id":42}}"#,
+            ))
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        let body = json_body(resp).await;
+        assert_eq!(body["rendered"]["subject"], "Hello Alice");
+        assert_eq!(body["rendered"]["text"], "Order #42 confirmed");
+    }
+
+    #[tokio::test]
+    async fn event_stats_returns_delivery_counts() {
+        let (app, key) = setup_admin_app().await;
+
+        // Create event
+        let req = Request::builder()
+            .method("POST")
+            .uri("/admin/api/v1/events")
+            .header("content-type", "application/json")
+            .header("authorization", format!("Bearer {key}"))
+            .body(Body::from(
+                r#"{"name":"stats.test","category":"transactional"}"#,
+            ))
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::CREATED);
+        let body = json_body(resp).await;
+        let event_id = body["id"].as_str().unwrap().to_string();
+
+        // Get stats (should be empty initially)
+        let req = Request::builder()
+            .uri(format!("/admin/api/v1/events/{event_id}/stats"))
+            .header("authorization", format!("Bearer {key}"))
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        let body = json_body(resp).await;
+        assert_eq!(body["event_id"], event_id);
+        assert!(body["stats"].as_array().unwrap().is_empty());
+    }
 }
