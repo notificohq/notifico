@@ -54,6 +54,12 @@ lettre = { version = "0.11", default-features = false, features = ["tokio1-rustl
 metrics = "0.24"
 metrics-exporter-prometheus = { version = "0.16", default-features = false }
 
+# OpenTelemetry
+opentelemetry = "0.29"
+opentelemetry_sdk = { version = "0.29", features = ["rt-tokio"] }
+opentelemetry-otlp = { version = "0.29", features = ["grpc-tonic"] }
+tracing-opentelemetry = "0.30"
+
 # HTTP client
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
 
@@ -64,6 +70,10 @@ aes-gcm = "0.10"
 base64 = "0.22"
 rand = "0.9"
 hex = "0.4"
+regex = "1.11"
+
+# Text processing
+html2text = "0.14"
 
 # Internal crates
 notifico-core = { path = "notifico-core" }

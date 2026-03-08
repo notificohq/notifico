@@ -16,6 +16,9 @@ reqwest = { workspace = true }
 sha2 = { workspace = true }
 hmac = { workspace = true }
 hex = { workspace = true }
+base64 = { workspace = true }
+regex = { workspace = true }
+html2text = { workspace = true }
 notifico-template = { workspace = true }
 
 [dev-dependencies]
