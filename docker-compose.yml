@@ -7,6 +7,8 @@ services:
       RUST_LOG: info
       NOTIFICO_DATABASE_URL: "postgres://notifico:notifico@postgres:5432/notifico"
       NOTIFICO_SERVER_MODE: all
+      # Uncomment to enable OpenTelemetry tracing to Jaeger
+      # NOTIFICO_OTEL_ENDPOINT: "http://jaeger:4317"
     depends_on:
       postgres:
         condition: service_healthy
@@ -27,6 +29,13 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  # Uncomment for OpenTelemetry tracing
+  # jaeger:
+  #   image: jaegertracing/jaeger:2
+  #   ports:
+  #     - "16686:16686"  # Jaeger UI
+  #     - "4317:4317"    # OTLP gRPC
 
 volumes:
   pgdata:

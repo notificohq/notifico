@@ -46,5 +46,7 @@ EXPOSE 8000
 ENV RUST_LOG=info
 ENV NOTIFICO_SERVER_HOST=0.0.0.0
 ENV NOTIFICO_SERVER_PORT=8000
+# OpenTelemetry OTLP endpoint (e.g. http://jaeger:4317). Leave empty to disable.
+ENV NOTIFICO_OTEL_ENDPOINT=""
 
 ENTRYPOINT ["notifico"]
