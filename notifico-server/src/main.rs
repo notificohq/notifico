@@ -16,8 +16,16 @@ use axum::{Router, extract::State, middleware, routing::{get, post}};
 use sea_orm::DatabaseConnection;
 use tower_http::trace::TraceLayer;
 
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
+
 use config::{Config, ServerMode};
 use notifico_core::middleware::MiddlewareRegistry;
+use notifico_core::middleware::click_tracking::ClickTrackingMiddleware;
+use notifico_core::middleware::open_tracking::OpenTrackingMiddleware;
+use notifico_core::middleware::plaintext_fallback::PlaintextFallbackMiddleware;
+use notifico_core::middleware::unsubscribe_link::UnsubscribeLinkMiddleware;
+use notifico_core::middleware::utm_params::UtmParamsMiddleware;
 use notifico_core::registry::TransportRegistry;
 use notifico_core::transport::ConsoleTransport;
 use notifico_core::transport::discord::DiscordTransport;
@@ -42,16 +50,49 @@ async fn main() {
     let env_filter = tracing_subscriber::EnvFilter::try_from_default_env()
         .unwrap_or_else(|_| "info".parse().unwrap());
 
+    // Build optional OpenTelemetry layer
+    let otel_layer = if let Some(ref endpoint) = config.otel.endpoint {
+        use opentelemetry::trace::TracerProvider;
+        use opentelemetry_otlp::WithExportConfig;
+
+        let exporter = opentelemetry_otlp::SpanExporter::builder()
+            .with_tonic()
+            .with_endpoint(endpoint)
+            .build()
+            .expect("Failed to create OTLP span exporter");
+
+        let tracer_provider = opentelemetry_sdk::trace::SdkTracerProvider::builder()
+            .with_batch_exporter(exporter)
+            .with_resource(
+                opentelemetry_sdk::Resource::builder()
+                    .with_service_name(config.otel.service_name.clone())
+                    .build(),
+            )
+            .build();
+
+        let tracer = tracer_provider.tracer("notifico");
+        // Register the global provider so it can be shut down later
+        opentelemetry::global::set_tracer_provider(tracer_provider);
+
+        eprintln!("OpenTelemetry OTLP exporter configured for endpoint: {endpoint}");
+        Some(tracing_opentelemetry::layer().with_tracer(tracer))
+    } else {
+        None
+    };
+
     match config.server.log_format {
         config::LogFormat::Json => {
-            tracing_subscriber::fmt()
-                .json()
-                .with_env_filter(env_filter)
+            tracing_subscriber::registry()
+                .with(env_filter)
+                .with(otel_layer)
+                .with(tracing_subscriber::fmt::layer().json())
                 .init();
         }
         config::LogFormat::Text => {
-            tracing_subscriber::fmt()
-                .with_env_filter(env_filter)
+            tracing_subscriber::registry()
+                .with(env_filter)
+                .with(otel_layer)
+                .with(tracing_subscriber::fmt::layer())
                 .init();
         }
     }
@@ -95,11 +136,18 @@ async fn main() {
 
     let metrics_handle = metrics::install_prometheus_recorder();
 
+    let mut middleware_registry = MiddlewareRegistry::new();
+    middleware_registry.register(Arc::new(UnsubscribeLinkMiddleware));
+    middleware_registry.register(Arc::new(ClickTrackingMiddleware));
+    middleware_registry.register(Arc::new(OpenTrackingMiddleware));
+    middleware_registry.register(Arc::new(UtmParamsMiddleware));
+    middleware_registry.register(Arc::new(PlaintextFallbackMiddleware));
+
     let state = Arc::new(AppState {
         db,
         config: config.clone(),
         registry,
-        middleware_registry: MiddlewareRegistry::new(),
+        middleware_registry,
         encryption_key,
         metrics_handle: Some(metrics_handle),
         rate_limiter: rate_limit::RateLimiter::new(100, 60),
