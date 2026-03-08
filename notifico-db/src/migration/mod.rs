@@ -9,6 +9,7 @@ mod m20260303_000006_create_api_keys;
 mod m20260303_000007_create_idempotency;
 mod m20260304_000008_create_delivery_task;
 mod m20260304_000009_create_credentials;
+mod m20260308_000010_create_pipeline_middleware;
 
 pub struct Migrator;
 
@@ -25,6 +26,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20260303_000007_create_idempotency::Migration),
             Box::new(m20260304_000008_create_delivery_task::Migration),
             Box::new(m20260304_000009_create_credentials::Migration),
+            Box::new(m20260308_000010_create_pipeline_middleware::Migration),
         ]
     }
 }
