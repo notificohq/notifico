@@ -3,6 +3,7 @@ pub mod api_key;
 pub mod credential;
 pub mod delivery_log;
 pub mod idempotency;
+pub mod middleware;
 pub mod preference;
 pub mod queue;
 pub mod recipient;
