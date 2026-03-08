@@ -1,8 +1,9 @@
-# Notifico v2 Frontend Design
+# Notifico v2 Frontend & Middleware Design
 
 ## Overview
 
 Admin panel SPA for Notifico, providing full CRUD management of all backend resources.
+Pipeline middleware system for intercepting and transforming messages at various stages.
 
 ## Stack
 
@@ -105,3 +106,98 @@ notifico-frontend/
 - Content area with breadcrumbs
 - Responsive: sidebar collapses on mobile
 - Dark/light mode via Tailwind (system preference default)
+
+---
+
+## Pipeline Middleware System
+
+### Overview
+
+Middleware intercepts messages at defined hook points in the pipeline. Implementations
+are native Rust traits; activation and configuration per-event stored in DB and managed
+via admin UI. The trait is designed so that WASM-based middleware can be added in the
+future without changing the interface.
+
+### Hook Points
+
+| Hook | When | Use Cases |
+|------|------|-----------|
+| **pre-render** | Before template rendering | Modify context data, inject variables, filter recipients |
+| **post-render** | After rendering, before enqueue | Modify content — tracking pixels, unsubscribe links, URL rewriting |
+| **pre-send** | After dequeue, before transport.send() | Last-chance modifications, per-recipient rate limiting |
+| **post-send** | After transport.send() | Logging, webhooks, analytics |
+
+All four hooks defined in the trait with default no-op implementations.
+Initial implementation covers **post-render** and **post-send** only.
+
+### Middleware Trait
+
+```rust
+#[async_trait]
+pub trait Middleware: Send + Sync {
+    fn name(&self) -> &str;
+    fn hook_point(&self) -> HookPoint;
+
+    async fn pre_render(&self, input: &mut PipelineInput, config: &Value) -> Result<(), CoreError> { Ok(()) }
+    async fn post_render(&self, output: &mut PipelineOutput, config: &Value) -> Result<(), CoreError> { Ok(()) }
+    async fn pre_send(&self, message: &mut RenderedMessage, config: &Value) -> Result<(), CoreError> { Ok(()) }
+    async fn post_send(&self, message: &RenderedMessage, result: &DeliveryResult, config: &Value) -> Result<(), CoreError> { Ok(()) }
+}
+```
+
+### Configuration Model
+
+Middleware is attached per pipeline rule (event + channel). Stored in DB:
+
+```
+pipeline_middleware (
+    id UUID,
+    rule_id UUID FK,        -- references pipeline_rule
+    middleware_name TEXT,    -- e.g. "unsubscribe_link"
+    config JSONB,           -- middleware-specific config
+    priority INT,           -- execution order (lower = first)
+    enabled BOOL
+)
+```
+
+Admin API endpoints:
+- `GET /admin/api/v1/rules/{rule_id}/middleware`
+- `POST /admin/api/v1/rules/{rule_id}/middleware`
+- `PUT /admin/api/v1/middleware/{id}`
+- `DELETE /admin/api/v1/middleware/{id}`
+
+### Day-1 Middleware
+
+| Name | Hook | Description |
+|------|------|-------------|
+| `unsubscribe_link` | post-render | Inject List-Unsubscribe header (RFC 8058) and unsubscribe URL into email body |
+| `click_tracking` | post-render | Rewrite URLs to route through Notifico (`/t/click/{token}`) for click analytics |
+| `open_tracking` | post-render | Append invisible 1x1 pixel (`/t/open/{token}`) to HTML emails for open tracking |
+| `utm_params` | post-render | Auto-append UTM tags to links (source, medium, campaign from event name) |
+| `plaintext_fallback` | post-render | Auto-generate text/plain from HTML content via html2text |
+
+### Tracking Endpoints
+
+New public routes for tracking pixel/click resolution:
+
+- `GET /t/open/{token}` — Returns 1x1 transparent GIF, records open event
+- `GET /t/click/{token}` — Records click event, 302 redirects to original URL
+
+Token encodes: delivery_log_id + link_url (for clicks). Stored/resolved via DB or signed JWT.
+
+### Future: WASM Middleware
+
+The `Middleware` trait is designed so WASM modules can implement it:
+- WASM module exports the same hook functions
+- A `WasmMiddleware` adapter wraps wasmtime/wasmer calls behind the trait
+- WASM modules uploaded via admin API, stored in DB or filesystem
+- Sandboxed execution with resource limits
+
+### OpenTelemetry
+
+- Add `opentelemetry` + `tracing-opentelemetry` crates
+- Instrument middleware chain: each middleware call is a span with name, hook point, duration
+- Instrument transport.send(): span per delivery with channel, recipient, status
+- Instrument pipeline execution: parent span covering render → middleware → enqueue
+- Configurable OTLP exporter endpoint via `NOTIFICO_OTEL_ENDPOINT` env var
+- Graceful degradation: if no endpoint configured, tracing works locally only
