@@ -1,3 +1,9 @@
+pub mod click_tracking;
+pub mod open_tracking;
+pub mod plaintext_fallback;
+pub mod unsubscribe_link;
+pub mod utm_params;
+
 use async_trait::async_trait;
 use serde_json::Value;
 
