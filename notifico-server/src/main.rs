@@ -911,4 +911,119 @@ mod integration_tests {
         assert_eq!(body["event_id"], event_id);
         assert!(body["stats"].as_array().unwrap().is_empty());
     }
+
+    #[tokio::test]
+    async fn admin_middleware_crud() {
+        let (app, key) = setup_admin_app().await;
+
+        // Create event
+        let req = Request::builder()
+            .method("POST")
+            .uri("/admin/api/v1/events")
+            .header("content-type", "application/json")
+            .header("authorization", format!("Bearer {key}"))
+            .body(Body::from(
+                r#"{"name":"mw.test","category":"transactional"}"#,
+            ))
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::CREATED);
+        let body = json_body(resp).await;
+        let event_id = body["id"].as_str().unwrap().to_string();
+
+        // Create template
+        let req = Request::builder()
+            .method("POST")
+            .uri("/admin/api/v1/templates")
+            .header("content-type", "application/json")
+            .header("authorization", format!("Bearer {key}"))
+            .body(Body::from(
+                r#"{"name":"mw_tpl","channel":"email"}"#,
+            ))
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::CREATED);
+        let body = json_body(resp).await;
+        let template_id = body["id"].as_str().unwrap().to_string();
+
+        // Create rule
+        let req = Request::builder()
+            .method("POST")
+            .uri(format!("/admin/api/v1/events/{event_id}/rules"))
+            .header("content-type", "application/json")
+            .header("authorization", format!("Bearer {key}"))
+            .body(Body::from(format!(
+                r#"{{"channel":"email","template_id":"{template_id}","priority":5}}"#
+            )))
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::CREATED);
+        let body = json_body(resp).await;
+        let rule_id = body["id"].as_str().unwrap().to_string();
+
+        // POST middleware to rule -> 201
+        let req = Request::builder()
+            .method("POST")
+            .uri(format!("/admin/api/v1/rules/{rule_id}/middleware"))
+            .header("content-type", "application/json")
+            .header("authorization", format!("Bearer {key}"))
+            .body(Body::from(
+                r#"{"middleware_name":"rate_limiter","config":{"max":100},"priority":10}"#,
+            ))
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::CREATED);
+        let body = json_body(resp).await;
+        assert_eq!(body["middleware_name"], "rate_limiter");
+        assert_eq!(body["priority"], 10);
+        assert_eq!(body["enabled"], true);
+        let mw_id = body["id"].as_str().unwrap().to_string();
+
+        // GET middleware list for rule -> should have 1
+        let req = Request::builder()
+            .uri(format!("/admin/api/v1/rules/{rule_id}/middleware"))
+            .header("authorization", format!("Bearer {key}"))
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = json_body(resp).await;
+        assert_eq!(body.as_array().unwrap().len(), 1);
+
+        // PUT update middleware -> 200
+        let req = Request::builder()
+            .method("PUT")
+            .uri(format!("/admin/api/v1/middleware/{mw_id}"))
+            .header("content-type", "application/json")
+            .header("authorization", format!("Bearer {key}"))
+            .body(Body::from(
+                r#"{"config":{"max":200},"priority":20,"enabled":false}"#,
+            ))
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = json_body(resp).await;
+        assert_eq!(body["updated"], true);
+
+        // DELETE middleware -> 204
+        let req = Request::builder()
+            .method("DELETE")
+            .uri(format!("/admin/api/v1/middleware/{mw_id}"))
+            .header("authorization", format!("Bearer {key}"))
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::NO_CONTENT);
+
+        // GET middleware list -> should be empty
+        let req = Request::builder()
+            .uri(format!("/admin/api/v1/rules/{rule_id}/middleware"))
+            .header("authorization", format!("Bearer {key}"))
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = json_body(resp).await;
+        assert_eq!(body.as_array().unwrap().len(), 0);
+    }
 }

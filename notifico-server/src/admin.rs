@@ -13,7 +13,7 @@ use uuid::Uuid;
 
 use axum::extract::Query;
 
-use notifico_db::repo::{admin, api_key, credential, delivery_log};
+use notifico_db::repo::{admin, api_key, credential, delivery_log, middleware};
 
 use crate::AppState;
 use crate::auth::AuthContext;
@@ -68,6 +68,15 @@ pub fn admin_router() -> Router<Arc<AppState>> {
         .route("/templates/{id}/preview", axum::routing::post(preview_template))
         // Event stats
         .route("/events/{id}/stats", get(event_stats))
+        // Middleware
+        .route(
+            "/rules/{rule_id}/middleware",
+            get(list_middleware).post(create_middleware),
+        )
+        .route(
+            "/middleware/{id}",
+            put(update_middleware).delete(delete_middleware),
+        )
         // Channels
         .route("/channels", get(list_channels))
 }
@@ -1106,4 +1115,107 @@ async fn event_stats(
             .collect(),
     })
     .into_response())
+}
+
+// ── Middleware ───────────────────────────────────────────────────────
+
+#[derive(Serialize)]
+struct MiddlewareResponse {
+    id: String,
+    rule_id: String,
+    middleware_name: String,
+    config: Value,
+    priority: i32,
+    enabled: bool,
+}
+
+#[derive(Deserialize)]
+struct CreateMiddlewareRequest {
+    middleware_name: String,
+    #[serde(default)]
+    config: Value,
+    #[serde(default)]
+    priority: i32,
+}
+
+#[derive(Deserialize)]
+struct UpdateMiddlewareRequest {
+    config: Value,
+    priority: i32,
+    enabled: bool,
+}
+
+async fn list_middleware(
+    State(state): State<Arc<AppState>>,
+    auth: AuthContext,
+    Path(rule_id): Path<Uuid>,
+) -> ApiResult {
+    require_admin(&auth)?;
+    let rows = middleware::list_all_by_rule(&state.db, rule_id)
+        .await
+        .map_err(db_err)?;
+    Ok(Json(
+        rows.into_iter()
+            .map(|m| {
+                let config = m.config_value().unwrap_or_default();
+                MiddlewareResponse {
+                    id: m.id.to_string(),
+                    rule_id: m.rule_id.to_string(),
+                    middleware_name: m.middleware_name,
+                    config,
+                    priority: m.priority,
+                    enabled: m.enabled,
+                }
+            })
+            .collect::<Vec<_>>(),
+    )
+    .into_response())
+}
+
+async fn create_middleware(
+    State(state): State<Arc<AppState>>,
+    auth: AuthContext,
+    Path(rule_id): Path<Uuid>,
+    Json(body): Json<CreateMiddlewareRequest>,
+) -> ApiResult {
+    require_admin(&auth)?;
+    let id = Uuid::now_v7();
+    middleware::insert(&state.db, id, rule_id, &body.middleware_name, &body.config, body.priority)
+        .await
+        .map_err(db_err)?;
+    Ok((
+        StatusCode::CREATED,
+        Json(MiddlewareResponse {
+            id: id.to_string(),
+            rule_id: rule_id.to_string(),
+            middleware_name: body.middleware_name,
+            config: body.config,
+            priority: body.priority,
+            enabled: true,
+        }),
+    )
+        .into_response())
+}
+
+async fn update_middleware(
+    State(state): State<Arc<AppState>>,
+    auth: AuthContext,
+    Path(id): Path<Uuid>,
+    Json(body): Json<UpdateMiddlewareRequest>,
+) -> ApiResult {
+    require_admin(&auth)?;
+    middleware::update(&state.db, id, &body.config, body.priority, body.enabled)
+        .await
+        .map_err(db_err)?;
+    Ok(Json(serde_json::json!({"id": id.to_string(), "updated": true})).into_response())
+}
+
+async fn delete_middleware(
+    State(state): State<Arc<AppState>>,
+    auth: AuthContext,
+    Path(id): Path<Uuid>,
+) -> ApiResult {
+    require_admin(&auth)?;
+    middleware::delete(&state.db, id).await.map_err(db_err)?;
+    Ok(StatusCode::NO_CONTENT.into_response())
 }
