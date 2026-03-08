@@ -162,6 +162,29 @@ pub async fn count_logs(
     Ok(result.cnt)
 }
 
+/// Count delivery logs grouped by status for a given event name within a project.
+pub async fn count_by_event_name(
+    db: &DatabaseConnection,
+    project_id: Uuid,
+    event_name: &str,
+) -> Result<Vec<(String, i64)>, DbErr> {
+    #[derive(FromQueryResult)]
+    struct StatusCount {
+        status: String,
+        cnt: i64,
+    }
+
+    let rows = StatusCount::find_by_statement(Statement::from_sql_and_values(
+        db.get_database_backend(),
+        "SELECT status, COUNT(*) as cnt FROM delivery_log WHERE project_id = ? AND event_name = ? GROUP BY status ORDER BY status",
+        [project_id.to_string().into(), event_name.into()],
+    ))
+    .all(db)
+    .await?;
+
+    Ok(rows.into_iter().map(|r| (r.status, r.cnt)).collect())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

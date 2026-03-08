@@ -1,5 +1,6 @@
-use axum::{Json, response::IntoResponse};
+use axum::Router;
 use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 
 use crate::broadcast::{BroadcastRequest, BroadcastResponse};
 use crate::ingest::IngestResponse;
@@ -31,6 +32,8 @@ use crate::ingest::IngestResponse;
 )]
 pub struct ApiDoc;
 
-pub async fn openapi_json() -> impl IntoResponse {
-    Json(ApiDoc::openapi())
+pub fn swagger_ui_router<S: Clone + Send + Sync + 'static>() -> Router<S> {
+    SwaggerUi::new("/swagger-ui")
+        .url("/api/openapi.json", ApiDoc::openapi())
+        .into()
 }

@@ -21,12 +21,14 @@ toml = { workspace = true }
 notifico-core = { workspace = true }
 notifico-db = { workspace = true }
 notifico-queue = { workspace = true }
+notifico-template = { workspace = true }
 uuid = { workspace = true }
 hex = { workspace = true }
 metrics = { workspace = true }
 metrics-exporter-prometheus = { workspace = true }
 utoipa = { workspace = true }
 utoipa-axum = { workspace = true }
+utoipa-swagger-ui = { workspace = true }
 
 [dev-dependencies]
 tower = { workspace = true }

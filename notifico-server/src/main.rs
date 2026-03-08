@@ -18,7 +18,10 @@ use tower_http::trace::TraceLayer;
 use config::{Config, ServerMode};
 use notifico_core::registry::TransportRegistry;
 use notifico_core::transport::ConsoleTransport;
+use notifico_core::transport::discord::DiscordTransport;
 use notifico_core::transport::email::EmailTransport;
+use notifico_core::transport::slack::SlackTransport;
+use notifico_core::transport::sms_twilio::TwilioSmsTransport;
 
 pub(crate) struct AppState {
     pub(crate) db: DatabaseConnection,
@@ -74,6 +77,9 @@ async fn main() {
     let mut registry = TransportRegistry::new();
     registry.register(Arc::new(ConsoleTransport));
     registry.register(Arc::new(EmailTransport));
+    registry.register(Arc::new(SlackTransport::new()));
+    registry.register(Arc::new(DiscordTransport::new()));
+    registry.register(Arc::new(TwilioSmsTransport::new()));
 
     // Parse encryption key from config (hex-encoded 32-byte key)
     let encryption_key = config.auth.encryption_key.as_ref().map(|hex_key| {
@@ -120,7 +126,7 @@ pub(crate) fn build_router(state: Arc<AppState>) -> Router {
         .route("/metrics", get(metrics::metrics_handler))
         .route("/api/v1/events", post(ingest::handle_ingest))
         .route("/api/v1/broadcasts", post(broadcast::handle_broadcast))
-        .route("/api/openapi.json", get(openapi::openapi_json))
+        .merge(openapi::swagger_ui_router())
         .nest("/admin/api/v1", admin::admin_router())
         .nest("/api/v1/public", public::public_router())
         .layer(middleware::from_fn(metrics::track_metrics))

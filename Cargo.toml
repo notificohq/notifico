@@ -34,6 +34,7 @@ tower-http = { version = "0.6", features = ["cors", "trace"] }
 http-body-util = "0.1"
 utoipa = { version = "5.3", features = ["axum_extras", "uuid"] }
 utoipa-axum = "0.2"
+utoipa-swagger-ui = { version = "9", features = ["axum", "vendored"] }
 
 # Database
 sea-orm = { version = "2.0.0-rc.35", features = ["sqlx-postgres", "sqlx-sqlite", "runtime-tokio-rustls", "macros"] }
