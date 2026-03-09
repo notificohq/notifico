@@ -63,6 +63,10 @@ tracing-opentelemetry = "0.30"
 # HTTP client
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
 
+# Frontend embedding
+rust-embed = { version = "8", features = ["interpolate-folder-path"] }
+mime_guess = "2"
+
 # Crypto
 sha2 = "0.10"
 hmac = "0.12"

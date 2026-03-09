@@ -2,6 +2,7 @@ mod admin;
 mod auth;
 mod broadcast;
 mod config;
+mod frontend;
 mod ingest;
 mod metrics;
 mod openapi;
@@ -183,6 +184,7 @@ pub(crate) fn build_router(state: Arc<AppState>) -> Router {
         .nest("/api/v1/public", public::public_router())
         .route("/t/open/{token}", get(tracking::handle_open))
         .route("/t/click/{token}", get(tracking::handle_click))
+        .fallback(frontend::serve_frontend)
         .layer(middleware::from_fn(metrics::track_metrics))
         .layer(TraceLayer::new_for_http())
         .with_state(state)

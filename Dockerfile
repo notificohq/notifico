@@ -26,6 +26,11 @@ COPY . .
 # Touch files to invalidate stubs
 RUN find . -name "*.rs" -exec touch {} +
 
+# Build frontend
+RUN curl -fsSL https://bun.sh/install | bash
+ENV PATH="/root/.bun/bin:$PATH"
+RUN cd notifico-frontend && bun install --frozen-lockfile && bun run build
+
 # Build the real binary
 RUN cargo build --release --bin notifico
 
