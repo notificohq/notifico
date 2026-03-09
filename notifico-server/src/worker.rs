@@ -119,6 +119,11 @@ fn task_row_to_delivery_task(row: &repo::queue::TaskRow) -> DeliveryTask {
 }
 
 /// Process a single delivery task.
+#[tracing::instrument(
+    name = "process_delivery",
+    skip(task, registry, middleware_registry, db, encryption_key),
+    fields(task_id = %task.id, channel = %task.channel, recipient_id = %task.recipient_id)
+)]
 pub async fn process_delivery(
     task: &DeliveryTask,
     registry: &TransportRegistry,

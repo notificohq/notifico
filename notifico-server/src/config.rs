@@ -18,6 +18,8 @@ pub struct Config {
     pub auth: AuthConfig,
     #[serde(default)]
     pub project: ProjectConfig,
+    #[serde(default)]
+    pub otel: OtelConfig,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -102,6 +104,18 @@ pub struct OidcConfig {
 pub struct ProjectConfig {
     #[serde(default = "default_locale")]
     pub default_locale: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct OtelConfig {
+    #[serde(default)]
+    pub endpoint: Option<String>,
+    #[serde(default = "default_otel_service_name")]
+    pub service_name: String,
+}
+
+fn default_otel_service_name() -> String {
+    "notifico".into()
 }
 
 fn default_mode() -> ServerMode {
@@ -195,6 +209,15 @@ impl Default for ProjectConfig {
     }
 }
 
+impl Default for OtelConfig {
+    fn default() -> Self {
+        Self {
+            endpoint: None,
+            service_name: default_otel_service_name(),
+        }
+    }
+}
+
 impl Config {
     /// Load config from notifico.toml (optional) + NOTIFICO_ env vars.
     pub fn load(config_path: Option<&str>) -> Result<Self, figment::Error> {
@@ -248,6 +271,13 @@ mod tests {
         assert_eq!(config.server.port, 9000);
         assert_eq!(config.server.admin_port, 8001); // default
         assert_eq!(config.project.default_locale, "ru");
+    }
+
+    #[test]
+    fn default_otel_config() {
+        let config = Config::load(None).unwrap();
+        assert!(config.otel.endpoint.is_none());
+        assert_eq!(config.otel.service_name, "notifico");
     }
 
     #[test]

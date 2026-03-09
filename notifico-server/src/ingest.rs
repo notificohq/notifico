@@ -33,6 +33,11 @@ pub struct IngestResponse {
     ),
     security(("bearer" = []))
 )]
+#[tracing::instrument(
+    name = "ingest",
+    skip(state, auth, event),
+    fields(event_name = %event.event, project_id = %auth.project_id)
+)]
 pub async fn handle_ingest(
     State(state): State<Arc<AppState>>,
     auth: AuthContext,
