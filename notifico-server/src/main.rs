@@ -28,7 +28,7 @@ use notifico_core::middleware::plaintext_fallback::PlaintextFallbackMiddleware;
 use notifico_core::middleware::unsubscribe_link::UnsubscribeLinkMiddleware;
 use notifico_core::middleware::utm_params::UtmParamsMiddleware;
 use notifico_core::registry::TransportRegistry;
-use notifico_core::transport::ConsoleTransport;
+use notifico_transport_console::ConsoleTransport;
 use notifico_core::transport::discord::DiscordTransport;
 use notifico_core::transport::email::EmailTransport;
 use notifico_core::transport::slack::SlackTransport;

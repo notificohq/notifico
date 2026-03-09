@@ -1,0 +1,13 @@
+[package]
+name = "notifico-transport-console"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+notifico-core = { path = "../../notifico-core" }
+async-trait.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true }

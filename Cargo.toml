@@ -6,6 +6,7 @@ members = [
     "notifico-template",
     "notifico-queue",
     "notifico-server",
+    "transports/console",
 ]
 
 [workspace.package]
