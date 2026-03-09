@@ -15,6 +15,7 @@ members = [
     "transports/webhook",
     "transports/fcm",
     "transports/apns",
+    "transports/web-push",
 ]
 
 [workspace.package]

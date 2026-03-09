@@ -31,6 +31,7 @@ notifico-transport-twilio-sms = { path = "../transports/twilio-sms" }
 notifico-transport-webhook = { path = "../transports/webhook" }
 notifico-transport-fcm = { path = "../transports/fcm" }
 notifico-transport-apns = { path = "../transports/apns" }
+notifico-transport-web-push = { path = "../transports/web-push" }
 uuid = { workspace = true }
 hex = { workspace = true }
 hmac = { workspace = true }
