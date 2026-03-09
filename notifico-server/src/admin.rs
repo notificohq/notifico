@@ -35,10 +35,10 @@ pub fn admin_router() -> Router<Arc<AppState>> {
         )
         .route("/rules/{id}", put(update_rule).delete(delete_rule))
         .route("/templates", get(list_templates).post(create_template))
-        .route("/templates/{id}", delete(delete_template))
+        .route("/templates/{id}", get(get_template).delete(delete_template))
         .route(
             "/templates/{template_id}/content/{locale}",
-            put(set_template_content),
+            get(get_template_content).put(set_template_content),
         )
         .route(
             "/credentials",
@@ -496,6 +496,25 @@ async fn create_template(
         .into_response())
 }
 
+async fn get_template(
+    State(state): State<Arc<AppState>>,
+    auth: AuthContext,
+    Path(id): Path<Uuid>,
+) -> ApiResult {
+    require_admin(&auth)?;
+    let template = admin::get_template(&state.db, id)
+        .await
+        .map_err(db_err)?
+        .ok_or_else(|| (StatusCode::NOT_FOUND, "Template not found".to_string()).into_response())?;
+    Ok(Json(TemplateResponse {
+        id: template.id,
+        project_id: template.project_id,
+        name: template.name,
+        channel: template.channel,
+    })
+    .into_response())
+}
+
 async fn delete_template(
     State(state): State<Arc<AppState>>,
     auth: AuthContext,
@@ -506,6 +525,21 @@ async fn delete_template(
         .await
         .map_err(db_err)?;
     Ok(StatusCode::NO_CONTENT.into_response())
+}
+
+async fn get_template_content(
+    State(state): State<Arc<AppState>>,
+    auth: AuthContext,
+    Path((template_id, locale)): Path<(Uuid, String)>,
+) -> ApiResult {
+    require_admin(&auth)?;
+    let content = admin::get_template_content(&state.db, template_id, &locale)
+        .await
+        .map_err(db_err)?
+        .ok_or_else(|| {
+            (StatusCode::NOT_FOUND, "Content not found for locale".to_string()).into_response()
+        })?;
+    Ok(Json(serde_json::json!({ "body": content })).into_response())
 }
 
 async fn set_template_content(

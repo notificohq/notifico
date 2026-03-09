@@ -488,6 +488,37 @@ pub async fn set_template_content(
     Ok(())
 }
 
+pub async fn get_template_content(
+    db: &DatabaseConnection,
+    template_id: Uuid,
+    locale: &str,
+) -> Result<Option<Value>, DbErr> {
+    #[derive(Debug, FromQueryResult)]
+    struct ContentBody {
+        body: String,
+    }
+
+    let row = ContentBody::find_by_statement(Statement::from_sql_and_values(
+        db.get_database_backend(),
+        r#"SELECT tc.body
+           FROM template_content tc
+           JOIN template_version tv ON tc.template_version_id = tv.id
+           WHERE tv.template_id = ? AND tv.is_current = true AND tc.locale = ?"#,
+        [template_id.to_string().into(), locale.into()],
+    ))
+    .one(db)
+    .await?;
+
+    match row {
+        Some(r) => {
+            let val: Value =
+                serde_json::from_str(&r.body).map_err(|e| DbErr::Custom(format!("JSON: {e}")))?;
+            Ok(Some(val))
+        }
+        None => Ok(None),
+    }
+}
+
 // ── Recipient ─────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone)]

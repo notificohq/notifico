@@ -25,8 +25,8 @@
   let deleteTarget = $state<Credential | null>(null);
 
   const createCredential = createMutation({
-    mutationFn: (data: { name: string; channel: string; config: string }) =>
-      api.post<Credential>('/admin/api/v1/credentials', data),
+    mutationFn: (payload: { name: string; channel: string; data: unknown }) =>
+      api.post<Credential>('/admin/api/v1/credentials', payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['credentials'] });
       createOpen = false;
@@ -44,12 +44,22 @@
     },
   });
 
+  let configError = $state('');
+
   function handleCreate() {
     if (!newName.trim() || !newChannel.trim()) return;
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(newConfig);
+      configError = '';
+    } catch {
+      configError = 'Invalid JSON';
+      return;
+    }
     $createCredential.mutate({
       name: newName.trim(),
       channel: newChannel.trim(),
-      config: newConfig,
+      data: parsed,
     });
   }
 </script>
@@ -83,6 +93,9 @@
           <div class="space-y-2">
             <Label>Config (JSON)</Label>
             <Textarea bind:value={newConfig} placeholder={'{}'} class="font-mono min-h-[120px]" />
+            {#if configError}
+              <p class="text-sm text-destructive">{configError}</p>
+            {/if}
           </div>
         </div>
         <Dialog.Footer>
