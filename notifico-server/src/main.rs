@@ -33,6 +33,8 @@ use notifico_core::transport::discord::DiscordTransport;
 use notifico_core::transport::email::EmailTransport;
 use notifico_core::transport::slack::SlackTransport;
 use notifico_core::transport::sms_twilio::TwilioSmsTransport;
+use notifico_core::transport::telegram::TelegramTransport;
+use notifico_core::transport::webhook::WebhookTransport;
 
 pub(crate) struct AppState {
     pub(crate) db: DatabaseConnection,
@@ -125,6 +127,8 @@ async fn main() {
     registry.register(Arc::new(SlackTransport::new()));
     registry.register(Arc::new(DiscordTransport::new()));
     registry.register(Arc::new(TwilioSmsTransport::new()));
+    registry.register(Arc::new(TelegramTransport::new()));
+    registry.register(Arc::new(WebhookTransport::new()));
 
     // Parse encryption key from config (hex-encoded 32-byte key)
     let encryption_key = config.auth.encryption_key.as_ref().map(|hex_key| {

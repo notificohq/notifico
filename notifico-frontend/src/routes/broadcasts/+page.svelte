@@ -9,8 +9,8 @@
 
   let eventName = $state('');
   let dataJson = $state('{}');
-  let filterJson = $state('{}');
-  let showFilter = $state(false);
+  let recipientIds = $state('');
+  let showRecipients = $state(false);
 
   interface BroadcastResult {
     broadcast_id: string;
@@ -22,8 +22,8 @@
   let error = $state<string | null>(null);
 
   const sendBroadcast = createMutation({
-    mutationFn: (payload: { event: string; data: unknown; filter?: unknown }) =>
-      api.post<BroadcastResult>('/admin/api/v1/broadcasts', payload),
+    mutationFn: (payload: { event: string; data: unknown; recipients?: string[] }) =>
+      api.post<BroadcastResult>('/api/v1/broadcasts', payload),
     onSuccess: (data) => {
       result = data;
       error = null;
@@ -39,16 +39,16 @@
     error = null;
     try {
       const data = JSON.parse(dataJson);
-      const payload: { event: string; data: unknown; filter?: unknown } = {
+      const payload: { event: string; data: unknown; recipients?: string[] } = {
         event: eventName.trim(),
         data,
       };
-      if (showFilter && filterJson.trim() !== '{}') {
-        payload.filter = JSON.parse(filterJson);
+      if (showRecipients && recipientIds.trim()) {
+        payload.recipients = recipientIds.split(',').map((s) => s.trim()).filter(Boolean);
       }
       $sendBroadcast.mutate(payload);
     } catch {
-      error = 'Invalid JSON in data or filter fields';
+      error = 'Invalid JSON in data field';
     }
   }
 </script>
@@ -78,16 +78,17 @@
       <div>
         <button
           class="text-sm text-muted-foreground hover:text-foreground transition-colors underline"
-          onclick={() => (showFilter = !showFilter)}
+          onclick={() => (showRecipients = !showRecipients)}
         >
-          {showFilter ? 'Hide filter' : 'Add recipient filter'}
+          {showRecipients ? 'Hide recipient filter' : 'Target specific recipients'}
         </button>
       </div>
 
-      {#if showFilter}
+      {#if showRecipients}
         <div class="space-y-2">
-          <Label>Filter (JSON)</Label>
-          <Textarea bind:value={filterJson} placeholder={'{"locale": "en"}'} class="font-mono min-h-[80px]" />
+          <Label>Recipient IDs (comma-separated)</Label>
+          <Input bind:value={recipientIds} placeholder="user-1, user-2, user-3" class="font-mono" />
+          <p class="text-xs text-muted-foreground">Leave empty to send to all recipients</p>
         </div>
       {/if}
 
