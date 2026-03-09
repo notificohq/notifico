@@ -1,0 +1,17 @@
+[package]
+name = "notifico-transport-apns"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+notifico-core = { path = "../../notifico-core" }
+async-trait.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+reqwest.workspace = true
+tracing.workspace = true
+jsonwebtoken = "9"
+chrono.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true }

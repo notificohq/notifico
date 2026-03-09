@@ -36,6 +36,7 @@ use notifico_transport_twilio_sms::TwilioSmsTransport;
 use notifico_transport_telegram::TelegramTransport;
 use notifico_transport_webhook::WebhookTransport;
 use notifico_transport_fcm::FcmTransport;
+use notifico_transport_apns::ApnsTransport;
 
 pub(crate) struct AppState {
     pub(crate) db: DatabaseConnection,
@@ -131,6 +132,7 @@ async fn main() {
     registry.register(Arc::new(TelegramTransport::new()));
     registry.register(Arc::new(WebhookTransport::new()));
     registry.register(Arc::new(FcmTransport::new()));
+    registry.register(Arc::new(ApnsTransport::new()));
 
     // Parse encryption key from config (hex-encoded 32-byte key)
     let encryption_key = config.auth.encryption_key.as_ref().map(|hex_key| {
