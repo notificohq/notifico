@@ -23,6 +23,12 @@ notifico-db = { workspace = true }
 notifico-queue = { workspace = true }
 notifico-template = { workspace = true }
 notifico-transport-console = { path = "../transports/console" }
+notifico-transport-email = { path = "../transports/email" }
+notifico-transport-telegram = { path = "../transports/telegram" }
+notifico-transport-slack = { path = "../transports/slack" }
+notifico-transport-discord = { path = "../transports/discord" }
+notifico-transport-twilio-sms = { path = "../transports/twilio-sms" }
+notifico-transport-webhook = { path = "../transports/webhook" }
 uuid = { workspace = true }
 hex = { workspace = true }
 hmac = { workspace = true }

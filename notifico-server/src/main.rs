@@ -29,12 +29,12 @@ use notifico_core::middleware::unsubscribe_link::UnsubscribeLinkMiddleware;
 use notifico_core::middleware::utm_params::UtmParamsMiddleware;
 use notifico_core::registry::TransportRegistry;
 use notifico_transport_console::ConsoleTransport;
-use notifico_core::transport::discord::DiscordTransport;
-use notifico_core::transport::email::EmailTransport;
-use notifico_core::transport::slack::SlackTransport;
-use notifico_core::transport::sms_twilio::TwilioSmsTransport;
-use notifico_core::transport::telegram::TelegramTransport;
-use notifico_core::transport::webhook::WebhookTransport;
+use notifico_transport_discord::DiscordTransport;
+use notifico_transport_email::EmailTransport;
+use notifico_transport_slack::SlackTransport;
+use notifico_transport_twilio_sms::TwilioSmsTransport;
+use notifico_transport_telegram::TelegramTransport;
+use notifico_transport_webhook::WebhookTransport;
 
 pub(crate) struct AppState {
     pub(crate) db: DatabaseConnection,

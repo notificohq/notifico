@@ -2,25 +2,23 @@ use async_trait::async_trait;
 use reqwest::Client;
 use serde::Deserialize;
 
-use crate::channel::ChannelId;
-use crate::error::CoreError;
-
-use super::{
+use notifico_core::channel::ChannelId;
+use notifico_core::error::CoreError;
+use notifico_core::transport::{
     ContentField, ContentFieldType, ContentSchema, CredentialField, CredentialSchema,
     DeliveryResult, RenderedMessage, Transport,
 };
 
-/// Telegram Bot API transport.
+/// Slack transport using the Web API `chat.postMessage` endpoint.
 ///
-/// Sends messages via the `sendMessage` endpoint.
-/// - recipient_contact: the Telegram chat ID
-/// - content: `text` (required), `parse_mode` (optional: "HTML" or "MarkdownV2")
-/// - credentials: `bot_token` (required)
-pub struct TelegramTransport {
+/// - recipient_contact: the Slack channel ID or user ID (e.g. "C01234", "U01234")
+/// - content: `text` (required), `blocks` (optional JSON array of Block Kit blocks)
+/// - credentials: `bot_token` (required, xoxb-...)
+pub struct SlackTransport {
     client: Client,
 }
 
-impl TelegramTransport {
+impl SlackTransport {
     pub fn new() -> Self {
         Self {
             client: Client::new(),
@@ -28,32 +26,27 @@ impl TelegramTransport {
     }
 }
 
-impl Default for TelegramTransport {
+impl Default for SlackTransport {
     fn default() -> Self {
         Self::new()
     }
 }
 
 #[derive(Deserialize)]
-struct TelegramResponse {
+struct SlackResponse {
     ok: bool,
-    result: Option<TelegramMessage>,
-    description: Option<String>,
-}
-
-#[derive(Deserialize)]
-struct TelegramMessage {
-    message_id: i64,
+    ts: Option<String>,
+    error: Option<String>,
 }
 
 #[async_trait]
-impl Transport for TelegramTransport {
+impl Transport for SlackTransport {
     fn channel_id(&self) -> ChannelId {
-        ChannelId::new("telegram")
+        ChannelId::new("slack")
     }
 
     fn display_name(&self) -> &str {
-        "Telegram"
+        "Slack"
     }
 
     fn content_schema(&self) -> ContentSchema {
@@ -63,13 +56,13 @@ impl Transport for TelegramTransport {
                     name: "text".into(),
                     field_type: ContentFieldType::Text,
                     required: true,
-                    description: "Message text".into(),
+                    description: "Message text (also used as fallback for blocks)".into(),
                 },
                 ContentField {
-                    name: "parse_mode".into(),
-                    field_type: ContentFieldType::Text,
+                    name: "blocks".into(),
+                    field_type: ContentFieldType::Json,
                     required: false,
-                    description: "Parse mode: HTML or MarkdownV2 (optional)".into(),
+                    description: "Slack Block Kit blocks (JSON array)".into(),
                 },
             ],
         }
@@ -81,7 +74,7 @@ impl Transport for TelegramTransport {
                 name: "bot_token".into(),
                 required: true,
                 secret: true,
-                description: "Telegram Bot API token from @BotFather".into(),
+                description: "Slack Bot User OAuth Token (xoxb-...)".into(),
             }],
         }
     }
@@ -99,48 +92,49 @@ impl Transport for TelegramTransport {
             .and_then(|v| v.as_str())
             .ok_or_else(|| CoreError::Transport("Missing 'text' in content".into()))?;
 
-        let chat_id = &message.recipient_contact;
-
-        let url = format!("https://api.telegram.org/bot{bot_token}/sendMessage");
+        let channel = &message.recipient_contact;
 
         let mut params = serde_json::json!({
-            "chat_id": chat_id,
+            "channel": channel,
             "text": text,
         });
 
-        if let Some(parse_mode) = message.content.get("parse_mode").and_then(|v| v.as_str()) {
-            params["parse_mode"] = serde_json::Value::String(parse_mode.to_string());
+        if let Some(blocks) = message.content.get("blocks") {
+            params["blocks"] = blocks.clone();
         }
 
         let resp = self
             .client
-            .post(&url)
+            .post("https://slack.com/api/chat.postMessage")
+            .bearer_auth(bot_token)
             .json(&params)
             .send()
             .await
-            .map_err(|e| CoreError::Transport(format!("Telegram HTTP error: {e}")))?;
+            .map_err(|e| CoreError::Transport(format!("Slack HTTP error: {e}")))?;
 
         let status = resp.status();
-        let body: TelegramResponse = resp
+        let body: SlackResponse = resp
             .json()
             .await
-            .map_err(|e| CoreError::Transport(format!("Telegram response parse error: {e}")))?;
+            .map_err(|e| CoreError::Transport(format!("Slack response parse error: {e}")))?;
 
         if body.ok {
-            let message_id = body.result.map(|m| m.message_id.to_string());
             Ok(DeliveryResult::Delivered {
-                provider_message_id: message_id,
+                provider_message_id: body.ts,
             })
         } else {
             let error = body
-                .description
-                .unwrap_or_else(|| format!("Telegram API error (HTTP {})", status));
-            let retryable = status.is_server_error() || status.as_u16() == 429;
+                .error
+                .unwrap_or_else(|| format!("Slack API error (HTTP {})", status));
+            let retryable = matches!(
+                error.as_str(),
+                "rate_limited" | "service_unavailable" | "internal_error"
+            );
             tracing::warn!(
-                chat_id = %chat_id,
+                channel = %channel,
                 error = %error,
                 retryable = retryable,
-                "Telegram delivery failed"
+                "Slack delivery failed"
             );
             Ok(DeliveryResult::Failed { error, retryable })
         }
@@ -152,16 +146,16 @@ mod tests {
     use super::*;
 
     #[test]
-    fn telegram_schema() {
-        let transport = TelegramTransport::new();
-        assert_eq!(transport.channel_id(), ChannelId::new("telegram"));
-        assert_eq!(transport.display_name(), "Telegram");
+    fn slack_schema() {
+        let transport = SlackTransport::new();
+        assert_eq!(transport.channel_id(), ChannelId::new("slack"));
+        assert_eq!(transport.display_name(), "Slack");
 
         let content = transport.content_schema();
         assert_eq!(content.fields.len(), 2);
         assert_eq!(content.fields[0].name, "text");
         assert!(content.fields[0].required);
-        assert_eq!(content.fields[1].name, "parse_mode");
+        assert_eq!(content.fields[1].name, "blocks");
         assert!(!content.fields[1].required);
 
         let creds = transport.credential_schema();
@@ -172,13 +166,28 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn telegram_missing_credentials() {
-        let transport = TelegramTransport::new();
+    async fn slack_missing_credentials() {
+        let transport = SlackTransport::new();
         let message = RenderedMessage {
-            channel: ChannelId::new("telegram"),
-            recipient_contact: "12345".into(),
+            channel: ChannelId::new("slack"),
+            recipient_contact: "C01234".into(),
             content: serde_json::json!({"text": "Hello!"}),
             credentials: serde_json::json!({}),
+            attachments: vec![],
+        };
+
+        let result = transport.send(&message).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn slack_missing_text() {
+        let transport = SlackTransport::new();
+        let message = RenderedMessage {
+            channel: ChannelId::new("slack"),
+            recipient_contact: "C01234".into(),
+            content: serde_json::json!({}),
+            credentials: serde_json::json!({"bot_token": "xoxb-test"}),
             attachments: vec![],
         };
 

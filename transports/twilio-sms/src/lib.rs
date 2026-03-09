@@ -2,10 +2,9 @@ use async_trait::async_trait;
 use reqwest::Client;
 use serde::Deserialize;
 
-use crate::channel::ChannelId;
-use crate::error::CoreError;
-
-use super::{
+use notifico_core::channel::ChannelId;
+use notifico_core::error::CoreError;
+use notifico_core::transport::{
     ContentField, ContentFieldType, ContentSchema, CredentialField, CredentialSchema,
     DeliveryResult, RenderedMessage, Transport,
 };

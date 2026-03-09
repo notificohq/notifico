@@ -1,0 +1,14 @@
+[package]
+name = "notifico-transport-discord"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+notifico-core = { path = "../../notifico-core" }
+async-trait.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+reqwest.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true }

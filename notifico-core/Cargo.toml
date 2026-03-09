@@ -11,11 +11,6 @@ chrono = { workspace = true }
 async-trait = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
-lettre = { workspace = true }
-reqwest = { workspace = true }
-sha2 = { workspace = true }
-hmac = { workspace = true }
-hex = { workspace = true }
 base64 = { workspace = true }
 regex = { workspace = true }
 html2text = { workspace = true }

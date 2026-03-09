@@ -3,10 +3,9 @@ use hmac::{Hmac, Mac};
 use reqwest::Client;
 use sha2::Sha256;
 
-use crate::channel::ChannelId;
-use crate::error::CoreError;
-
-use super::{
+use notifico_core::channel::ChannelId;
+use notifico_core::error::CoreError;
+use notifico_core::transport::{
     ContentField, ContentFieldType, ContentSchema, CredentialField, CredentialSchema,
     DeliveryResult, RenderedMessage, Transport,
 };

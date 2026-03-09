@@ -7,6 +7,12 @@ members = [
     "notifico-queue",
     "notifico-server",
     "transports/console",
+    "transports/email",
+    "transports/telegram",
+    "transports/slack",
+    "transports/discord",
+    "transports/twilio-sms",
+    "transports/webhook",
 ]
 
 [workspace.package]

@@ -3,10 +3,9 @@ use lettre::message::{MultiPart, SinglePart, header::ContentType};
 use lettre::transport::smtp::authentication::Credentials;
 use lettre::{AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor};
 
-use crate::channel::ChannelId;
-use crate::error::CoreError;
-
-use super::{
+use notifico_core::channel::ChannelId;
+use notifico_core::error::CoreError;
+use notifico_core::transport::{
     ContentField, ContentFieldType, ContentSchema, CredentialField, CredentialSchema,
     DeliveryResult, RenderedMessage, Transport,
 };
