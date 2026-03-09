@@ -29,6 +29,7 @@ notifico-transport-slack = { path = "../transports/slack" }
 notifico-transport-discord = { path = "../transports/discord" }
 notifico-transport-twilio-sms = { path = "../transports/twilio-sms" }
 notifico-transport-webhook = { path = "../transports/webhook" }
+notifico-transport-fcm = { path = "../transports/fcm" }
 uuid = { workspace = true }
 hex = { workspace = true }
 hmac = { workspace = true }
